@@ -389,7 +389,7 @@ describe("search engines", () => {
 		for (const path of paths) {
 			const { file, metadata } = await readPage(path);
 			const title = await resolveTitle(file, metadata.title);
-			assert.match(title, /MailCheap/, `${path}: ${title}`);
+			assert.match(title, /mailcheap/, `${path}: ${title}`);
 			assert.ok(metadata.description?.length >= 50 && metadata.description.length <= 200, `${path}: ${metadata.description}`);
 			assert.equal(metadata.alternates?.canonical, path, path);
 			// A page's openGraph would replace its layouts' whole: the share image and the page's address with it.
@@ -406,7 +406,7 @@ describe("search engines", () => {
 		const { metadata } = await importFile("app/(site)/layout.js");
 		assert.equal(metadata.metadataBase.href, new URL("/", m.config.getAppUrl()).href);
 		assert.deepEqual(metadata.robots, { index: true, follow: true });
-		assert.deepEqual(metadata.openGraph, { type: "website", siteName: "MailCheap", locale: "en_US", url: "./" });
+		assert.deepEqual(metadata.openGraph, { type: "website", siteName: "mailcheap", locale: "en_US", url: "./" });
 		assert.equal(metadata.twitter.card, "summary_large_image");
 		assert.deepEqual((await importFile("app/layout.js")).metadata.robots, { index: false, follow: false }, "the app's own pages stay out of search");
 	});
@@ -432,7 +432,7 @@ describe("search engines", () => {
 		const response = (await importFile("app/site.webmanifest/route.js")).GET();
 		assert.equal(response.headers.get("content-type"), "application/manifest+json");
 		const manifest = await response.json();
-		assert.equal(manifest.name, "MailCheap");
+		assert.equal(manifest.name, "mailcheap");
 		assert.equal(manifest.start_url, "/");
 		assert.deepEqual(manifest.icons.map(({ sizes }) => sizes), ["192x192", "512x512"]);
 		for (const { src, sizes, type } of manifest.icons) {

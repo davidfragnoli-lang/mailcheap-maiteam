@@ -11,7 +11,7 @@ process.env.AWS_EC2_METADATA_DISABLED = "true";
 
 const ses = await import("../lib/ses.js");
 
-test("without MailCheap's own SES keys nothing falls back to the machine's AWS credentials", async () => {
+test("without mailcheap's own SES keys nothing falls back to the machine's AWS credentials", async () => {
 	assert.match((await ses.getSesAccount({ fresh: true })).error, /SES is not configured/);
 	assert.match((await ses.getDomainIdentity("example.com")).error, /SES is not configured/);
 	await assert.rejects(ses.createTenant("mc-test", { accountId: "a" }), /SES is not configured/);

@@ -10,7 +10,7 @@ function render(theme, options = {}) {
 	return renderEmail({ ...base, newsletter: { name: "Field notes", postalAddress: "1 Main St", ...(theme && { theme }) }, ...options });
 }
 
-test("MailCheap's theme, saved or not, sends the email it always did: system fonts, no web fonts", () => {
+test("mailcheap's theme, saved or not, sends the email it always did: system fonts, no web fonts", () => {
 	const plain = render(null);
 	assert.equal(render({ preset: "mailcheap" }).html, plain.html);
 	assert.doesNotMatch(plain.html, /@font-face|\[if mso\]/);

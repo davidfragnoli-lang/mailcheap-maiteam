@@ -267,7 +267,7 @@ function SectionSender({ draft, set, update, domains, sharedDomain, fromEmail, d
 				htmlFor={POSTAL_ADDRESS_ID}
 				hint={
 					defaultPostalAddress && postalAddress === defaultPostalAddress ? (
-						"MailCheap's address is used by default. Replace it with yours anytime."
+						"mailcheap's address is used by default. Replace it with yours anytime."
 					) : postalAddress.trim() ? (
 						"Shown in the footer of every email. Anti-spam laws require one."
 					) : (
@@ -281,7 +281,7 @@ function SectionSender({ draft, set, update, domains, sharedDomain, fromEmail, d
 										onClick={() => set("postalAddress", defaultPostalAddress)}
 										className="font-medium text-foreground underline decoration-foreground/30 underline-offset-2 transition-colors duration-150 hover:decoration-foreground"
 									>
-										Use MailCheap&apos;s address
+										Use mailcheap&apos;s address
 									</button>
 								</>
 							)}
@@ -524,7 +524,7 @@ function SectionCleanup({ draft, setDraft, set, newsletter, sender, fromEmail, t
 				doesn&apos;t answer by a send {LAST_CHANCE_DAYS} days later becomes dormant: not unsubscribed, not deleted, and
 				back if they sign up again.
 			</p>
-			<Field label="Ignored issues" hint="In a row, counting from the first issue MailCheap sent">
+			<Field label="Ignored issues" hint="In a row, counting from the first issue mailcheap sent">
 				<Input
 					name="cleanupIssues"
 					type="number"

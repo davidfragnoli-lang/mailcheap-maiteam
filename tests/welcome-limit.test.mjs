@@ -18,7 +18,7 @@ let admin;
 let nextId = 0;
 let visitor = 0;
 
-const isWelcomeNotice = ({ subject }) => subject.startsWith("[MailCheap] Welcome emails paused");
+const isWelcomeNotice = ({ subject }) => subject.startsWith("[mailcheap] Welcome emails paused");
 
 async function callTool(key, name, args = {}) {
 	const request = new Request("http://localhost:3000/mcp", {
@@ -235,7 +235,7 @@ describe("the owner", () => {
 		const [notice] = notices;
 		const current = await usage(user);
 		assert.deepEqual(notice.to, ["notice@example.com"]);
-		assert.equal(notice.subject, "[MailCheap] Welcome emails paused: you've used this month's 2 emails");
+		assert.equal(notice.subject, "[mailcheap] Welcome emails paused: you've used this month's 2 emails");
 		const { supportChatPath } = m.siteExtensions;
 		assert.equal(
 			notice.text,

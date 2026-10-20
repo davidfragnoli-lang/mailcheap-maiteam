@@ -138,13 +138,13 @@ export default function ContactsPage() {
 					<strong>Unsubscribe</strong> stops every email to them.
 				</li>
 				<li>
-					<strong>Resubscribe</strong> brings back someone who unsubscribed. Do it only when they asked: MailCheap asks you to
+					<strong>Resubscribe</strong> brings back someone who unsubscribed. Do it only when they asked: mailcheap asks you to
 					confirm it, and keeps who did it and when. Someone who unsubscribed can&apos;t be marked dormant, so they only come back
 					this way or by signing up again.
 				</li>
 				<li>
 					<strong>Delete contact</strong> removes them with their dates and engagement, and can&apos;t be undone. For someone who
-					unsubscribed, bounced or complained, MailCheap keeps a scrambled trace of the address, so adding it again never emails it.
+					unsubscribed, bounced or complained, mailcheap keeps a scrambled trace of the address, so adding it again never emails it.
 					Anyone else can be added again like a new contact.
 				</li>
 			</ul>
@@ -162,7 +162,7 @@ export default function ContactsPage() {
 
 			<h2 id="undeliverable">Addresses no one can reach</h2>
 			<p>
-				When an address hard bounces or turns out to be a spam trap, MailCheap remembers it for every sender: imports and signups
+				When an address hard bounces or turns out to be a spam trap, mailcheap remembers it for every sender: imports and signups
 				leave it out, and sends skip it, showing the contact as bounced. A bounced address is remembered for 180 days, a spam trap for
 				good.
 			</p>

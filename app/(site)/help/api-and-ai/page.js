@@ -21,7 +21,7 @@ export default function ApiAndAiPage() {
 
 			<h2 id="ai-assistants">AI assistants</h2>
 			<p>
-				ChatGPT, Claude and Grok Bot connect with your sign-in: add MailCheap in the assistant, then approve it on MailCheap&apos;s
+				ChatGPT, Claude and Grok Bot connect with your sign-in: add mailcheap in the assistant, then approve it on mailcheap&apos;s
 				page. Claude Code, Codex and Cursor connect with an API key. Your assistant can then write drafts, send you tests, schedule
 				issues and read your stats. Sending to your list can&apos;t be undone, so it asks you first. In ChatGPT, OpenAI lets apps make
 				changes only on its Business, Enterprise and Edu plans. <Link href="/docs/mcp">See the setup for each assistant</Link>.
@@ -34,7 +34,7 @@ export default function ApiAndAiPage() {
 
 			<h2 id="api-keys">API keys</h2>
 			<p>
-				Create keys on the <LinkApp href="/api-keys">API keys page</LinkApp>. A key is shown once: copy it then, since MailCheap only
+				Create keys on the <LinkApp href="/api-keys">API keys page</LinkApp>. A key is shown once: copy it then, since mailcheap only
 				keeps a fingerprint of it.
 			</p>
 			<ul>

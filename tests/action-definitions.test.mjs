@@ -90,10 +90,10 @@ test("newsletter changes land on the saved settings, and the shared address foll
 	assert.equal(getNewsletterProblem({ ...merged, socialLinks: ["http://x.com/me"] }), "http://x.com/me is not an https:// link");
 });
 
-test("a slug can't be a subdomain MailCheap uses or keeps", () => {
+test("a slug can't be a subdomain mailcheap uses or keeps", () => {
 	const settings = (slug) => applySharedAddress(mergeNewsletterSettings(toNewsletterSettings(null), { name: "Mine", slug }), "mailcheap.ai");
 	for (const slug of ["www", "r", "rp", "send", "rsend", "cdn", "api", "app", "mail", "docs", "admin", "status", "blog", "help", "support", "bounce", "mcp"]) {
-		assert.equal(getNewsletterProblem(settings(slug)), `${slug} is reserved for MailCheap, pick another slug`, slug);
+		assert.equal(getNewsletterProblem(settings(slug)), `${slug} is reserved for mailcheap, pick another slug`, slug);
 	}
 	for (const slug of ["weekly", "the-hens", "www2", "api-notes", "r2"]) assert.equal(getNewsletterProblem(settings(slug)), null, slug);
 });

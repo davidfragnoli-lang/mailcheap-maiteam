@@ -16,19 +16,19 @@ export default function GettingStartedPage() {
 			<h2 id="sign-in">Sign in</h2>
 			<p>
 				{isGoogleEnabled() ? "Sign in with Google, or with your email address: " : "Sign in with your email address: "}
-				MailCheap emails you a code to type in. Each code works once, for 5 minutes, so there&apos;s no password to remember.
+				mailcheap emails you a code to type in. Each code works once, for 5 minutes, so there&apos;s no password to remember.
 				{!isCloud() && " On this server, only the addresses its admin allowed can sign in."}
 			</p>
 
 			<h2 id="setup">Set up your newsletter</h2>
-			<p>The first time you sign in, MailCheap asks four things:</p>
+			<p>The first time you sign in, mailcheap asks four things:</p>
 			<ul>
 				<li>Your newsletter&apos;s name.</li>
 				<li>What it&apos;s about, in one line, under its name on your signup form and website. You can skip it.</li>
 				<li>Who it&apos;s from: the name your readers see in their inbox.</li>
 				<li>
 					Whether you have subscribers already, and where they are now
-					{isCloud() ? ", so MailCheap can suggest the plan that fits one issue a week" : ""}.
+					{isCloud() ? ", so mailcheap can suggest the plan that fits one issue a week" : ""}.
 				</li>
 			</ul>
 			<p>

@@ -160,7 +160,7 @@ test("a day with no one joining or leaving and no issue is quiet", () => {
 	assert.equal(isQuietSummary([{ ...quiet, subscribers: { joined: 1, left: 0 } }]), false);
 });
 
-test("summaries are for paying MailCheap Cloud accounts, weekly unless their owner chose", () => {
+test("summaries are for paying mailcheap Cloud accounts, weekly unless their owner chose", () => {
 	const paying = { subscriptionStatus: "active" };
 	assert.equal(isSummaryEligible(paying, CLOUD), true);
 	assert.equal(isSummaryEligible({ subscriptionStatus: "past_due" }, CLOUD), true);
@@ -194,7 +194,7 @@ test("a summary's settings link names one account and expires; its share link ca
 	assert.equal(verifySummaryShareToken(createSummaryShareToken({ name: "Hens", joined: 1, total: 1, frequency: "weekly", lastKey: "Oct 25" })), null);
 });
 
-test("share links exist on MailCheap Cloud for a period someone joined in, and every link opens the right newsletter", async () => {
+test("share links exist on mailcheap Cloud for a period someone joined in, and every link opens the right newsletter", async () => {
 	const period = getSummaryPeriod({ frequency: "weekly", todayKey: "2026-10-26", timeZone: "UTC" });
 	const summary = (joined) => ({ newsletters: [{ id: "74f1a2b3c4d5e6f7a8b9c0d2", name: "Hens", subscribers: { joined, total: 40 }, issue: { id: "74f1a2b3c4d5e6f7a8b9c0d3" } }] });
 	const account = { _id: ACCOUNT_ID };

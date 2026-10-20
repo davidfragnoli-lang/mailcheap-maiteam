@@ -19,7 +19,7 @@ import { published } from "./stubs/qstash.mjs";
 const HOUR_MS = 3_600_000;
 const CLOUD = { MAILCHEAP_CLOUD: "true" };
 
-test("the warm-up runs 30 days from the first campaign, on MailCheap Cloud only", () => {
+test("the warm-up runs 30 days from the first campaign, on mailcheap Cloud only", () => {
 	const now = new Date("2026-10-13T12:00:00Z");
 	assert.equal(getWarmupDay({}, now), 0, "before the first campaign");
 	assert.equal(getWarmupDay({ spreadUntil: getSpreadEnd(now) }, now), 1, "the first campaign was just now");
@@ -292,7 +292,7 @@ describe("sends earn their pace", () => {
 		assert.deepEqual([paused.status, paused.pauseCode], ["paused", "high_rates"], "5% bounces");
 		assert.deepEqual(
 			platformEmails.slice(emailsBefore).map(({ subject }) => subject),
-			["[MailCheap] Campaign paused"]
+			["[mailcheap] Campaign paused"]
 		);
 
 		const from = published.length;

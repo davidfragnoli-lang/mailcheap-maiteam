@@ -26,7 +26,7 @@ export default function McpPage() {
 		<>
 			<HeaderDocs kicker="Guides" title="MCP server">
 				ChatGPT, Claude and Grok Bot connect to <code className="font-mono text-[15px] text-foreground">{mcpUrl}</code>: you sign in to
-				MailCheap and allow them, no key to copy. Claude Code, Codex and Cursor use a full access key. Each gets one tool per
+				mailcheap and allow them, no key to copy. Claude Code, Codex and Cursor use a full access key. Each gets one tool per
 				endpoint, with the same inputs, checks and errors.
 			</HeaderDocs>
 

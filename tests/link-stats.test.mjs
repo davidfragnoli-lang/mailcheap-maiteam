@@ -37,7 +37,7 @@ test("the report links only web addresses: anything else stays text", async () =
 	assert.ok(html.includes("javascript:alert(1)"), "it still shows, as text");
 });
 
-test("MailCheap's own unsubscribe, keep and confirm pages aren't the issue's links", () => {
+test("mailcheap's own unsubscribe, keep and confirm pages aren't the issue's links", () => {
 	const host = "localhost:3000";
 	assert.equal(isSystemLink("http://localhost:3000/api/unsubscribe?token=abc", host), true);
 	assert.equal(isSystemLink("http://localhost:3000/unsubscribe", host), true);

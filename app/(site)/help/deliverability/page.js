@@ -15,7 +15,7 @@ export default function DeliverabilityPage() {
 			<h2 id="bounces">Bounces</h2>
 			<p>
 				A hard bounce means the address doesn&apos;t exist or can&apos;t receive email. The contact becomes bounced and never gets
-				another email, and MailCheap remembers the address for every sender for 180 days. A soft bounce, like a full mailbox, is
+				another email, and mailcheap remembers the address for every sender for 180 days. A soft bounce, like a full mailbox, is
 				temporary and changes nothing.
 			</p>
 
@@ -42,7 +42,7 @@ export default function DeliverabilityPage() {
 			<p>
 				Past {formatPercent(block.bounceRate)} hard bounces (at least {block.minBounces}) or {formatPercent(block.complaintRate)}{" "}
 				complaints (at least {block.minComplaints}), the whole account is blocked. So is an account whose email reaches a spam trap,
-				an address that exists only on bought, scraped or old lists. MailCheap also adds up each account&apos;s sends of the last{" "}
+				an address that exists only on bought, scraped or old lists. mailcheap also adds up each account&apos;s sends of the last{" "}
 				{ACCOUNT_CHECK_DAYS} days, so sends that each stay just under the levels add up too
 				{isCloud() && ", as does a high spam rate reported by Gmail"}.
 			</p>
@@ -72,7 +72,7 @@ export default function DeliverabilityPage() {
 			</ul>
 			{isCloud() && (
 				<p>
-					MailCheap publishes its customers&apos; delivery, bounce and spam rates, every day, on the{" "}
+					mailcheap publishes its customers&apos; delivery, bounce and spam rates, every day, on the{" "}
 					<Link href="/open">deliverability page</Link>.
 				</p>
 			)}

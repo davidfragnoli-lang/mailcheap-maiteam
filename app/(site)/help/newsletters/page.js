@@ -37,7 +37,7 @@ export default function NewslettersPage() {
 					{sharedDomain
 						? ` Your shared address (hello@slug.${sharedDomain}) and your website (slug.${sharedDomain}) follow it, so changing it moves them.`
 						: " Your website's address follows it."}{" "}
-					A few names like www, api or mail are kept by MailCheap. An account changes slugs {SLUG_CHANGES.limit} times{" "}
+					A few names like www, api or mail are kept by mailcheap. An account changes slugs {SLUG_CHANGES.limit} times{" "}
 					{formatWindow(SLUG_CHANGES.window)} at most.
 				</li>
 				<li>
@@ -60,7 +60,7 @@ export default function NewslettersPage() {
 				<li>
 					<strong>Postal address</strong>: printed in the footer of every email, as anti-spam laws ask.{" "}
 					{isCloud()
-						? "Until you set yours, emails print MailCheap's business address. Saved empty, emails wait until you add one."
+						? "Until you set yours, emails print mailcheap's business address. Saved empty, emails wait until you add one."
 						: "Saved empty, emails wait until you add one."}
 				</li>
 			</ul>

@@ -104,7 +104,7 @@ function event(user, message, fields) {
 }
 
 function alertsSince(index) {
-	return platformEmails.slice(index).filter(({ subject }) => subject === "[MailCheap] Account blocked");
+	return platformEmails.slice(index).filter(({ subject }) => subject === "[mailcheap] Account blocked");
 }
 
 function assertError(response, status, code) {
@@ -193,12 +193,12 @@ describe("what blocks an account", () => {
 
 		let emailsBefore = platformEmails.length;
 		await event(user, messages[0], { type: "complaint" });
-		assert.deepEqual(subjectsSince(emailsBefore), ["complaints@example.com [MailCheap] Spam complaint"], "only the usual notice");
+		assert.deepEqual(subjectsSince(emailsBefore), ["complaints@example.com [mailcheap] Spam complaint"], "only the usual notice");
 
 		emailsBefore = platformEmails.length;
 		await event(user, messages[1], { type: "complaint" });
 		assert.equal((await loadAccount(user)).status, "active", "2 complaints never block");
-		assert.deepEqual(subjectsSince(emailsBefore), ["complaints@example.com [MailCheap] Bounces or complaints are high"]);
+		assert.deepEqual(subjectsSince(emailsBefore), ["complaints@example.com [mailcheap] Bounces or complaints are high"]);
 
 		emailsBefore = platformEmails.length;
 		await event(user, messages[2], { type: "complaint" });
@@ -224,7 +224,7 @@ describe("what blocks an account", () => {
 		assert.match(paused.pauseReason, /^Bounce rate of 5.00% on this campaign \(limit 2.00%\)\. Check where these contacts came from before you resume/);
 		assert.equal((await loadCampaign(user, other)).status, "sent");
 		const emails = platformEmails.slice(emailsBefore);
-		assert.deepEqual(emails.map(({ to, subject }) => [to, subject]), [[["campaign-warning@example.com"], "[MailCheap] Campaign paused"]], "no admin email");
+		assert.deepEqual(emails.map(({ to, subject }) => [to, subject]), [[["campaign-warning@example.com"], "[mailcheap] Campaign paused"]], "no admin email");
 
 		assert.deepEqual(await as(user, () => m.campaigns.resumeCampaign(warned)), { ok: true });
 		assert.equal(sentCount(await runJobs(user)), 3, "the same rates don't pause it again");

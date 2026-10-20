@@ -106,5 +106,5 @@ const HINTS = [
 	{ key: "readOnly", label: "Read-only" },
 	{ key: "destructive", label: "Can't be undone", tone: "danger" },
 	{ key: "idempotent", label: "Safe to repeat" },
-	{ key: "openWorld", label: "Reaches outside MailCheap" },
+	{ key: "openWorld", label: "Reaches outside mailcheap" },
 ];

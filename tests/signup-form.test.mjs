@@ -295,7 +295,7 @@ describe("signups from forms on other sites", () => {
 		const forged = await post(id, { email: "forged@example.org" }, { headers: { origin: "https://example.com", referer: "https://example.com/" } });
 		assert.deepEqual([forged.status, (await forged.json()).error], [403, "This form doesn't take signups on this site"]);
 		await flushAfter();
-		const alerts = platformEmails.filter(({ subject }) => subject === "[MailCheap] HTML signup form refused");
+		const alerts = platformEmails.filter(({ subject }) => subject === "[mailcheap] HTML signup form refused");
 		assert.deepEqual(alerts.at(-1)?.to, ["embed-forged@example.com"], "its owner learns the plain form is off");
 
 		// Or it loads the frame with a listed site as its referrer for a token, which only a browser can then use.
@@ -363,7 +363,7 @@ describe("signups from forms on other sites", () => {
 		assert.equal((await load(visitor())).status, 200, "other visitors still get the form");
 	});
 
-	test("on Vercel, the frame loads BotID's browser code from MailCheap's own host", async () => {
+	test("on Vercel, the frame loads BotID's browser code from mailcheap's own host", async () => {
 		const user = await customer("embed-botid@example.com");
 		const id = user.newsletterId;
 		const load = async () =>
@@ -395,7 +395,7 @@ describe("signups from forms on other sites", () => {
 			assert.deepEqual([refused.status, (await refused.json()).error], [429, "This form is busy. Try again in a few minutes."]);
 			await flushAfter();
 		}
-		const alerts = platformEmails.slice(emailsBefore).filter(({ subject }) => subject === "[MailCheap] Signup form paused");
+		const alerts = platformEmails.slice(emailsBefore).filter(({ subject }) => subject === "[mailcheap] Signup form paused");
 		assert.equal(alerts.length, 1);
 		assert.match(alerts[0].text, /Over 20 signups to embed-flood from its HTML form in 10 minutes, so it refuses new ones/);
 		assert.equal(await m.Contact.countDocuments({ accountId: user.accountId }), perNewsletterPlain.limit, "nobody the flood typed joins");

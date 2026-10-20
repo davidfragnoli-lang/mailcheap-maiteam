@@ -68,7 +68,7 @@ describe("checking a slug", () => {
 			slug: "www",
 			available: false,
 			reason: "reserved",
-			message: "www is reserved for MailCheap, pick another slug",
+			message: "www is reserved for mailcheap, pick another slug",
 		});
 		assert.deepEqual(await check(jane, "notes!"), {
 			slug: "notes!",
@@ -78,7 +78,7 @@ describe("checking a slug", () => {
 		});
 
 		assert.deepEqual(await saveSlug(jane, "john-notes"), { error: "This slug is already used" });
-		assert.deepEqual(await saveSlug(jane, "www"), { error: "www is reserved for MailCheap, pick another slug" });
+		assert.deepEqual(await saveSlug(jane, "www"), { error: "www is reserved for mailcheap, pick another slug" });
 	});
 
 	test("from the API too; checking counts toward its own limit, never toward the slug changes", async () => {

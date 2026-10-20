@@ -211,7 +211,7 @@ describe("through the API and MCP", () => {
 		assert.equal((await findContact(user, "reader@example.org")).statusChanges.at(-1).via, "mcp");
 	});
 
-	test("an address the account or MailCheap won't email stays out, and its suppression stays as it was", async () => {
+	test("an address the account or mailcheap won't email stays out, and its suppression stays as it was", async () => {
 		const user = await customer("suppressed@example.com");
 		await importRows(user, [
 			{ email: "bounced-elsewhere@example.org", status: "unsubscribed" },

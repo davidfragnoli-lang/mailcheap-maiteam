@@ -205,7 +205,7 @@ describe("from addresses", () => {
 	});
 
 	test("before the provider's keys are in, the shared address waits without an alert; once they are, a failure alerts the admins", async () => {
-		const alerts = () => platformEmails.filter(({ subject }) => subject === "[MailCheap] Shared address not set up").length;
+		const alerts = () => platformEmails.filter(({ subject }) => subject === "[mailcheap] Shared address not set up").length;
 		const before = { alerts: alerts(), calls: calls.length };
 		const user = await withEnv({ SES_ACCESS_KEY_ID: "", SES_SECRET_ACCESS_KEY: "" }, () => customer("no-provider@example.com", "no-provider"));
 		const waiting = await m.Newsletter.findOne({ accountId: user.accountId }).lean();
@@ -367,7 +367,7 @@ describe("own domains", () => {
 		const second = await customer("second-owner@example.com", "second-owner");
 		await addVerifiedDomain(first, "taken.com");
 		const result = await as(second, () => m.domains.addDomainAction(null, form({ domain: "taken.com" })));
-		assert.deepEqual(result, { error: "taken.com is used by another MailCheap account" });
+		assert.deepEqual(result, { error: "taken.com is used by another mailcheap account" });
 		assert.match((await saveFrom(second, "second-owner", "hi@taken.com")).error, /Add taken.com on the Domains page first/);
 		assert.equal(await m.Domain.countDocuments({ accountId: second.accountId }), 0);
 		assert.deepEqual(await as(first, () => m.domains.addDomainAction(null, form({ domain: "taken.com" }))), { error: "taken.com is already added" });

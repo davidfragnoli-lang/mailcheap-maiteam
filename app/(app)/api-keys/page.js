@@ -117,7 +117,7 @@ function CardAgents({ agents }) {
 			<div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
 				<div className="max-w-lg">
 					<h2 className="font-semibold tracking-tight">Run your newsletter with your AI agent</h2>
-					<p className="mt-1 text-sm text-muted-foreground">Connect MailCheap to your AI agent. It writes, schedules and sends for you.</p>
+					<p className="mt-1 text-sm text-muted-foreground">Connect mailcheap to your AI agent. It writes, schedules and sends for you.</p>
 				</div>
 				<Link
 					href="/docs/api"

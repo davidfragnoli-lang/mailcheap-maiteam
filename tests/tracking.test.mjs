@@ -30,7 +30,7 @@ test("open and click links carry the message and can't be forged", () => {
 	assert.equal(readClickToken("not-a-token"), null);
 });
 
-test("links go through MailCheap except unsubscribe links, and the pixel comes first", () => {
+test("links go through mailcheap except unsubscribe links, and the pixel comes first", () => {
 	const html = [
 		'<html><body style="margin:0"><p><a href="https://example.org/?a=1&amp;b=2">Example</a>',
 		"<a href='https://x.com/example'>X</a>",

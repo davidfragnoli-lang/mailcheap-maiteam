@@ -27,7 +27,7 @@ export default function CardSubscription({ account }) {
 export function getPlanDetails(account) {
 	const plan = getAccountPlan(account);
 	if (isOnFreePlan(account)) {
-		return [`Free ${plan.name} plan from MailCheap`, account.comp.until && `Ends ${formatDate(account.comp.until)}`].filter(Boolean);
+		return [`Free ${plan.name} plan from mailcheap`, account.comp.until && `Ends ${formatDate(account.comp.until)}`].filter(Boolean);
 	}
 	const nextDate = account.cancelAt
 		? `Ends ${formatDate(account.cancelAt)}`

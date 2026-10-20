@@ -32,7 +32,7 @@ test("a bucket without its keys or CDN says what's missing, instead of quietly u
 	assert.equal(getImageStorageProblem({ ...S3, IMAGES_CDN_URL: "http://cdn.example.com" }), "IMAGES_CDN_URL must be an https:// URL");
 });
 
-test("S3 uploads get a name of their own in the folder, a year of cache, and the CDN's URL, with MailCheap's keys only", async () => {
+test("S3 uploads get a name of their own in the folder, a year of cache, and the CDN's URL, with mailcheap's keys only", async () => {
 	const env = { ...S3, AWS_ACCESS_KEY_ID: "machine-key", AWS_SECRET_ACCESS_KEY: "machine-secret", AWS_PROFILE: "main" };
 	const first = await withEnv(env, () => putImage("accounts/abc/images/cover.png", PNG, "image/png"));
 	const second = await withEnv(env, () => putImage("accounts/abc/images/cover.png", PNG, "image/png"));

@@ -21,7 +21,7 @@ const S3 = {
 	IMAGES_CDN_URL: "https://cdn.example.com",
 	IMAGES_CLOUDFRONT_DISTRIBUTION_ID: "E2TESTDISTRIBUTION",
 };
-const DELETION_SUBJECT = /^(\d{6}) is your code to delete your MailCheap account$/;
+const DELETION_SUBJECT = /^(\d{6}) is your code to delete your mailcheap account$/;
 const BLOCKED = { error: "Your account can't be deleted yet. This page says what to do first." };
 const WRONG_CODE = { error: "This code is wrong or expired" };
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -428,7 +428,7 @@ describe("the purge", () => {
 		const returning = await signIn(doomed.email);
 		assert.notEqual(String(returning.accountId), String(doomed.accountId), "signing in again opens a new account");
 		assert.ok(
-			platformEmails.slice(admins).some(({ to, subject }) => to.includes("admin@example.com") && subject === "[MailCheap] A deleted account's email signed up again"),
+			platformEmails.slice(admins).some(({ to, subject }) => to.includes("admin@example.com") && subject === "[mailcheap] A deleted account's email signed up again"),
 			"and the admins hear of it"
 		);
 	});
@@ -453,7 +453,7 @@ describe("the purge", () => {
 		assert.equal(await m.Upload.countDocuments({ accountId: user.accountId }), 1, "kept, so the next try deletes the file");
 		assert.equal((await countData(user)).user, 0, "the rest went ahead");
 		assert.ok(
-			platformEmails.some(({ to, subject }) => to.includes("admin@example.com") && subject === "[MailCheap] Account purge postponed"),
+			platformEmails.some(({ to, subject }) => to.includes("admin@example.com") && subject === "[mailcheap] Account purge postponed"),
 			"the admins hear of it"
 		);
 

@@ -18,7 +18,7 @@ export default function SendingPage() {
 			<p>Before a campaign can go out, the review step checks it:</p>
 			<ul>
 				<li>a subject, and content;</li>
-				<li>the unsubscribe link, which MailCheap adds to every issue written in the editor;</li>
+				<li>the unsubscribe link, which mailcheap adds to every issue written in the editor;</li>
 				<li>a size under 100 KB, since Gmail cuts off longer emails;</li>
 				<li>
 					a postal address, set in the <LinkApp href="/newsletters/sender">newsletter&apos;s settings</LinkApp>;
@@ -80,7 +80,7 @@ export default function SendingPage() {
 				sent stays sent. Resume sends the rest, after checking your account again.
 			</p>
 			<p>
-				MailCheap pauses a send by itself when too many of its emails bounce or get marked as spam.{" "}
+				mailcheap pauses a send by itself when too many of its emails bounce or get marked as spam.{" "}
 				<Link href={getHelpHref("deliverability", "pauses")}>Bounces, complaints and pauses</Link>
 			</p>
 
@@ -92,7 +92,7 @@ export default function SendingPage() {
 						content. It never reads your contacts. Almost every issue goes straight out.
 					</p>
 					<p>
-						When an issue looks clearly harmful, its send waits and its page says In review: a person at MailCheap looks at it,
+						When an issue looks clearly harmful, its send waits and its page says In review: a person at mailcheap looks at it,
 						usually within a few hours, then sends it as you wrote it or tells you why it can&apos;t go out.{" "}
 						<Link href="/acceptable-use">Acceptable use policy</Link>
 					</p>

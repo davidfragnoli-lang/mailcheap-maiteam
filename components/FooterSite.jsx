@@ -63,7 +63,7 @@ const SELF_HOSTED_FOOTER = {
 	tagline: "Newsletters sent from your own server.",
 	columns: [
 		{
-			title: "MailCheap",
+			title: "mailcheap",
 			links: [
 				{ href: "/help", label: "Help" },
 				{ href: "/docs", label: "API and MCP" },

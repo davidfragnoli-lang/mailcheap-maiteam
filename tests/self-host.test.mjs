@@ -100,7 +100,7 @@ before(async () => {
 		SHARED_DOMAIN: "",
 		ALLOWED_EMAILS: ALLOWED,
 		ADMIN_EMAILS: "admin@example.com",
-		EMAIL_FROM: "MailCheap <login@mail.example.com>",
+		EMAIL_FROM: "mailcheap <login@mail.example.com>",
 		GOOGLE_CLIENT_ID: "google-client",
 		GOOGLE_CLIENT_SECRET: "google-secret",
 		QSTASH_CURRENT_SIGNING_KEY: "sig-current",

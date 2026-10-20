@@ -10,7 +10,7 @@ export default function LogoWordmark({ href, canFly, className, children }) {
 	return (
 		<Wordmark href={href} className={cn("flex items-center gap-2", canFly && "wordmark-flight", className)}>
 			{canFly ? <LogoFlight /> : <LogoMailcheap />}
-			<span className="text-[17px] font-semibold tracking-tight">MailCheap</span>
+			<span className="text-[17px] font-semibold tracking-tight">mailcheap</span>
 			{children}
 		</Wordmark>
 	);

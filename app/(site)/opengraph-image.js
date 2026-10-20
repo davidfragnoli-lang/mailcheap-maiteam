@@ -6,7 +6,7 @@ import { getAppHost } from "@/lib/config";
 
 // The docs' card on every server: what they cover and the server's own address. MailCheap Cloud's marketing pages
 // have their own card.
-export const alt = "The MailCheap REST API and MCP server, documented";
+export const alt = "The mailcheap REST API and MCP server, documented";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -43,7 +43,7 @@ export default async function Image() {
 			<div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 1056, height: "100%", padding: "64px 0 60px 72px" }}>
 				<div style={{ display: "flex", alignItems: "center", gap: 16 }}>
 					<Logo />
-					<span style={{ fontSize: 32, fontWeight: 600, letterSpacing: -1 }}>MailCheap</span>
+					<span style={{ fontSize: 32, fontWeight: 600, letterSpacing: -1 }}>mailcheap</span>
 				</div>
 				<div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 					<span style={{ fontSize: 64, fontWeight: 600, lineHeight: 1.06, letterSpacing: -2.4 }}>Everything the dashboard does, from code or an AI agent</span>

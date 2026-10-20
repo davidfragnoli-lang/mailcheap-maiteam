@@ -20,7 +20,7 @@ export default function NavMobile({ isAdmin, switcher, footer }) {
 	return (
 		<header className="sticky top-(--plan-bar-height) z-30 flex h-14 items-center justify-between gap-2 border-b border-border/60 bg-background/80 px-2 backdrop-blur-md md:hidden">
 			<div className="flex min-w-0 items-center">
-				<Link href="/" aria-label="MailCheap" className="grid size-10 shrink-0 place-items-center rounded-lg">
+				<Link href="/" aria-label="mailcheap" className="grid size-10 shrink-0 place-items-center rounded-lg">
 					<LogoMailcheap />
 				</Link>
 				<span aria-hidden="true" className="mr-1 text-xl font-light text-foreground/15">

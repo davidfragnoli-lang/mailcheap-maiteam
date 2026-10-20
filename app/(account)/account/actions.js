@@ -31,7 +31,7 @@ export async function updateProfile(_state, formData) {
 // Saved with the browser's timezone, which the summary goes out in.
 export async function updateSummaryFrequency(frequency) {
 	const { account } = await requireAccount();
-	if (!isCloud()) return { error: "Summary emails are only on MailCheap Cloud" };
+	if (!isCloud()) return { error: "Summary emails are only on mailcheap Cloud" };
 	const timeZone = (await cookies()).get(TIME_ZONE_COOKIE)?.value;
 	if (!(await saveSummaryFrequency(account._id, frequency, { timeZone }))) return { error: "Pick daily, weekly or off" };
 	revalidatePath("/account");
@@ -40,7 +40,7 @@ export async function updateSummaryFrequency(frequency) {
 
 export async function previewSummaryEmail() {
 	const { account } = await requireAccount();
-	if (!isCloud()) return { error: "Summary emails are only on MailCheap Cloud" };
+	if (!isCloud()) return { error: "Summary emails are only on mailcheap Cloud" };
 	if (await isRateLimited({ ...PREVIEWS_PER_ACCOUNT, key: String(account._id) })) return { error: "Too many previews. Try again later." };
 	try {
 		const email = await previewSummary({ account });

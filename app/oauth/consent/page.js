@@ -46,7 +46,7 @@ export default async function ConsentPage({ searchParams }) {
 						<LogoMailcheap className="size-10" />
 					</div>
 					<div className="flex flex-col gap-1">
-						<h1 className="text-lg font-semibold tracking-tight text-balance">Connect {client.name} to MailCheap</h1>
+						<h1 className="text-lg font-semibold tracking-tight text-balance">Connect {client.name} to mailcheap</h1>
 						{client.host && client.host !== client.name && <p className="font-mono text-xs text-muted-foreground">{client.host}</p>}
 					</div>
 				</div>
@@ -112,7 +112,7 @@ function Expired() {
 			<div className="flex w-full max-w-xs flex-col items-center gap-3 text-center animate-enter">
 				<LogoMailcheap className="size-10" />
 				<h1 className="text-lg font-semibold tracking-tight">This request expired</h1>
-				<p className="text-sm text-pretty text-muted-foreground">Go back to the app and connect MailCheap again.</p>
+				<p className="text-sm text-pretty text-muted-foreground">Go back to the app and connect mailcheap again.</p>
 			</div>
 			{SiteAnalytics && <SiteAnalytics />}
 		</main>

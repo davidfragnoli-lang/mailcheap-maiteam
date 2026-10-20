@@ -298,7 +298,7 @@ describe("subscription changes", () => {
 			console.error = error;
 		}
 		const [alert] = platformEmails.slice(emailsBefore);
-		assert.deepEqual([alert.to, alert.subject], [["admin@example.com"], "[MailCheap] Stripe event not handled"]);
+		assert.deepEqual([alert.to, alert.subject], [["admin@example.com"], "[mailcheap] Stripe event not handled"]);
 		assert.match(alert.text, new RegExp(`customer\\.subscription\\.updated evt_${eventCount}: No such subscription\\.\\nStripe retries it for 3 days`));
 		assert.match(alert.text, /\nhttps:\/\/dashboard\.stripe\.com\/webhooks$/);
 	});

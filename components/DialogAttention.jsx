@@ -103,7 +103,7 @@ function Details({ details, onNavigate }) {
 			{(done || action) && (
 				<div className={cn("grid gap-5", done && action && "sm:grid-cols-2")}>
 					{done && (
-						<Section title="What MailCheap did">
+						<Section title="What mailcheap did">
 							<p className="text-pretty">{done}</p>
 						</Section>
 					)}

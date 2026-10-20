@@ -4,8 +4,8 @@ import { isCloud } from "@/lib/config";
 import { getHelpGroups } from "@/lib/help";
 
 export const metadata = {
-	title: { default: "Help", template: "%s · MailCheap help" },
-	description: "How MailCheap works, in plain words: your newsletter, contacts, writing and sending, and your account.",
+	title: { default: "Help", template: "%s · mailcheap help" },
+	description: "How mailcheap works, in plain words: your newsletter, contacts, writing and sending, and your account.",
 };
 
 export default function HelpLayout({ children }) {

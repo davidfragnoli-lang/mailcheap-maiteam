@@ -25,7 +25,7 @@ test("an address's inbox: Gmail ignores dots and +tags, these providers +tags, Y
 	assert.doesNotMatch("aaab@outlook.com", getAliasPattern("a*b@outlook.com"), "the address is escaped");
 });
 
-describe("sign-ups on MailCheap Cloud", () => {
+describe("sign-ups on mailcheap Cloud", () => {
 	let app;
 	let m;
 	let nextIp = 0;
@@ -135,7 +135,7 @@ describe("sign-ups on MailCheap Cloud", () => {
 	});
 
 	test("self-hosted servers decide with their allowlist alone", async () => {
-		await withEnv({ MAILCHEAP_CLOUD: "", ALLOWED_EMAILS: "@gmail.com", EMAIL_FROM: "MailCheap <login@mail.example.com>" }, async () => {
+		await withEnv({ MAILCHEAP_CLOUD: "", ALLOWED_EMAILS: "@gmail.com", EMAIL_FROM: "mailcheap <login@mail.example.com>" }, async () => {
 			assert.ok(await signIn("jane.doe+selfhosted@gmail.com"));
 		});
 	});

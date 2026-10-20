@@ -171,5 +171,5 @@ test("self-hosted, without MAILCHEAP_CLOUD: no paywall, no plan limits, every ac
 		const huge = { account: {}, emailsSent: 50_000_000, queued: 1_000_000, recipients: 2_000_000, activeContacts: 3_000_000 };
 		assert.equal(getPlanLimitProblem(huge), null);
 	});
-	assert.equal(getAccountSendProblem({}).code, ERROR_CODES.subscriptionRequired, "back on MailCheap Cloud");
+	assert.equal(getAccountSendProblem({}).code, ERROR_CODES.subscriptionRequired, "back on mailcheap Cloud");
 });

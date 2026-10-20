@@ -44,7 +44,7 @@ test("sign-in codes go out through Resend and are stored hashed", async () => {
 	await as(user, () => actions.sendSigninCode(null, form({ email: user.email })));
 	const email = platformEmails.at(-1);
 	assert.deepEqual(email.to, [user.email]);
-	assert.match(email.subject, /^\d{6} is your MailCheap code$/);
+	assert.match(email.subject, /^\d{6} is your mailcheap code$/);
 	const code = email.subject.slice(0, 6);
 	const stored = await mongoose.connection.db.collection("verifications").findOne({ identifier: `sign-in-otp-${user.email}` });
 	assert.ok(stored, "the code is waiting to be used");

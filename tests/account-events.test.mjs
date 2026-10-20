@@ -164,7 +164,7 @@ describe("per-account events", () => {
 		assert.equal(warned.health.sent, 600);
 		assert.ok(Math.abs(warned.health.bounceRate - 13 / 600) < 1e-9);
 		const emails = platformEmails.slice(emailsBefore);
-		const warning = emails.find(({ subject }) => subject === "[MailCheap] Bounces or complaints are high");
+		const warning = emails.find(({ subject }) => subject === "[mailcheap] Bounces or complaints are high");
 		assert.deepEqual(warning.to, ["bouncy@example.com"]);
 		assert.match(warning.text, /Bounce rate of 2.17% over the last 7 days \(limit 2.00%\)\. Nothing is paused, but at 5.00% with 10 bounces the account is blocked/);
 		assert.equal(emails.some(({ to }) => to.includes("admin@example.com")), false, "the admins only hear of blocks");

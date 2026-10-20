@@ -32,13 +32,13 @@ test("the server doesn't start with a short secret or hash key", () =>
 	withEnv(STRONG, () => {
 		assert.doesNotThrow(register);
 		process.env.SUPPRESSION_HASH_KEY = "short";
-		assert.throws(register, /MailCheap can't start\. SUPPRESSION_HASH_KEY must be at least 32 characters/);
+		assert.throws(register, /mailcheap can't start\. SUPPRESSION_HASH_KEY must be at least 32 characters/);
 		process.env.SUPPRESSION_HASH_KEY = STRONG.SUPPRESSION_HASH_KEY;
 		process.env.BETTER_AUTH_SECRET = "short";
-		assert.throws(register, /MailCheap can't start\. BETTER_AUTH_SECRET must be at least 32 characters/);
+		assert.throws(register, /mailcheap can't start\. BETTER_AUTH_SECRET must be at least 32 characters/);
 	}));
 
-test("MailCheap Cloud needs both Stripe keys and RESEND_API_KEY; a self-hosted server needs none of them", () => {
+test("mailcheap Cloud needs both Stripe keys and RESEND_API_KEY; a self-hosted server needs none of them", () => {
 	assert.deepEqual(getConfigProblems(CLOUD), []);
 	for (const name of ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY"]) {
 		const problems = getConfigProblems({ ...CLOUD, [name]: " " });
@@ -63,7 +63,7 @@ test("the cloud refuses to start without Stripe or Resend, and its health check 
 		assert.equal(healthy.headers.get("cache-control"), "no-store");
 
 		delete process.env.STRIPE_SECRET_KEY;
-		assert.throws(register, /MailCheap can't start\. MAILCHEAP_CLOUD is true, so STRIPE_SECRET_KEY has to be set/);
+		assert.throws(register, /mailcheap can't start\. MAILCHEAP_CLOUD is true, so STRIPE_SECRET_KEY has to be set/);
 		const failing = await GET();
 		assert.equal(failing.status, 503);
 		const body = await failing.json();
@@ -82,7 +82,7 @@ test("a self-hosted server signs in ALLOWED_EMAILS, its @domains and ADMIN_EMAIL
 		assert.equal(isEmailAllowed(email, env), false, String(email));
 	}
 	assert.equal(isEmailAllowed("jane@example.com", {}), false, "never open by default");
-	assert.equal(isEmailAllowed("anyone@anywhere.dev", { MAILCHEAP_CLOUD: "true" }), true, "MailCheap Cloud takes anyone");
+	assert.equal(isEmailAllowed("anyone@anywhere.dev", { MAILCHEAP_CLOUD: "true" }), true, "mailcheap Cloud takes anyone");
 });
 
 test("ADMIN_EMAILS is a comma-separated list, trimmed and lowercased", () => {

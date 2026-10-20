@@ -14,7 +14,7 @@ export default function AccountPage() {
 		<ArticleHelp slug="account">
 			<h2 id="sign-in">Signing in</h2>
 			<p>
-				You sign in {isGoogleEnabled() ? "with Google, or " : ""}with a code MailCheap emails to your address. The address can&apos;t
+				You sign in {isGoogleEnabled() ? "with Google, or " : ""}with a code mailcheap emails to your address. The address can&apos;t
 				be changed. Your name and photo are on the <LinkApp href="/account">Account page</LinkApp>, opened from the menu at the bottom
 				of the sidebar, along with
 				{isCloud() ? " your plan and" : ""} the deletion of your account.
@@ -29,7 +29,7 @@ export default function AccountPage() {
 				<>
 					<h2 id="summary-email" data-cloud>Summary emails</h2>
 					<p>
-						With a paid plan, MailCheap can email you your newsletter&apos;s numbers every Monday at {SUMMARY_HOUR} AM, your time.
+						With a paid plan, mailcheap can email you your newsletter&apos;s numbers every Monday at {SUMMARY_HOUR} AM, your time.
 						It says who joined and who left against the week before, your total, new subscribers over the last{" "}
 						{SUMMARY_BARS.weekly} weeks, and your latest
 						issue&apos;s opens and clicks against your average, with its most clicked link. With several newsletters, the one with
@@ -66,7 +66,7 @@ export default function AccountPage() {
 				</li>
 			</ul>
 			<p>
-				Then click Delete account and type the code MailCheap emails you. Your account stops at once: you&apos;re signed out
+				Then click Delete account and type the code mailcheap emails you. Your account stops at once: you&apos;re signed out
 				everywhere, your API keys are revoked, connected apps are disconnected, nothing is sent, and your websites go offline.
 			</p>
 

@@ -84,7 +84,7 @@ async function findAccount(accountId) {
 function describe(frequency) {
 	if (frequency === "daily") return `Your numbers come every morning at ${SUMMARY_HOUR} AM, your time. Days with no news are skipped.`;
 	if (frequency === "weekly") return `Your numbers come every Monday at ${SUMMARY_HOUR} AM, your time.`;
-	return "It's off: MailCheap won't send you summaries.";
+	return "It's off: mailcheap won't send you summaries.";
 }
 
 const OPTIONS = [

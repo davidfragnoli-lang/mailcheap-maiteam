@@ -495,7 +495,7 @@ describe("connecting with the official MCP client", () => {
 		const tampered = new URL(start.headers.get("location"), APP_URL).search.slice(1).replace("state-123", "state-999");
 		await as(user, () => m.signin.sendSigninCode(null, form({ email })));
 		const result = await as(user, () => m.signin.verifySigninCode(null, form({ email, code: signInCode(email), oauth_query: tampered })));
-		assert.equal(result.error, "This sign-in link expired. Go back to the app and connect MailCheap again.");
+		assert.equal(result.error, "This sign-in link expired. Go back to the app and connect mailcheap again.");
 		assert.equal(user.jar.size, 0, "no session");
 	});
 
@@ -847,7 +847,7 @@ describe("tokens", () => {
 		assert.deepEqual(await byHand("hand-again@example.org"), { error: "You can add 600 contacts an hour. Try again later." });
 		await flushAfter();
 		assert.equal(await m.Contact.countDocuments({ accountId: user.accountId }), 600);
-		assert.equal(platformEmails.filter(({ to, subject }) => to.includes(user.email) && subject === "[MailCheap] Signups paused").length, 1);
+		assert.equal(platformEmails.filter(({ to, subject }) => to.includes(user.email) && subject === "[mailcheap] Signups paused").length, 1);
 	});
 });
 

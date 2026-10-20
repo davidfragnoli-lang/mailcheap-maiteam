@@ -205,7 +205,7 @@ describe("PostShiba tenants", () => {
 
 	test("when two plan starts race to create the tenant, the one that loses tries again and nobody is alerted", async () => {
 		const user = await signIn("ps-race@example.com");
-		const alerts = () => platformEmails.filter(({ subject }) => subject === "[MailCheap] PostShiba tenant not created").length;
+		const alerts = () => platformEmails.filter(({ subject }) => subject === "[mailcheap] PostShiba tenant not created").length;
 		const before = alerts();
 		fake.fail({ method: "POST", path: /\/tenants$/, status: 500, body: { error: "Internal Server Error" } });
 		await m.billing.applySubscription(await loadAccount(user), subscription("ps-race"));
@@ -258,7 +258,7 @@ describe("PostShiba domains", () => {
 		const domain = await m.Domain.findOne({ accountId: owner.accountId, domain: "ps-owner.dev" }).lean();
 		const domainsBefore = fake.state.domains.size;
 		assert.deepEqual(await as(other, () => m.domains.addDomainAction(null, form({ domain: "ps-owner.dev" }))), {
-			error: "ps-owner.dev is used by another MailCheap account",
+			error: "ps-owner.dev is used by another mailcheap account",
 		});
 		assert.equal(fake.state.domains.size, domainsBefore, "PostShiba never heard of the second claim");
 		assert.deepEqual(await as(other, () => m.domains.checkDomainAction(String(domain._id))), { error: "Domain not found" });
@@ -541,7 +541,7 @@ describe("PostShiba sending", () => {
 		fake.fail({ method: "POST", path: /\/sends$/, status: 403, body: { error: "kyc_required", field: "to" } });
 		assert.match((await as(user, () => m.campaigns.sendTestCampaign(id))).error, /hasn't approved production sending/);
 		const toAdmins = platformEmails.slice(emailsBefore).filter(({ to }) => to.includes("admin@example.com"));
-		assert.deepEqual(toAdmins.map(({ subject }) => subject), ["[MailCheap] PostShiba refuses MailCheap's sends"], "the campaign and the test are the same problem");
+		assert.deepEqual(toAdmins.map(({ subject }) => subject), ["[mailcheap] PostShiba refuses mailcheap's sends"], "the campaign and the test are the same problem");
 		assert.match(toAdmins[0].text, new RegExp(`Account ${user.accountId}: PostShiba hasn't approved production sending yet \\(kyc_required\\)\\.\\nReaders' emails are refused until PostShiba approves the team\\.`));
 	});
 

@@ -16,7 +16,7 @@ import {
 	resolveTheme,
 } from "../lib/themes.js";
 
-test("a newsletter without a theme has MailCheap's, which changes nothing on its pages", () => {
+test("a newsletter without a theme has mailcheap's, which changes nothing on its pages", () => {
 	const resolved = resolveTheme(undefined);
 	assert.equal(resolved.id, "mailcheap");
 	assert.equal(resolved.isDefault, true);
@@ -69,7 +69,7 @@ test("a yellow accent too light for text paints buttons and underlines, links st
 	assert.equal(palette.onAccent, "#0a0a0a");
 });
 
-test("a dark palette is the same for every reader, MailCheap's colors follow their dark mode", () => {
+test("a dark palette is the same for every reader, mailcheap's colors follow their dark mode", () => {
 	const midnight = getThemeVariables(resolveTheme({ preset: "midnight" }));
 	assert.equal(midnight["--background"], "#0d1017");
 	assert.equal(midnight["color-scheme"], "dark");
@@ -112,7 +112,7 @@ test("the API gives the values in effect and what was changed", () => {
 	});
 });
 
-test("share cards keep their address with MailCheap's colors, and a palette names a new one", () => {
+test("share cards keep their address with mailcheap's colors, and a palette names a new one", () => {
 	const issue = { archiveSlug: "hello" };
 	assert.equal(getShareCardUrl({ slug: "notes" }, issue, "https://app.test"), "https://app.test/archive/notes/og?p=hello");
 	assert.equal(
@@ -130,7 +130,7 @@ test("a heading font without the chosen weight uses its closest", () => {
 	assert.equal(resolveTheme({ preset: "swiss", fonts: { heading: "syne" }, headingWeight: 800 }).headingWeight, 800);
 });
 
-test("emails keep MailCheap's colors and system fonts, and themes get theirs with Outlook's own", () => {
+test("emails keep mailcheap's colors and system fonts, and themes get theirs with Outlook's own", () => {
 	const plain = getEmailTheme(resolveTheme(null));
 	assert.equal(plain.isDefault, true);
 	assert.equal(plain.text, "#27272a");

@@ -89,11 +89,11 @@ before(async () => {
 after(() => app?.stop());
 
 describe("hosts", () => {
-	test("mailcheap.ai, www and MailCheap's other subdomains are the app; <slug>.mailcheap.ai is the newsletter's archive", async () => {
+	test("mailcheap.ai, www and mailcheap's other subdomains are the app; <slug>.mailcheap.ai is the newsletter's archive", async () => {
 		const resolve = m.hostRouting.resolveArchiveHost;
 		const appHosts = [
 			"mailcheap.ai",
-			"MailCheap.ai:443",
+			"mailcheap.ai:443",
 			"www.mailcheap.ai",
 			"r.mailcheap.ai",
 			"send.r.mailcheap.ai",
@@ -106,7 +106,7 @@ describe("hosts", () => {
 		];
 		for (const host of appHosts) assert.deepEqual(await resolve(host), { isArchiveHost: false, slug: null }, host);
 		assert.deepEqual(await resolve("weekly.mailcheap.ai"), { isArchiveHost: true, slug: "weekly" });
-		assert.deepEqual(await resolve("Field-Notes.MailCheap.ai:443"), { isArchiveHost: true, slug: "field-notes" });
+		assert.deepEqual(await resolve("Field-Notes.mailcheap.ai:443"), { isArchiveHost: true, slug: "field-notes" });
 		assert.deepEqual(await resolve("a.weekly.mailcheap.ai"), { isArchiveHost: true, slug: null }, "one label deep");
 	});
 
@@ -129,9 +129,9 @@ describe("hosts", () => {
 });
 
 describe("reserved slugs", () => {
-	test("the dashboard, the REST API and MCP refuse a slug MailCheap keeps, on create and on update", async () => {
+	test("the dashboard, the REST API and MCP refuse a slug mailcheap keeps, on create and on update", async () => {
 		const user = await customer("reserved@example.com", "reserved-news");
-		const refused = (slug) => ({ code: "validation_failed", message: `${slug} is reserved for MailCheap, pick another slug` });
+		const refused = (slug) => ({ code: "validation_failed", message: `${slug} is reserved for mailcheap, pick another slug` });
 		const save = (fields) => as(user, () => m.newsletters.saveNewsletter(null, form({ name: "Notes", postalAddress: "1 Main St, Paris", ...fields })));
 
 		assert.deepEqual(await save({ slug: "www" }), { error: refused("www").message });
@@ -150,7 +150,7 @@ describe("reserved slugs", () => {
 		for (const slug of ["www", "cdn", "r", "api", "mail"]) assert.equal(hasRecordsFor(`${slug}.mailcheap.ai`), false, slug);
 	});
 
-	test("a slug made from the name skips the ones MailCheap keeps", async () => {
+	test("a slug made from the name skips the ones mailcheap keeps", async () => {
 		const user = await signIn("blog@example.com");
 		assert.equal(await as(user, () => catchRedirect(m.welcome.completeOnboarding(null, form({ name: "Blog" })))), "/");
 		await activate(user);
@@ -185,10 +185,10 @@ describe("shared addresses", () => {
 		assert.equal(email.from, "hello@weekly.mailcheap.ai");
 		assert.match(email.html, /https:\/\/weekly\.mailcheap\.ai\/c\//);
 		assert.match(email.headers["List-Unsubscribe"], /^<https:\/\/weekly\.mailcheap\.ai\/api\/unsubscribe\?token=/);
-		assert.equal(email.headers["Feedback-ID"], `${id}:mc-${user.accountId}:test:mailcheap`, "SES sends MailCheap's own as it is");
+		assert.equal(email.headers["Feedback-ID"], `${id}:mc-${user.accountId}:test:mailcheap`, "SES sends mailcheap's own as it is");
 	});
 
-	test("a slug saved before MailCheap kept it gets no sending subdomain, and the one of its old slug goes", async () => {
+	test("a slug saved before mailcheap kept it gets no sending subdomain, and the one of its old slug goes", async () => {
 		const user = await customer("legacy@example.com", "legacy-news");
 		const { sharedSender: old } = await m.Newsletter.findOne({ accountId: user.accountId }).lean();
 		await m.Newsletter.updateOne({ accountId: user.accountId, _id: user.newsletterId }, { $set: { slug: "r", fromEmail: "hello@r.mailcheap.ai" } });
@@ -204,7 +204,7 @@ describe("shared addresses", () => {
 	test("when two plan starts set up the same address at once, the run that loses finds it set up and doesn't alert", async () => {
 		const user = await customer("race@example.com", "race-news");
 		const stored = await m.Newsletter.findOne({ accountId: user.accountId }).lean();
-		const alerts = () => platformEmails.filter(({ subject }) => subject === "[MailCheap] Shared address not set up").length;
+		const alerts = () => platformEmails.filter(({ subject }) => subject === "[mailcheap] Shared address not set up").length;
 		const before = alerts();
 		state.failNext = { name: "createDomainIdentity", error: new Error("500 Internal Server Error") };
 
@@ -231,7 +231,7 @@ describe("shared addresses", () => {
 		assert.equal(state.identities.has(old.domain), false);
 		assert.equal(hasRecordsFor(old.domain), false);
 		assert.ok(
-			platformEmails.some(({ subject, text }) => subject === "[MailCheap] Shared address not set up" && text.includes("refused-new.mailcheap.ai")),
+			platformEmails.some(({ subject, text }) => subject === "[mailcheap] Shared address not set up" && text.includes("refused-new.mailcheap.ai")),
 			"the admins hear of it"
 		);
 

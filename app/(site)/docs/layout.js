@@ -5,8 +5,8 @@ import { DOC_PAGES } from "@/lib/docs/llms";
 import { getEndpointGroups } from "@/lib/docs/reference";
 
 export const metadata = {
-	title: { default: "API and MCP", template: "%s · MailCheap API and MCP" },
-	description: "The MailCheap REST API and MCP server: every action of the dashboard, from code or an AI assistant.",
+	title: { default: "API and MCP", template: "%s · mailcheap API and MCP" },
+	description: "The mailcheap REST API and MCP server: every action of the dashboard, from code or an AI assistant.",
 };
 
 export default function DocsLayout({ children }) {

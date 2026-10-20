@@ -8,7 +8,7 @@ import { getAuth, getCurrentAccount } from "@/lib/auth";
 import { answerConsent } from "@/lib/oauth";
 import { isExpiredOAuthQuery, readOAuthQuery, readOAuthQueryField } from "@/lib/oauth-rules";
 
-const EXPIRED_MESSAGE = "This request expired. Go back to the app and connect MailCheap again.";
+const EXPIRED_MESSAGE = "This request expired. Go back to the app and connect mailcheap again.";
 
 // Allow or Cancel: either way the browser goes back to the app, with a code or with access_denied.
 export async function answerConsentRequest(_state, formData) {
@@ -24,7 +24,7 @@ export async function answerConsentRequest(_state, formData) {
 	} catch (error) {
 		if (isExpiredOAuthQuery(error)) return { error: EXPIRED_MESSAGE };
 		console.error("[oauth] Consent failed:", error?.message);
-		return { error: "Couldn't answer the app. Go back to it and connect MailCheap again." };
+		return { error: "Couldn't answer the app. Go back to it and connect mailcheap again." };
 	}
 	if (!url) return { error: EXPIRED_MESSAGE };
 	if (accept) await notifyActivity(["App connected", readOAuthQuery(query).clientId], { accountId: current.account._id });

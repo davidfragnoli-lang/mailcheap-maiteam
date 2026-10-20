@@ -36,7 +36,7 @@ test("every article in lib/help.js has its page, and every page there is in the 
 	}
 });
 
-test("plans and the warm-up are MailCheap Cloud's only: a self-hosted server leaves them out", () => {
+test("plans and the warm-up are mailcheap Cloud's only: a self-hosted server leaves them out", () => {
 	const cloud = getHelpArticles({ MAILCHEAP_CLOUD: "true" }).map(({ slug }) => slug);
 	const selfHosted = getHelpArticles({}).map(({ slug }) => slug);
 	assert.deepEqual(cloud, HELP_ARTICLES.map(({ slug }) => slug));

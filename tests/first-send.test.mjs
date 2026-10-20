@@ -161,7 +161,7 @@ describe("first sends in steps", () => {
 		assert.match(paused.pauseReason, /^The first 200 new contacts had a bounce rate of 3.00% \(limit 2.00%\)\. The rest of the new contacts wait: clean the list/);
 		assert.equal((await m.Account.findById(user.accountId).lean()).status, "active", "6 bounces don't block");
 		const emails = platformEmails.slice(emailsBefore);
-		assert.deepEqual(emails.map(({ to, subject }) => [to, subject]), [[["warm-list@example.com"], "[MailCheap] Campaign paused"]]);
+		assert.deepEqual(emails.map(({ to, subject }) => [to, subject]), [[["warm-list@example.com"], "[mailcheap] Campaign paused"]]);
 		assert.equal(await count(user, "held"), 2800);
 
 		assert.deepEqual(await as(user, () => m.campaigns.resumeCampaign(user.campaignId)), { ok: true });

@@ -190,7 +190,7 @@ test("the sender asks for a look without a postal address or with an unverified 
 	const noAddress = { ...newsletter, postalAddress: "", postalAddressCleared: true };
 	assert.deepEqual(getSettingsSummary({ newsletter: noAddress, ...context }).sender, { text: "Add a postal address to send", tone: "warning" });
 	assert.equal(
-		getSettingsSummary({ newsletter: { ...newsletter, postalAddress: "" }, ...context, defaultPostalAddress: "MailCheap, 1 Rue" }).sender.tone,
+		getSettingsSummary({ newsletter: { ...newsletter, postalAddress: "" }, ...context, defaultPostalAddress: "mailcheap, 1 Rue" }).sender.tone,
 		"none",
 		"the server's default address counts"
 	);
@@ -218,8 +218,8 @@ test("the website waits for its first issue and for a plan, and shows its own su
 
 test("the design card names the theme and shows its colors", () => {
 	const colors = { background: "#ffffff", text: "#18181b", accent: "#e11d48" };
-	assert.deepEqual(getDesignSummary({ name: "MailCheap", isCustomized: false, colors }), {
-		text: "MailCheap",
+	assert.deepEqual(getDesignSummary({ name: "mailcheap", isCustomized: false, colors }), {
+		text: "mailcheap",
 		tone: "none",
 		swatches: ["#ffffff", "#18181b", "#e11d48"],
 	});

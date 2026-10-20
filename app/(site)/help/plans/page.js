@@ -44,7 +44,7 @@ export default function PlansPage() {
 
 			<h2 id="emails">What counts as an email</h2>
 			<p>
-				Every email MailCheap sends for you: issues, last-chance emails, test emails, and welcome and confirmation emails. An issue
+				Every email mailcheap sends for you: issues, last-chance emails, test emails, and welcome and confirmation emails. An issue
 				sent to 1,000 subscribers is 1,000 emails. The count starts over every month, on the day your plan started. The{" "}
 				<LinkApp href="/billing">billing page</LinkApp> and the <LinkApp href="/">overview</LinkApp> show how many you&apos;ve used.
 			</p>

@@ -130,7 +130,7 @@ describe("the account menu", () => {
 			assert.deepEqual(events, [], "a no tells nobody");
 			answer = true;
 			assert.equal(m.signOut.askToSignOut(), true);
-			assert.deepEqual(asked, ["Sign out of MailCheap?", "Sign out of MailCheap?"]);
+			assert.deepEqual(asked, ["Sign out of mailcheap?", "Sign out of mailcheap?"]);
 			assert.deepEqual(events, [m.signOut.SIGN_OUT_EVENT], "a yes tells the page, for the support chat");
 		} finally {
 			delete globalThis.window;

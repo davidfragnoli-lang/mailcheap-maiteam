@@ -270,7 +270,7 @@ describe("the content check before a send", () => {
 		const campaign = await load(user, id);
 		assert.equal(campaign.status, "sending");
 		assert.equal(campaign.review.outcome, "flag");
-		assert.equal(emailsTo("admin@example.com", emailsBefore).filter(({ subject }) => subject === "[MailCheap] Issue flagged").length, 1);
+		assert.equal(emailsTo("admin@example.com", emailsBefore).filter(({ subject }) => subject === "[mailcheap] Issue flagged").length, 1);
 		assert.equal(emailsTo("review-unsure@example.com", emailsBefore).length, 0, "the owner never sees the check's reasons");
 	});
 
@@ -312,7 +312,7 @@ describe("the content check before a send", () => {
 		assert.equal(campaign.pauseReason, "This issue can't be sent: Phishing isn't allowed");
 		assert.equal(campaign.review.decision, "rejected");
 		const toOwner = emailsTo("review-rejected@example.com", emailsBefore);
-		assert.ok(toOwner.some(({ subject, text }) => subject === "[MailCheap] An issue can't be sent" && text.includes("Phishing isn't allowed.\n")));
+		assert.ok(toOwner.some(({ subject, text }) => subject === "[mailcheap] An issue can't be sent" && text.includes("Phishing isn't allowed.\n")));
 		assert.equal((await m.Account.findById(user.accountId).lean()).pauseReason, "Phishing isn't allowed");
 		assert.equal((await m.Account.findById(user.accountId).lean()).status, "paused");
 	});
@@ -326,7 +326,7 @@ describe("the content check before a send", () => {
 		const campaign = await load(user, id);
 		assert.equal(campaign.status, "sending");
 		assert.equal(campaign.review.outcome, "error");
-		assert.ok(emailsTo("admin@example.com", emailsBefore).some(({ subject }) => subject === "[MailCheap] Content check failed"));
+		assert.ok(emailsTo("admin@example.com", emailsBefore).some(({ subject }) => subject === "[mailcheap] Content check failed"));
 	});
 
 	test("a scheduled send it holds waits paused instead of going back to draft", async () => {
@@ -371,8 +371,8 @@ describe("the content check before a send", () => {
 		await as(user, () => m.campaigns.sendCampaign(another, {}));
 		assert.equal((await load(user, another)).pauseCode, "content_review");
 		const toAdmins = emailsTo("admin@example.com", emailsBefore).map(({ subject }) => subject);
-		assert.equal(toAdmins.filter((subject) => subject === "[MailCheap] Over the check limit, held for review").length, 1, "one alert for the account");
-		assert.equal(toAdmins.filter((subject) => subject === "[MailCheap] Issue held for review").length, 0);
+		assert.equal(toAdmins.filter((subject) => subject === "[mailcheap] Over the check limit, held for review").length, 1, "one alert for the account");
+		assert.equal(toAdmins.filter((subject) => subject === "[mailcheap] Issue held for review").length, 0);
 		assert.equal(emailsTo("review-budget@example.com", emailsBefore).length, 0, "the owner only sees In review");
 
 		assert.deepEqual(await as(admin, () => m.admin.approveContentReview(fresh)), { ok: true });

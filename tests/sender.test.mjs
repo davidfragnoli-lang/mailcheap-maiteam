@@ -81,7 +81,7 @@ test("saving a newsletter takes the shared address or a domain the account added
 	assert.match(getFromEmailSaveProblem({ fromEmail: "hi@stranger.com", slug: "x", domains: [], sharedDomain: null }), /Domains page first$/);
 });
 
-test("customers can't claim MailCheap's domains, and archive hosts are subdomains of theirs", () => {
+test("customers can't claim mailcheap's domains, and archive hosts are subdomains of theirs", () => {
 	const options = { sharedDomain: SHARED, appHost: "mailcheap.ai" };
 	assert.equal(getDomainProblem("example.com", options), null);
 	assert.equal(getDomainProblem("news.example.co.uk", options), null);
@@ -97,7 +97,7 @@ test("customers can't claim MailCheap's domains, and archive hosts are subdomain
 	assert.match(getArchiveHostProblem("rp.example.com", "example.com"), /return path/);
 });
 
-test("with the app's own domain shared, <slug>.mailcheap.ai is the shared address and the rest of mailcheap.ai stays MailCheap's", () => {
+test("with the app's own domain shared, <slug>.mailcheap.ai is the shared address and the rest of mailcheap.ai stays mailcheap's", () => {
 	const sharedDomain = "mailcheap.ai";
 	const options = { sharedDomain, appHost: "mailcheap.ai" };
 	for (const domain of ["mailcheap.ai", "r.mailcheap.ai", "weekly.mailcheap.ai", "news.weekly.mailcheap.ai"]) {
@@ -114,7 +114,7 @@ test("with the app's own domain shared, <slug>.mailcheap.ai is the shared addres
 	const ready = { domain: "weekly.mailcheap.ai", provider: "postshiba", verified: true };
 	const from = (fromEmail) => resolveFrom({ newsletter: { slug: "weekly", fromEmail, sharedSender: ready }, ownerEmail: "jane@example.com", sharedDomain, providerId: "postshiba" });
 	assert.deepEqual(from("hello@weekly.mailcheap.ai"), { identity: "weekly.mailcheap.ai", replyTo: "jane@example.com", isShared: true });
-	assert.match(from("hello@r.mailcheap.ai").problem, /The shared address for this newsletter is hello@weekly.mailcheap.ai/, "never MailCheap's own sender");
+	assert.match(from("hello@r.mailcheap.ai").problem, /The shared address for this newsletter is hello@weekly.mailcheap.ai/, "never mailcheap's own sender");
 	assert.equal(getOwnDomainLocalPart("hello@weekly.mailcheap.ai", sharedDomain), "hi");
 });
 
