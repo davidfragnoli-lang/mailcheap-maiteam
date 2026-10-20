@@ -10,12 +10,13 @@ import { startTestApp } from "./helpers/app.mjs";
 let app;
 let sourceDb;
 let targetDb;
-const OLD_SECRET = "test-secret-for-integration-tests-0123456789"; // the old SESSION_SECRET = the new BETTER_AUTH_SECRET
+// The old SESSION_SECRET is the new BETTER_AUTH_SECRET: the test app sets it (tests/helpers/app.mjs).
+const oldSecret = () => process.env.BETTER_AUTH_SECRET;
 const id = () => new mongoose.Types.ObjectId();
 
 // The old fork's unsubscribe token (origin/production lib/unsubscribe.js).
 function oldUnsubscribeToken(contactId, newsletterId) {
-	const key = Buffer.from(crypto.hkdfSync("sha256", OLD_SECRET, "", "mailcheap-unsubscribe-v1", 32));
+	const key = Buffer.from(crypto.hkdfSync("sha256", oldSecret(), "", "mailcheap-unsubscribe-v1", 32));
 	const payload = Buffer.from(JSON.stringify({ c: String(contactId), n: String(newsletterId) })).toString("base64url");
 	return `${payload}.${crypto.createHmac("sha256", key).update(payload).digest("base64url")}`;
 }
