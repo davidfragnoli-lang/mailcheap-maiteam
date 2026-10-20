@@ -13,6 +13,7 @@ import { sent as sesEmails, state as sesState } from "./stubs/ses.mjs";
 
 const DAY = 86_400_000;
 const COPY = JSON.parse(readFileSync(new URL("../fixtures/maifortune-welcome/copy.maiteam.en.json", import.meta.url), "utf8"));
+const SENDER = JSON.parse(readFileSync(new URL("../fixtures/maifortune-welcome/sender.json", import.meta.url), "utf8"));
 let app;
 let m;
 let processed = 0;
@@ -111,8 +112,15 @@ describe("maiteam welcome sequences", () => {
 		const user = await customer("seq-fortuna", {
 			requireConfirmation: true,
 			confirmation: COPY.confirmation,
-			theme: { preset: "fortuna" },
+			theme: { preset: SENDER.productionIntent.theme.preset },
 		});
+		// QA r1 item 8: the intended configuration's look, saved through the API and read back as stored.
+		const intended = SENDER.productionIntent.theme;
+		assert.deepEqual(intended.look, SENDER.dryRunFixture.theme.look, "the dry-run fixture and the production intent pick the same look");
+		const saved = await callApi("PATCH", `/api/v1/newsletters/${user.newsletterId}/email-look`, { key: user.key, body: { look: intended.look } });
+		assert.equal(saved.status, 200, JSON.stringify(saved.body));
+		const stored = (await m.Newsletter.findOne({ accountId: user.accountId, _id: user.newsletterId }).lean()).theme;
+		assert.deepEqual([stored.preset, stored.look.preset, stored.look.product, stored.look.wordmark, stored.look.dark.enabled], ["fortuna", "maiteam", "fortuna", "fortuna", true]);
 		await createSequence(user, { name: "fortuna welcome", slug: "welcome", steps: COPY.steps.map(({ delayDays, subject, previewText, markdown }) => ({ delayDays, subject, previewText, markdown })) });
 		const reader = "reader@seq-fortuna.example.org";
 		const jobsBefore = stepJobs().length;
@@ -126,6 +134,8 @@ describe("maiteam welcome sequences", () => {
 		assert.equal(confirmationEmail.subject, COPY.confirmation.subject);
 		assert.match(confirmationEmail.html, /href="http[^"]+\/confirm\?token=[^"]+" style="display:inline-block;background:#6e5c96;color:#ffffff;/, "the button in fortuna's malva");
 		assert.doesNotMatch(confirmationEmail.html, /#18181b/);
+		const darkFortuna = /@media \(prefers-color-scheme: dark\)[\s\S]*#ae9cd2/;
+		assert.match(confirmationEmail.html, darkFortuna, "the confirmation carries fortuna's dark palette");
 
 		const contact = await contactOf(user, reader);
 		let enrollment = await enrollmentOf(user, contact._id);
@@ -159,6 +169,7 @@ describe("maiteam welcome sequences", () => {
 		const sequenceEmails = emailsTo(reader).filter((email) => kindOf(email) === "sequence");
 		assert.deepEqual(sequenceEmails.map(({ subject }) => subject), COPY.steps.map(({ subject }) => subject));
 		assert.ok(sequenceEmails.every(({ headers }) => headers["List-Unsubscribe-Post"] === "List-Unsubscribe=One-Click"));
+		assert.ok(sequenceEmails.every(({ html }) => darkFortuna.test(html) && html.includes("#6e5c96")), "both steps in the fortuna look, light and dark");
 		enrollment = await enrollmentOf(user, contact._id);
 		assert.equal(enrollment.status, "completed");
 		assert.deepEqual(enrollment.steps.map(({ status }) => status), ["sent", "sent"]);

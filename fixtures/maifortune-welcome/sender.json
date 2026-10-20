@@ -22,7 +22,12 @@
       "enabled": false
     },
     "theme": {
-      "preset": "fortuna"
+      "preset": "fortuna",
+      "look": {
+        "preset": "maiteam",
+        "product": "fortuna",
+        "wordmark": "fortuna"
+      }
     }
   },
   "productionIntent": {
@@ -47,7 +52,12 @@
     },
     "theme": {
       "preset": "fortuna",
-      "note": "Upstream's fortuna preset (P3), saved explicitly as the newsletter's theme; never inferred from the copy."
+      "look": {
+        "preset": "maiteam",
+        "product": "fortuna",
+        "wordmark": "fortuna"
+      },
+      "note": "Saved explicitly, never inferred from the copy: upstream's fortuna preset for the site, and the maiteam look with the fortuna slot for email (theme.look, P3c), which carries the dark palette. Set through update_newsletter_email_look; the preset alone has no dark mode."
     }
   }
 }
