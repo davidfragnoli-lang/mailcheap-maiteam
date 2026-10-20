@@ -30,7 +30,7 @@ function* files(dir) {
 	}
 }
 
-function rewrite(text, isCode) {
+export function rewrite(text, isCode) {
 	return text
 		.split("\n")
 		.map((line) => {
@@ -41,6 +41,14 @@ function rewrite(text, isCode) {
 		.join("\n");
 }
 
+export function isCodeFile(file) {
+	return /\.(m?js|jsx)$/.test(file);
+}
+
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isMain) main();
+
+function main() {
 const check = process.argv.includes("--check");
 const changed = [];
 const targets = [
@@ -50,7 +58,7 @@ const targets = [
 {
 	for (const file of targets) {
 		const before = fs.readFileSync(file, "utf8");
-		const after = rewrite(before, /\.(m?js|jsx)$/.test(file));
+		const after = rewrite(before, isCodeFile(file));
 		if (after === before) continue;
 		changed.push(path.relative(ROOT, file));
 		if (!check) fs.writeFileSync(file, after);
@@ -58,3 +66,4 @@ const targets = [
 }
 console.log(JSON.stringify({ mode: check ? "check" : "write", files: changed.length, changed }));
 if (check && changed.length) process.exit(1);
+}

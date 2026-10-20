@@ -57,9 +57,15 @@ log "upstream/main ${UPSTREAM:0:7}: $NEW new commits on top of $DEPLOYED ${BASE:
 
 git checkout --quiet -B "$SYNC" "$BASE" || finish "STOP cannot create $SYNC" 1
 if ! git -c user.name="mailcheap weekly sync" -c user.email=noreply@anthropic.com merge --no-edit --quiet "$UPSTREAM" >>"$LOG" 2>&1; then
-	FILES="$(git diff --name-only --diff-filter=U | tr '\n' ' ')"
-	git merge --abort >/dev/null 2>&1
-	finish "STOP merge conflict: $FILES" 1
+	# Conflicts that are only P2's names take upstream's side; the script below lowercases them again.
+	if node scripts/maiteam/resolve-name-conflicts.mjs >>"$LOG" 2>&1; then
+		git -c user.name="mailcheap weekly sync" -c user.email=noreply@anthropic.com commit --no-edit --quiet >>"$LOG" 2>&1 || finish "STOP merge commit failed" 1
+		log "name-only conflicts resolved to upstream, P2 re-applied below"
+	else
+		FILES="$(git diff --name-only --diff-filter=U | tr '\n' ' ')"
+		git merge --abort >/dev/null 2>&1
+		finish "STOP merge conflict: $FILES" 1
+	fi
 fi
 
 # P2: names are re-applied by the script, never merged by hand.
