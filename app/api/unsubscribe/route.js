@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDb } from "@/lib/db";
+import { recordPendingAction } from "@/lib/maiteam/cutover";
 import { cancelEnrollmentsFor } from "@/lib/maiteam/sequence-store";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 import { verifyUnsubscribeToken } from "@/lib/unsubscribe";
@@ -46,7 +47,11 @@ async function unsubscribe({ contactId, newsletterId }) {
 		.setOptions({ crossAccount: true })
 		.select({ _id: 1, accountId: 1 })
 		.lean();
-	if (!previous) return;
+	// maiteam (P8d): a contact the old server took in after its dump, during the cutover hold: kept for the catch-up.
+	if (!previous) {
+		await recordPendingAction("unsubscribe", { contactId, newsletterId });
+		return;
+	}
 
 	console.log(`[unsubscribe] Contact ${contactId} unsubscribed from newsletter ${newsletterId}`);
 	// maiteam (P6): their welcome sequences end with it; a step in flight is left, every other one is cancelled.

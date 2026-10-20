@@ -2,7 +2,8 @@
 # P8 rehearsal on a copy, never on production (FRA-26000 step 3):
 #   1. restore a mongodump archive of the old fork into a throwaway database (fork_copy),
 #   2. migrate it into a fresh one (upstream_rehearsal) with scripts/maiteam/migrate-from-fork.mjs,
-#   3. dump that, restore it into a third (upstream_restore) and compare: the restore proof.
+#   3. dump that, restore it into a third (upstream_restore) and compare every document and index: the restore proof.
+# The migration's own checks compare each document with its conversion and stop on a broken reference.
 # Everything runs in one mongo:7 container bound to 127.0.0.1 only, removed at the end. Reports hold counts and hashes.
 #
 #   scripts/maiteam/rehearse-migration.sh --dump <archive.gz> --source-db <name> --owner-email <email> --out <dir> \
@@ -37,7 +38,8 @@ docker exec "$NAME" mongorestore --quiet --archive=/work/source.archive.gz --gzi
 COMPARE_URI="$URI" node "$REPO/scripts/maiteam/compare-databases.mjs" fork_copy fork_copy >"$OUT/1-source-copy.json" || true
 
 MIGRATE_SOURCE_URI="$URI/fork_copy" MIGRATE_TARGET_URI="$URI/upstream_rehearsal" node "$REPO/scripts/maiteam/migrate-from-fork.mjs" \
-	--owner-email "$OWNER" ${MAIL_FROM:+--mail-from "$MAIL_FROM"} ${ARCHIVE_HOST:+--archive-host "$ARCHIVE_HOST"} --execute --report "$OUT/2-migration.json" >/dev/null
+	--owner-email "$OWNER" ${MAIL_FROM:+--mail-from "$MAIL_FROM"} ${ARCHIVE_HOST:+--archive-host "$ARCHIVE_HOST"} \
+	--dumped-at "$(date -u -r "$DUMP" +%Y-%m-%dT%H:%M:%SZ)" --execute --report "$OUT/2-migration.json" >/dev/null
 docker exec "$NAME" mongodump --quiet --db upstream_rehearsal --archive=/work/upstream.archive.gz --gzip
 docker exec "$NAME" mongorestore --quiet --archive=/work/upstream.archive.gz --gzip --nsFrom "upstream_rehearsal.*" --nsTo "upstream_restore.*"
 COMPARE_URI="$URI" node "$REPO/scripts/maiteam/compare-databases.mjs" upstream_rehearsal upstream_restore >"$OUT/3-restore-proof.json"

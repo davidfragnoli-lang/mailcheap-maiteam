@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { after, before, test } from "node:test";
 import mongoose from "mongoose";
+import { compareDatabases } from "../scripts/maiteam/compare-databases.mjs";
 import { EVENT_TYPES, mapTheme, migrateFork } from "../scripts/maiteam/migrate-from-fork.mjs";
 import { startTestApp } from "./helpers/app.mjs";
 
@@ -88,7 +89,7 @@ before(async () => {
 after(() => app?.stop());
 
 test("a plan validates everything and writes nothing", async () => {
-	const report = await migrateFork({ sourceDb, targetDb, owner: { email: "David@Example.com" } });
+	const report = await migrateFork({ sourceDb, targetDb, owner: { email: "David@Example.com" }, dumpedAt: new Date() });
 	assert.equal(report.mode, "plan");
 	assert.deepEqual(report.problems.filter((line) => !line.includes("kept whole") && !line.includes("unvalidated")), []);
 	assert.equal(report.collections.contacts.source, 4);
@@ -96,7 +97,7 @@ test("a plan validates everything and writes nothing", async () => {
 });
 
 test("execute: same ids, states, keys and suppressions in one owner account, and upstream's code reads them", async () => {
-	const report = await migrateFork({ sourceDb, targetDb, owner: { email: "David@Example.com" }, mailFrom: "bounce.mail.maiteam.ch", archiveHost: "news.mail.maiteam.ch", execute: true });
+	const report = await migrateFork({ sourceDb, targetDb, owner: { email: "David@Example.com" }, mailFrom: "bounce.mail.maiteam.ch", archiveHost: "news.mail.maiteam.ch", dumpedAt: new Date(), execute: true });
 	assert.equal(report.checks.ok, true, JSON.stringify(report.checks));
 	for (const [name, counts] of Object.entries(report.collections)) assert.equal(counts.target, counts.source, name);
 	assert.equal(report.legacy.sequence_demo_ledger, 1);
@@ -150,7 +151,7 @@ test("a target that holds anything is refused", async () => {
 	const client = mongoose.connection.getClient();
 	sourceDb = client.db("fork-source");
 	targetDb = client.db("upstream-target");
-	await assert.rejects(() => migrateFork({ sourceDb, targetDb, owner: { email: "david@example.com" }, execute: true }), /not empty/);
+	await assert.rejects(() => migrateFork({ sourceDb, targetDb, owner: { email: "david@example.com" }, dumpedAt: new Date(), execute: true }), /not empty/);
 });
 
 test("old looks map to the upstream preset for the site and stay whole for email", () => {
@@ -159,4 +160,50 @@ test("old looks map to the upstream preset for the site and stay whole for email
 	assert.equal(mapTheme({ preset: "letter" }).preset, "mailcheap");
 	assert.equal(mapTheme({ preset: "default" }).preset, "mailcheap");
 	assert.equal(mapTheme(undefined), undefined);
+});
+
+// QA r1 item 5 (FRA-25999): the restore proof compares every document and index, and a broken reference stops the copy.
+test("a restore that changed one contact's address and status, or lost an index, is not the same", async () => {
+	const client = mongoose.connection.getClient();
+	const target = client.db("upstream-target");
+	const restored = client.db("upstream-restore-probe");
+	for (const { name } of await target.listCollections().toArray()) {
+		const docs = await target.collection(name).find({}).toArray();
+		await restored.createCollection(name);
+		if (docs.length) await restored.collection(name).insertMany(docs);
+		for (const { key, name: indexName, v, ...options } of await target.collection(name).indexes()) {
+			if (indexName !== "_id_") await restored.collection(name).createIndex(key, { name: indexName, ...options });
+		}
+	}
+	const faithful = await compareDatabases(target, restored);
+	assert.equal(faithful.same, true, JSON.stringify(Object.entries(faithful.collections).filter(([, value]) => !value.same)));
+	await restored.collection("contacts").updateOne({ _id: contacts[0]._id }, { $set: { status: "unsubscribed", email: "changed@reader.example.org" } });
+	const changed = await compareDatabases(target, restored);
+	assert.equal(changed.same, false);
+	assert.deepEqual(changed.collections.contacts.documents, { missing: 0, changed: 1, extra: 0 });
+	const original = await target.collection("contacts").findOne({ _id: contacts[0]._id });
+	await restored.collection("contacts").updateOne({ _id: contacts[0]._id }, { $set: { status: original.status, email: original.email } });
+	const back = await compareDatabases(target, restored);
+	assert.equal(back.same, true, JSON.stringify(Object.entries(back.collections).filter(([, value]) => !value.same)));
+	await restored.collection("contacts").dropIndex("newsletterId_1_email_1");
+	assert.equal((await compareDatabases(target, restored)).collections.contacts.same, false, "a lost unique index is caught");
+});
+
+test("a contact pointing at no newsletter, or a duplicate address, stops the migration before anything is written", async () => {
+	const client = mongoose.connection.getClient();
+	const source = client.db("fork-dangling");
+	const nid = id();
+	await source.collection("newsletters").insertOne({ _id: nid, name: "n", slug: "dangling-n", fromEmail: "hello@mail.maiteam.ch", createdAt: new Date(), updatedAt: new Date() });
+	await source.collection("contacts").insertOne({ _id: id(), newsletterId: id(), email: "lost@reader.example.org", status: "active", createdAt: new Date(), updatedAt: new Date() });
+	const plan = await migrateFork({ sourceDb: source, targetDb: client.db("upstream-dangling"), owner: { email: "owner@example.org" }, dumpedAt: new Date() });
+	assert.deepEqual(plan.relationships.hard, { "contacts.newsletterId": 1 });
+	await assert.rejects(() => migrateFork({ sourceDb: source, targetDb: client.db("upstream-dangling"), owner: { email: "owner@example.org" }, dumpedAt: new Date(), execute: true }), /nothing was written/);
+	assert.equal((await client.db("upstream-dangling").listCollections().toArray()).length, 0);
+
+	await source.collection("contacts").deleteMany({});
+	await source.collection("contacts").insertMany([
+		{ _id: id(), newsletterId: nid, email: "twice@reader.example.org", status: "active", createdAt: new Date(), updatedAt: new Date() },
+		{ _id: id(), newsletterId: nid, email: "twice@reader.example.org", status: "pending", createdAt: new Date(), updatedAt: new Date() },
+	]);
+	await assert.rejects(() => migrateFork({ sourceDb: source, targetDb: client.db("upstream-duplicate"), owner: { email: "owner@example.org" }, dumpedAt: new Date(), execute: true }), /duplicate key/);
 });

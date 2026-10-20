@@ -1,7 +1,7 @@
 // P8 (PATCHES.md): one-time move of the old single-admin fork's MongoDB data into upstream's multi-account shape.
 //
 //   MIGRATE_SOURCE_URI=… MIGRATE_TARGET_URI=… node scripts/maiteam/migrate-from-fork.mjs \
-//     --owner-email <email> --mail-from <host> --archive-host <host> [--execute] [--report <file>]
+//     --owner-email <email> --mail-from <host> --archive-host <host> --dumped-at <ISO time> [--execute] [--report <file>]
 //
 // The URIs come from the environment only, so they never appear in argv or logs. The source is only ever read. The
 // target must be an empty database: the script refuses one that holds any document. Without --execute it plans and
@@ -12,10 +12,19 @@
 // BETTER_AUTH_SECRET is the old SESSION_SECRET (same HKDF info and payload on both sides).
 //
 // The report holds counts, histograms and hashes of id sets only: no address, name or content.
+//
+// The new database starts in the cutover hold (P8d, lib/maiteam/cutover.js): the account is blocked with upstream's own
+// block, every active sequence is paused, and maiteam_cutover records what each was. --dumped-at is when the dump
+// began: scripts/maiteam/catch-up.mjs copies what the old server wrote from then on, and releases the hold.
+// A campaign scheduled or sending refuses the migration: its jobs would reach the new server mid-send.
 
-import crypto from "node:crypto";
 import fs from "node:fs";
 import mongoose from "mongoose";
+import { checkRelationships, compareContent, idSetHash as sha } from "./integrity.mjs";
+
+export const CUTOVER_ID = "fork-cutover";
+export const HOLD_REASON = "Cutover from the old server: catching up. scripts/maiteam/catch-up.mjs --release ends it.";
+const BUSY_CAMPAIGN_STATUSES = ["scheduled", "sending"];
 
 // Old SES event names → upstream's (lib/ses-event-mapping.js EVENT_TYPES).
 export const EVENT_TYPES = {
@@ -46,7 +55,6 @@ export function mapTheme(look) {
 	return { preset, look };
 }
 
-const sha = (values) => crypto.createHash("sha256").update(values.map(String).sort().join("\n")).digest("hex");
 
 function histogram(docs, key) {
 	const counts = {};
@@ -64,7 +72,7 @@ function omit(doc, ...keys) {
 }
 
 // One converter per old collection: the target collection and the document upstream stores.
-function converters({ accountId }) {
+export function converters({ accountId }) {
 	const owned = (doc) => ({ ...doc, accountId });
 	return {
 		newsletters: {
@@ -156,8 +164,10 @@ async function validate(Model, doc) {
 	}
 }
 
-export async function migrateFork({ sourceDb, targetDb, owner, mailFrom, archiveHost, execute = false, now = new Date() }) {
+export async function migrateFork({ sourceDb, targetDb, owner, mailFrom, archiveHost, dumpedAt, execute = false, now = new Date() }) {
 	if (!owner?.email) throw new Error("--owner-email is required");
+	const since = new Date(dumpedAt ?? NaN);
+	if (!Number.isFinite(since.getTime()) || since > now) throw new Error("--dumped-at must be the time the dump began, as an ISO date");
 	const models = await loadModels();
 	const report = { mode: execute ? "execute" : "plan", at: now.toISOString(), collections: {}, created: {}, legacy: {}, problems: [], checks: {} };
 
@@ -170,17 +180,26 @@ export async function migrateFork({ sourceDb, targetDb, owner, mailFrom, archive
 	const accountId = new mongoose.Types.ObjectId();
 	const email = String(owner.email).trim().toLowerCase();
 	const user = { _id: userId, name: owner.name ?? email.split("@")[0], email, emailVerified: true, image: null, createdAt: now, updatedAt: now };
-	const account = { _id: accountId, ownerId: userId, status: "active", createdAt: now, updatedAt: now };
+	// Blocked with upstream's own block until the catch-up releases it: no email goes out and no new signup is taken.
+	const account = { _id: accountId, ownerId: userId, status: "paused", pausedAt: now, pauseReason: HOLD_REASON, pausedBy: "admin", createdAt: now, updatedAt: now };
 	const problem = await validate(models.Account, account);
 	if (problem) report.problems.push(`account: ${problem}`);
 
 	const sourceNames = new Set((await sourceDb.listCollections().toArray()).map(({ name }) => name));
 	const plan = converters({ accountId });
 	const converted = {};
+	const heldSequences = [];
 	for (const [name, { to, model, convert }] of Object.entries(plan)) {
 		if (!sourceNames.has(name)) continue;
 		const docs = await sourceDb.collection(name).find({}).toArray();
-		const out = docs.map(convert);
+		let out = docs.map(convert);
+		// The hold: every sequence that was running waits for the release; what each was is kept for it.
+		if (name === "sequences") {
+			out = out.map((doc) => {
+				heldSequences.push({ _id: doc._id, status: doc.status, pauseReason: doc.pauseReason ?? null });
+				return doc.status === "active" ? { ...doc, status: "paused", pauseReason: HOLD_REASON } : doc;
+			});
+		}
 		const Model = models[model];
 		const invalid = [];
 		for (const doc of out) {
@@ -193,6 +212,11 @@ export async function migrateFork({ sourceDb, targetDb, owner, mailFrom, archive
 		converted[name] = { to, docs, out, Model };
 		report.collections[name] = { to, source: docs.length, invalid: invalid.length, ids: sha(docs.map(({ _id }) => _id)) };
 	}
+
+	const busy = (converted.campaigns?.docs ?? []).filter(({ status }) => BUSY_CAMPAIGN_STATUSES.includes(status)).length;
+	if (busy) report.problems.push(`campaigns: ${busy} scheduled or sending. Unschedule them, or let them finish, before the dump`);
+	report.relationships = checkRelationships(Object.fromEntries(Object.entries(converted).map(([name, { out }]) => [name, out])));
+	for (const [key, broken] of Object.entries(report.relationships.hard)) report.problems.push(`${key}: ${broken} documents point at nothing`);
 
 	// The sending domains the newsletters use, as upstream's verified Domain documents (no new verification: "Check now"
 	// re-reads SES). Adding the domain in the UI instead would rewrite its MAIL FROM.
@@ -237,6 +261,8 @@ export async function migrateFork({ sourceDb, targetDb, owner, mailFrom, archive
 		throw Object.assign(new Error("Validation problems: nothing was written"), { report });
 	}
 
+	// Upstream's indexes first, unique ones included, so a duplicate stops the copy instead of reaching the app.
+	report.indexes = await createModelIndexes({ targetDb, models, collections: ["users", "accounts", "domains", ...Object.values(converted).map(({ to }) => to)] });
 	await targetDb.collection("users").insertOne(user);
 	await targetDb.collection("accounts").insertOne(account);
 	if (domainDocs.length) await targetDb.collection("domains").insertMany(domainDocs);
@@ -245,18 +271,48 @@ export async function migrateFork({ sourceDb, targetDb, owner, mailFrom, archive
 		report.collections[name].target = await targetDb.collection(to).countDocuments({});
 	}
 	if (legacy.length) await targetDb.collection("migration_legacy").insertMany(legacy);
-	report.checks = await verify({ sourceDb, targetDb, converted, accountId });
+	await targetDb.collection("maiteam_cutover").insertOne({ _id: CUTOVER_ID, state: "holding", accountId, since, migratedAt: now, sequences: heldSequences, passes: [] });
+	const levels = models.ApiKey?.schema.path("level")?.enumValues ?? null;
+	report.checks = await verify({ sourceDb, targetDb, converted, accountId, indexes: report.indexes, levels });
 	report.accountId = String(accountId);
 	return report;
 }
 
-// After the copy: the same ids, the same states, and every suppressed address still ineligible.
-export async function verify({ sourceDb, targetDb, converted, accountId }) {
-	const checks = {};
-	for (const [name, { to, docs }] of Object.entries(converted)) {
-		const target = await targetDb.collection(to).find({}, { projection: { _id: 1 } }).toArray();
-		checks[`${name}:ids`] = sha(target.map(({ _id }) => _id)) === sha(docs.map(({ _id }) => _id));
+// The indexes upstream's models declare, created on the target. Returns each collection's index names.
+async function createModelIndexes({ targetDb, models, collections }) {
+	const created = {};
+	for (const Model of Object.values(models)) {
+		if (!Model || !collections.includes(Model.collection.collectionName)) continue;
+		const name = Model.collection.collectionName;
+		created[name] = ["_id_"];
+		for (const [keys, options] of Model.schema.indexes()) {
+			const { background, ...rest } = options ?? {};
+			created[name].push(await targetDb.collection(name).createIndex(keys, rest));
+		}
 	}
+	return created;
+}
+
+// After the copy: every document exactly as converted, the same states, every reference resolving, upstream's indexes
+// in place, and every suppressed address still ineligible.
+export async function verify({ sourceDb, targetDb, converted, accountId, indexes = {}, levels = null }) {
+	const checks = {};
+	for (const [name, { to, docs, out }] of Object.entries(converted)) {
+		const target = await targetDb.collection(to).find({}).toArray();
+		checks[`${name}:ids`] = sha(target.map(({ _id }) => _id)) === sha(docs.map(({ _id }) => _id));
+		const content = compareContent(out, target);
+		checks[`${name}:documents`] = content.same;
+		if (!content.same) checks[`${name}:documents-detail`] = `${content.missing} missing, ${content.changed} changed, ${content.extra} extra`;
+	}
+	for (const [collection, names] of Object.entries(indexes)) {
+		const present = new Set((await targetDb.collection(collection).indexes()).map(({ name }) => name));
+		checks[`${collection}:indexes`] = names.every((name) => present.has(name));
+	}
+	const targetCollections = {};
+	for (const name of ["newsletters", "contacts", "campaigns", "sequences", "enrollments", "messages", "events"]) {
+		targetCollections[name] = await targetDb.collection(name).find({}).toArray();
+	}
+	checks["relationships:hard"] = checkRelationships(targetCollections).ok;
 	const sourceContacts = converted.contacts?.docs ?? [];
 	const targetContacts = await targetDb.collection("contacts").find({}).toArray();
 	const statusKey = (doc) => `${doc.newsletterId}:${doc.status}`;
@@ -276,6 +332,19 @@ export async function verify({ sourceDb, targetDb, converted, accountId }) {
 	const sourceSuppressed = (converted.suppressions?.docs ?? []).map(({ email }) => email);
 	const targetSuppressed = new Set((await targetDb.collection("suppressions").find({ accountId }).toArray()).map(({ email }) => email));
 	checks["suppressions:every-address-still-suppressed"] = sourceSuppressed.every((address) => targetSuppressed.has(address));
+	// Per address: a contact the old list kept from mail can't be eligible here. Upstream sends only to active or dormant
+	// contacts whose address its account's list doesn't hold.
+	const eligible = targetContacts.filter(({ status, email }) => ["active", "dormant"].includes(status) && !targetSuppressed.has(email));
+	const oldSuppressed = new Set(sourceSuppressed);
+	checks["suppressions:no-suppressed-address-eligible"] = !eligible.some(({ email }) => oldSuppressed.has(email));
+	// Per key: each old key's hash, now in the owner account with a level upstream accepts.
+	if (converted.apikeys) {
+		const keys = new Map((await targetDb.collection("apikeys").find({}).toArray()).map((doc) => [String(doc._id), doc]));
+		checks["apikeys:usable"] = converted.apikeys.docs.every(({ _id, hash }) => {
+			const key = keys.get(String(_id));
+			return key && key.hash === hash && String(key.accountId) === String(accountId) && (!levels || levels.includes(key.level));
+		});
+	}
 	const messageStatus = (doc) => `${doc.kind}:${doc.status}`;
 	if (converted.messages) {
 		checks["messages:kind-status"] = JSON.stringify(histogram(converted.messages.docs, messageStatus)) === JSON.stringify(histogram(await targetDb.collection("messages").find({}).toArray(), messageStatus));
@@ -308,6 +377,7 @@ if (isMain) {
 			owner: { email: args["owner-email"], name: args["owner-name"] },
 			mailFrom: args["mail-from"],
 			archiveHost: args["archive-host"],
+			dumpedAt: args["dumped-at"],
 			execute: args.execute === true,
 		});
 		const text = `${JSON.stringify(report, null, 2)}\n`;

@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { keepContact } from "@/lib/contacts";
+import { recordPendingAction } from "@/lib/maiteam/cutover";
 import { connectDb } from "@/lib/db";
 import { verifyKeepToken } from "@/lib/last-chance";
 import { findNewsletterAnywhere } from "@/lib/public-newsletters";
@@ -18,5 +19,7 @@ export async function keepSending(token) {
 	await connectDb();
 	const newsletter = await findNewsletterAnywhere({ _id: reference.newsletterId });
 	const contact = newsletter && (await keepContact({ accountId: newsletter.accountId, ...reference }));
-	return contact ? { ok: true } : { error: "invalid" };
+	if (contact) return { ok: true };
+	// maiteam (P8d): during the cutover hold, a contact the catch-up hasn't brought yet.
+	return (await recordPendingAction("keep", reference)) ? { ok: true } : { error: "invalid" };
 }
