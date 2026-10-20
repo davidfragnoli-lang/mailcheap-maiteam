@@ -38,6 +38,9 @@ const newsletterSchema = new mongoose.Schema(
 		},
 		// New signups get an email with a link and only join once they click it (confirmed opt-in).
 		requireConfirmation: { type: Boolean, default: false },
+		// maiteam (PATCHES.md P4): emails a UTC day, lowered by the sender warm-up. 0 is closed; unset refuses unless
+		// NEWSLETTER_DAILY_CAP is set (lib/maiteam/newsletter-cap.js).
+		dailySendCap: { type: Number, min: 0 },
 		// Checked when an issue is sent (lib/cleanup.js). Empty numbers use the newsletter's defaults.
 		cleanup: {
 			enabled: { type: Boolean, default: false },

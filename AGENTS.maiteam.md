@@ -26,6 +26,10 @@ The default for an oversized eligible audience is to refuse it and say how many 
 
 Secrets belong in Paperclip secret bindings. Do not put tokens in files, logs, or comments. One SES production-access request is already pending in eu-north-1. Do not submit another. Do not invent a Google Postmaster TXT record or publish DNS. David adds that TXT after an authorized read returns the real record.
 
+## Send gates (P4): what the source implements
+
+`lib/maiteam/send-gate.js` sits in the one path every email takes to the provider (`deliver()` in `lib/sending.js`), so campaigns, last-chance, welcome, confirmation and test emails all pass through it. Each email holds one unit in the rolling 24-hour SES quota ledger and one in its newsletter's UTC-day cap before the handoff. The quota is a fresh account read no older than 60 s; missing or stale refuses. The cap is `Newsletter.dailySendCap`, else `NEWSLETTER_DAILY_CAP`; 0 is closed and unset refuses. It is lowered by the sender domain's warm-up level. The send slot runs at the lesser of `SEND_RATE_PER_SECOND`, 6 and SES `MaxSendRate`, and refuses when the shared Upstash count is missing or unreadable. A refusal leaves the email queued and the batch retries; a closed or missing cap pauses a campaign and fails a signup email with the reason. Holds are issued after the provider returns and released only when the email provably was not handed off. `queueCampaign` and `sendToMoreContacts` refuse an audience larger than what is left today, whole. Upstream's own pauses, account blocks, first-send slice and suppression checks run unchanged. `MAITEAM_SEND_GATES=off` disables the gates; only `tests/setup/register.mjs` sets it. Tests: `tests/maiteam-send-gates.test.mjs` (real batch path, synthetic SES account read and send slot) and the ported planner tests. They do not send mail. Not deployed.
+
 ## GitHub deployment provenance — David, 15 October 2026
 
 Both repositories remain private. Production deploys come only from a commit

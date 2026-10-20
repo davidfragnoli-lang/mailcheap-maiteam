@@ -28,6 +28,9 @@ const messageSchema = new mongoose.Schema(
 		firstSend: { type: Boolean },
 		// The email provider's id for it, when the send returns one; else the first event fills it in.
 		providerMessageId: { type: String },
+		// maiteam (PATCHES.md P4): stamped just before the handoff, for the sender warm-up's evidence.
+		senderDomain: { type: String },
+		handoffAt: Date,
 		error: { type: String },
 		sentAt: Date,
 		deliveredAt: Date,
