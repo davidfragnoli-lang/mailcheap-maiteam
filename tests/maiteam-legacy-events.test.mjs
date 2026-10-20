@@ -32,14 +32,18 @@ test("a hard bounce for a pre-migration email, without an account tag, still sup
 	const accountId = new mongoose.Types.ObjectId();
 	const newsletterId = new mongoose.Types.ObjectId();
 	const contact = await m.Contact.create({ accountId, newsletterId, email: "old@reader.example.org", status: "active" });
-	await m.Message.create({ accountId, newsletterId, contactId: contact._id, kind: "campaign", email: contact.email, status: "sent", providerMessageId: "old-ses-id-1", sentAt: new Date() });
+	await m.Message.create({ accountId, newsletterId, contactId: contact._id, kind: "campaign", email: contact.email, status: "sent", providerMessageId: "old-ses-id-1", sentAt: new Date(), migratedFromFork: true });
 	await m.events.handleSesEvent(sesBounce("old-ses-id-1", contact.email));
 	assert.ok(await m.Suppression.exists({ accountId, email: contact.email }), "suppressed in the message's own account");
 	assert.equal((await m.Message.findOne({ accountId, providerMessageId: "old-ses-id-1" }).lean()).status, "bounced");
 });
 
-test("an untagged event for an email this server never sent changes nothing", async () => {
+test("an untagged event changes nothing for an email this server never sent, or one upstream's code sent", async () => {
+	const accountId = new mongoose.Types.ObjectId();
+	const newsletterId = new mongoose.Types.ObjectId();
+	await m.Message.create({ accountId, newsletterId, kind: "campaign", email: "new@reader.example.org", status: "sent", providerMessageId: "tagged-era-id", sentAt: new Date() });
 	const before = await m.Suppression.countDocuments({}).setOptions({ crossAccount: true });
 	await m.events.handleSesEvent(sesBounce("someone-elses-id", "stranger@example.org"));
+	await m.events.handleSesEvent(sesBounce("tagged-era-id", "new@reader.example.org"));
 	assert.equal(await m.Suppression.countDocuments({}).setOptions({ crossAccount: true }), before);
 });

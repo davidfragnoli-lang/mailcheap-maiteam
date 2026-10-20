@@ -31,6 +31,8 @@ const messageSchema = new mongoose.Schema(
 		// maiteam (PATCHES.md P4): stamped just before the handoff, for the sender warm-up's evidence.
 		senderDomain: { type: String },
 		handoffAt: Date,
+		// maiteam (PATCHES.md P8b): sent by the old fork, before every email carried its account tag.
+		migratedFromFork: { type: Boolean },
 		error: { type: String },
 		sentAt: Date,
 		deliveredAt: Date,
