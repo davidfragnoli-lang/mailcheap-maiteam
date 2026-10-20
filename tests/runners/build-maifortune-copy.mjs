@@ -141,7 +141,7 @@ const copy = {
 		issue: "QI-27055",
 		approval: "David accepted QI-27055 card 87b8afae on 2026-10-19 (relayed by the board on FRA-25943, comment ced223b0)",
 		retrieved: true,
-		path: "/Users/davidfragnoli/Projects/maiteam-ships/maiteam-tracker-design (uncommitted working tree; bytes pinned by hash)",
+		path: "maiteam-ships/maiteam-tracker-design at cd801e6 (QI-27055; bytes pinned by hash)",
 		document: { file: "docs/MAIFORTUNE-WELCOME-SERIES.md", sha256: EXPECTED["docs/MAIFORTUNE-WELCOME-SERIES.md"] },
 		files: EXPECTED,
 		transcription: [

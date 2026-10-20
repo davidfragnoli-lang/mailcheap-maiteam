@@ -1,2 +1,6 @@
 # A synthetic test secret (upstream's own test value, tests/helpers/app.mjs), not a credential. Read from the env since.
 b75e9c880c4dbaa719a939d1f9afe4ea20180a4a:tests/maiteam-migration.test.mjs:generic-api-key:13
+# Synthetic test constants in upstream's own public history (marclou/mailcheap tests), not credentials.
+7343000f9057077fe8d2b08cc231ba357cb26a36:tests/postmaster.test.mjs:generic-api-key:27
+be981c145190f0cd7857fe0062cecd2c272c8974:tests/alerts.test.mjs:generic-api-key:19
+45672d3a618439c22bfa874d9991df62ce27eb71:tests/helpers/app.mjs:generic-api-key:45

@@ -12,7 +12,7 @@ For the operator and Ops QA. Nothing here is authorized by this file. Each gate 
 
 ## Pinned before cutover
 
-- **Old deployment:** the production deployment that serves `mailcheap.maiteam.ch` at that moment. Read it with the team-scoped project call (`targets.production.id`; `dpl_3kmpnoikc1rAbwqiugPFNvp2zydU` on 2026-10-20). Vercel keeps each deployment with its own build and environment, so rolling back to it also brings back its `MONGODB_URI`, the old database.
+- **Old deployment:** the production deployment that serves `mailcheap.maiteam.ch` at that moment. Read it with the team-scoped project call (`targets.production.id`, recorded on FRA-26000 at cutover). Vercel keeps each deployment with its own build and environment, so rolling back to it also brings back its `MONGODB_URI`, the old database.
 - **Old database:** never written by the migration. The new server uses a new database.
 - **Final dump:** `mongodump --archive --gzip` of the old database, stored under `$HOME/Backups/mailcheap/`, mode 600, with its sha256 recorded on FRA-26000. It holds personal data and does not go into evidence.
 
