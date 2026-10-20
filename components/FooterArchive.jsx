@@ -1,5 +1,6 @@
 import AvatarNewsletter from "@/components/AvatarNewsletter";
 import LinksSocial from "@/components/LinksSocial";
+import LinkSource from "@/components/maiteam/LinkSource";
 import { currentYear } from "@/lib/format";
 
 export default function FooterArchive({ newsletter, indexHref }) {
@@ -19,6 +20,8 @@ export default function FooterArchive({ newsletter, indexHref }) {
 			</div>
 			<p className="mx-auto max-w-5xl px-5 pb-10 text-xs text-muted-foreground tabular-nums">
 				© {currentYear()} {newsletter.name}
+				{/* maiteam (PATCHES.md P7): the AGPL source of this server. */}
+				<LinkSource className="ml-3" />
 			</p>
 		</footer>
 	);

@@ -6,6 +6,7 @@ import { getArchiveUrls } from "@/lib/archive-hosts";
 import { connectDb } from "@/lib/db";
 import { verifyKeepToken } from "@/lib/last-chance";
 import { findNewsletterAnywhere } from "@/lib/public-newsletters";
+import LinkSource from "@/components/maiteam/LinkSource";
 
 // The URL carries the keep token: keep it out of search results and referrer headers.
 export const metadata = {
@@ -34,6 +35,8 @@ export default async function KeepPage({ searchParams }) {
 					It may be older than 90 days. Sign up again to keep getting the newsletter.
 				</CardNotice>
 			)}
+			{/* maiteam (PATCHES.md P7): the AGPL source of this server. */}
+			<LinkSource className="fixed inset-x-0 bottom-4 text-center text-xs text-muted-foreground" />
 		</main>
 	);
 }

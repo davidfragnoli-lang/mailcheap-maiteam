@@ -7,6 +7,7 @@ import { getArchiveUrls } from "@/lib/archive-hosts";
 import { verifyConfirmToken } from "@/lib/confirmation";
 import { connectDb } from "@/lib/db";
 import { findOpenNewsletter } from "@/lib/public-newsletters";
+import LinkSource from "@/components/maiteam/LinkSource";
 
 // The URL carries the confirmation token: keep it out of search results and referrer headers.
 export const metadata = {
@@ -37,6 +38,8 @@ export default async function ConfirmPage({ searchParams }) {
 					It may be older than 30 days. Sign up again and use the newest confirmation email.
 				</CardNotice>
 			)}
+			{/* maiteam (PATCHES.md P7): the AGPL source of this server. */}
+			<LinkSource className="fixed inset-x-0 bottom-4 text-center text-xs text-muted-foreground" />
 		</main>
 	);
 }
