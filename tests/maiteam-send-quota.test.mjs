@@ -148,3 +148,79 @@ test("the rolling window releases issued sends and keeps unsent holds", () => {
 	assert.equal(rolled.reserved, 3);
 	assert.equal(rolled.accountedSent, 0);
 });
+
+// QA r1 item 1 (FRA-25999): two instances, each with its own cached reading, share one ledger.
+function sendOne(state, key, reading) {
+	const plan = planReservation(state, { max24HourSend: 102, ...reading, now: reading.fetchedAt + 500, key, amount: 1 });
+	if (!plan.ok) return { plan, state };
+	return { plan, state: planIssueFromKey(plan.state, key, 1, reading.fetchedAt + 100).state };
+}
+
+test("an older reading from another instance cannot rewind the ledger and admit a send past the quota", () => {
+	const instanceX = { sentLast24Hours: 100, fetchedAt: NOW };
+	const instanceY = { sentLast24Hours: 101, fetchedAt: NOW + 8_000 };
+	let state = normalizeQuotaState();
+	let step = sendOne(state, "A", instanceX);
+	assert.equal(step.plan.ok, true);
+	state = step.state;
+	step = sendOne(state, "B", instanceY);
+	assert.equal(step.plan.ok, true);
+	state = step.state;
+	// Actual usage is now 102. X's reading is still inside its reuse window and says 100.
+	step = sendOne(state, "C", instanceX);
+	assert.equal(step.plan.ok, false);
+	assert.equal(step.plan.reason, "none-left");
+	assert.equal(step.state.accountedSent, 101, "the superseded reading changed nothing");
+	assert.equal(step.state.accountedAt, NOW + 8_000);
+	// The same holds for the campaign preflight and for the remaining count.
+	assert.equal(planBatch(state, { max24HourSend: 102, ...instanceX, now: NOW + 9_000, batchSize: 1, alreadyReserved: false }).action, "defer");
+});
+
+test("readings applied in either order leave the same ledger", () => {
+	const early = { sentLast24Hours: 100, fetchedAt: NOW };
+	const late = { sentLast24Hours: 103, fetchedAt: NOW + 5_000 };
+	const base = planIssueFromKey(planReservation(normalizeQuotaState(), { ...fresh(), key: "k", amount: 3 }).state, "k", 3, NOW - 1_000).state;
+	const forward = reconcileQuota(reconcileQuota(base, early), late);
+	const backward = reconcileQuota(reconcileQuota(base, late), early);
+	assert.deepEqual({ ...forward, revision: 0 }, { ...backward, revision: 0 });
+	assert.equal(forward.accountedSent, 103);
+});
+
+test("genuine rolling expiry gives room back without forgetting sends SES may not have counted yet", () => {
+	let state = reconcileQuota(normalizeQuotaState(), { sentLast24Hours: 100, fetchedAt: NOW });
+	state = planIssueFromKey(planReservation(state, { max24HourSend: 102, sentLast24Hours: 100, fetchedAt: NOW, now: NOW, key: "A", amount: 1 }).state, "A", 1, NOW + 100).state;
+	// A newer, lower reading: old mail left the window. It can't say whether A is in it, so A stays reserved.
+	const later = { max24HourSend: 102, sentLast24Hours: 90, fetchedAt: NOW + 60_000, now: NOW + 60_000 };
+	const plan = planReservation(state, { ...later, key: "B", amount: 1 });
+	assert.equal(plan.ok, true);
+	assert.equal(plan.state.issued, 1);
+	assert.equal(plan.remaining, 102 - 90 - 1 - 1);
+	assert.equal(plan.state.accountedSent, 90);
+});
+
+test("a rising count absorbs only sends handed to SES before the reading was taken", () => {
+	let state = reconcileQuota(normalizeQuotaState(), { sentLast24Hours: 50, fetchedAt: NOW });
+	state = planIssueFromKey(planReservation(state, { ...fresh({ sentLast24Hours: 50 }), key: "late", amount: 1 }).state, "late", 1, NOW + 2_000).state;
+	// Someone else's send raised the count, read before "late" was handed off: "late" must stay outstanding.
+	const absorbed = reconcileQuota(state, { sentLast24Hours: 51, fetchedAt: NOW + 1_000 });
+	assert.equal(absorbed.issued, 1);
+	const after = reconcileQuota(absorbed, { sentLast24Hours: 52, fetchedAt: NOW + 3_000 });
+	assert.equal(after.issued, 0);
+});
+
+test("an issued send leaves the ledger once it is certainly out of the 24-hour window", () => {
+	let state = reconcileQuota(normalizeQuotaState(), { sentLast24Hours: 10, fetchedAt: NOW });
+	state = planIssueFromKey(planReservation(state, { ...fresh({ sentLast24Hours: 10 }), key: "x", amount: 2 }).state, "x", 2, NOW + 100).state;
+	const dayLater = reconcileQuota(state, { sentLast24Hours: 5, fetchedAt: NOW + 24 * 60 * 60 * 1000 });
+	assert.equal(dayLater.issued, 2, "exactly 24 hours is not yet certain");
+	const past = reconcileQuota(state, { sentLast24Hours: 5, fetchedAt: NOW + 24 * 60 * 60 * 1000 + 101 });
+	assert.equal(past.issued, 0);
+});
+
+test("a ledger written before issuedLog keeps its issued total", () => {
+	const legacy = normalizeQuotaState({ revision: 4, issued: 3, accountedSent: 20, holds: [] });
+	assert.equal(legacy.issued, 3);
+	assert.deepEqual(legacy.issuedLog, [{ at: null, amount: 3 }]);
+	assert.equal(reconcileQuota(legacy, { sentLast24Hours: 19, fetchedAt: NOW }).issued, 3);
+	assert.equal(reconcileQuota(legacy, { sentLast24Hours: 23, fetchedAt: NOW }).issued, 0);
+});
