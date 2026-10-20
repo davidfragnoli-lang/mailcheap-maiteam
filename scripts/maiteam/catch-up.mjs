@@ -13,7 +13,7 @@
 
 import mongoose from "mongoose";
 import { CUTOVER_ID, HOLD_REASON, converters } from "./migrate-from-fork.mjs";
-import { CANCELLED_BEFORE_HANDOFF, LEFT, changedSince, converge, mergeCap, mergeContact, mergeEnrollment, mergeMessage, upsertMerged } from "./fork-sync.mjs";
+import { CANCELLED_BEFORE_HANDOFF, LEFT, MERGE_ATTEMPTS, changedSince, converge, mergeCap, mergeContact, mergeEnrollment, mergeMessage, upsertMerged } from "./fork-sync.mjs";
 import { checkRelationships } from "./integrity.mjs";
 
 const OPEN_ENROLLMENT_STEPS = ["pending", "scheduled", "held", "claimed", "sending"];
@@ -65,12 +65,14 @@ async function applyPending({ targetDb, action, execute }) {
 	if (!execute) return { writes: 1, unresolved: 0 };
 	const at = action.at ?? new Date();
 	if (action.kind === "unsubscribe" && ["active", "dormant", "pending"].includes(contact.status)) {
-		await contacts.updateOne({ _id: contact._id }, { $set: { status: "unsubscribed", unsubscribedAt: at, updatedAt: new Date() } });
+		await contacts.updateOne({ _id: contact._id, status: { $in: ["active", "dormant", "pending"] } }, { $set: { status: "unsubscribed", unsubscribedAt: at, updatedAt: new Date() } });
 		await cancelEnrollments({ targetDb, contactId: contact._id });
 	}
 	if (action.kind === "confirm" && contact.status === "pending") {
-		await contacts.updateOne({ _id: contact._id }, { $set: { status: "active", confirmedAt: at, updatedAt: new Date() } });
-		for (const enrollment of await targetDb.collection("enrollments").find({ contactId: contact._id, status: "awaiting_confirmation" }).toArray()) {
+		const confirmed = await contacts.updateOne({ _id: contact._id, status: "pending" }, { $set: { status: "active", confirmedAt: at, updatedAt: new Date() } });
+		// The reader left meanwhile: the confirmation no longer applies, and the click is settled.
+		const awaiting = confirmed.matchedCount === 1 ? await targetDb.collection("enrollments").find({ contactId: contact._id, status: "awaiting_confirmation" }).toArray() : [];
+		for (const enrollment of awaiting) {
 			await targetDb.collection("enrollments").updateOne(
 				{ _id: enrollment._id, status: "awaiting_confirmation" },
 				{ $set: { status: "active", enrolledAt: at, steps: enrollment.steps.map(({ position }) => ({ position, status: "held" })), updatedAt: new Date() }, $inc: { __v: 1 } }
@@ -78,7 +80,7 @@ async function applyPending({ targetDb, action, execute }) {
 		}
 	}
 	if (action.kind === "keep" && contact.status === "dormant") {
-		await contacts.updateOne({ _id: contact._id }, { $set: { status: "active", updatedAt: new Date() } });
+		await contacts.updateOne({ _id: contact._id, status: "dormant" }, { $set: { status: "active", updatedAt: new Date() } });
 	}
 	await targetDb.collection("maiteam_cutover_pending").updateOne({ _id: action._id }, { $set: { appliedAt: new Date() } });
 	return { writes: 1, unresolved: 0 };
@@ -86,10 +88,17 @@ async function applyPending({ targetDb, action, execute }) {
 
 async function cancelEnrollments({ targetDb, contactId }) {
 	const enrollments = targetDb.collection("enrollments");
-	for (const enrollment of await enrollments.find({ contactId, status: { $in: ["awaiting_confirmation", "active"] } }).toArray()) {
-		const steps = enrollment.steps.map((step) => (OPEN_ENROLLMENT_STEPS.includes(step.status) ? { ...step, status: "cancelled" } : step));
-		await enrollments.updateOne({ _id: enrollment._id, __v: enrollment.__v }, { $set: { status: "cancelled", steps, updatedAt: new Date() }, $inc: { __v: 1 } });
-		await targetDb.collection("messages").updateMany({ enrollmentId: enrollment._id, status: "queued" }, { $set: { status: "skipped", error: CANCELLED_BEFORE_HANDOFF } });
+	const open = { contactId, status: { $in: ["awaiting_confirmation", "active"] } };
+	for (const { _id } of await enrollments.find(open).project({ _id: 1 }).toArray()) {
+		// Versioned like every enrollment write: one the server moved meanwhile is read again, never overwritten.
+		for (let attempt = 0; attempt < MERGE_ATTEMPTS; attempt += 1) {
+			const enrollment = await enrollments.findOne({ ...open, _id });
+			if (!enrollment) break;
+			const steps = enrollment.steps.map((step) => (OPEN_ENROLLMENT_STEPS.includes(step.status) ? { ...step, status: "cancelled" } : step));
+			const { matchedCount } = await enrollments.updateOne({ _id, __v: enrollment.__v }, { $set: { status: "cancelled", steps, updatedAt: new Date() }, $inc: { __v: 1 } });
+			if (matchedCount === 1) break;
+		}
+		await targetDb.collection("messages").updateMany({ enrollmentId: _id, status: "queued", sentAt: null }, { $set: { status: "skipped", error: CANCELLED_BEFORE_HANDOFF } });
 	}
 }
 
@@ -139,7 +148,7 @@ export async function catchUp({ sourceDb, targetDb, execute = false, release = f
 		for (const message of await targetDb.collection("messages").find({ migratedFromFork: true, status: "queued", sentAt: null }).toArray()) {
 			if (await oldMessages.findOne({ _id: message._id }, { projection: { _id: 1 } })) continue;
 			deleted += 1;
-			if (execute) await targetDb.collection("messages").deleteOne({ _id: message._id, status: "queued" });
+			if (execute) await targetDb.collection("messages").deleteOne({ _id: message._id, status: "queued", sentAt: null });
 		}
 		counts.messagesDeletedOnOld = deleted;
 		writes += deleted;

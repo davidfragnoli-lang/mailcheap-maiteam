@@ -33,9 +33,10 @@ const STUBS = {
 	"@/lib/maiteam/signup-protection": stub("maiteam-signup-protection.mjs"),
 };
 
-// MailCheap Cloud's marketing site extends the shared pages through this module where its file exists, as in
-// next.config.mjs. The open source has none, so the default stays.
-const SITE_EXTENSIONS = { "@/lib/site-extensions": "lib/marketing/site-extensions.js" };
+// MailCheap Cloud's marketing site extends the shared pages through these modules where their files exist, as in
+// next.config.mjs. The open source has none, so the defaults stay.
+// maiteam (P10): the components module too, as next.config.mjs resolves it, so the dashboard renders here as it builds.
+const SITE_EXTENSIONS = { "@/lib/site-extensions": "lib/marketing/site-extensions.js", "@/components/SiteExtensions": "components/marketing/SiteExtensions.jsx" };
 
 const EXTENSIONS = ["", ".js", ".jsx", ".mjs", "/index.js"];
 

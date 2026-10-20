@@ -157,6 +157,49 @@ describe("maiteam send gates", () => {
 		assert.equal((await capOf(user)).issued, 1);
 	});
 
+	// QA r2 item 2 (FRA-25999): a hold left behind by a failed release, retried through the real gate. QA's exact case:
+	// the account is full (max 1, sent 1) and the retained hold must not count as permission.
+	test("a retained hold is reused only while every reservation still fits the account's current room", async () => {
+		const user = await customer("retained", { contacts: 0 });
+		const newsletter = await m.Newsletter.findOne({ accountId: user.accountId, _id: user.newsletterId }).lean();
+		const queued = async () => (await m.Message.create({ accountId: user.accountId, newsletterId: user.newsletterId, kind: "test", email: "reader@retained.example.org", status: "queued" })).toObject();
+		const seed = (holds) => m.SesQuota.create({ _id: "ses-rolling-24h", revision: 1, issued: 0, reserved: holds.length, issuedLog: [], accountedSent: 0, accountedAt: Date.now() - 1000, holds });
+		const attempt = async (message) => {
+			let calls = 0;
+			const error = await m.gate
+				.gateDelivery({ message, newsletter, send: async () => ((calls += 1), { providerMessageId: "stub-only" }) })
+				.then(() => null, (caught) => caught);
+			return { calls, error };
+		};
+
+		const full = await queued();
+		await seed([{ key: `message:${full._id}`, amount: 1 }]);
+		Object.assign(quota, { max24HourSend: 1, sentLast24Hours: 1 });
+		const refused = await attempt(full);
+		assert.equal(refused.calls, 0);
+		assert.equal(refused.error?.name, "SendGateRefused");
+		assert.equal((await m.Message.findOne({ accountId: user.accountId, _id: full._id }).lean()).status, "queued");
+		assert.equal((await ledger()).holds.length, 1, "the hold stays until the email is sent or released");
+
+		// Another email's outstanding hold shares the room: two holds and one email of room is still refused.
+		await m.SesQuota.deleteMany({});
+		const other = await queued();
+		await seed([{ key: `message:${full._id}`, amount: 1 }, { key: `message:${other._id}`, amount: 1 }]);
+		Object.assign(quota, { max24HourSend: 2, sentLast24Hours: 1 });
+		m.gate.setSendGateSeamsForTests({});
+		assert.equal((await attempt(full)).calls, 0);
+
+		// With room for every reservation, the same hold is reused once, not taken twice.
+		Object.assign(quota, { max24HourSend: 10, sentLast24Hours: 1 });
+		m.gate.setSendGateSeamsForTests({});
+		const reused = await attempt(full);
+		assert.equal(reused.error, null);
+		assert.equal(reused.calls, 1);
+		const after = await ledger();
+		assert.deepEqual(after.holds.map(({ key }) => key), [`message:${other._id}`]);
+		assert.equal(after.issued, 1);
+	});
+
 	test("the real send slot refuses without a shared count when asked to fail closed", async () => {
 		const saved = [process.env.UPSTASH_REDIS_REST_URL, process.env.UPSTASH_REDIS_REST_TOKEN];
 		delete process.env.UPSTASH_REDIS_REST_URL;

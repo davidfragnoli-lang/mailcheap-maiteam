@@ -140,3 +140,27 @@ test("the card lists the newest unseen entries; closing it marks them all seen o
     "another account is untouched",
   );
 });
+
+// QA r2 item 3 (FRA-25999): the card where the owner sees it. The dashboard layout imports upstream's
+// @/components/SiteExtensions, which resolves to the maiteam module as next.config.mjs resolves it in the build.
+test("the dashboard layout renders the card for an owner with unseen entries", async () => {
+  const user = await signIn("whats-new-layout@example.com");
+  await activate(user);
+  const account = await m.Account.findById(user.accountId).lean();
+  const { WhatsNew } = await import("@/components/SiteExtensions");
+  assert.equal(WhatsNew, m.extensions.WhatsNew, "the build's alias resolves to the maiteam card");
+  const { default: LayoutDashboard } = await import("../components/LayoutDashboard.jsx");
+  const tree = await LayoutDashboard({ user: { name: "Owner", email: "whats-new-layout@example.com" }, account, isAdmin: false, children: null });
+  const found = [];
+  const walk = (node) => {
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (!node || typeof node !== "object") return;
+    if (node.type === WhatsNew) found.push(node);
+    walk(node.props?.children);
+  };
+  walk(tree);
+  assert.equal(found.length, 1, "the layout places the card once");
+  const html = renderToStaticMarkup(found[0]);
+  assert.match(html, /What&#x27;s new/);
+  assert.ok(html.includes(CHANGELOG[0].title));
+});

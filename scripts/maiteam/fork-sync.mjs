@@ -79,17 +79,37 @@ export function mergeCap(current, incoming) {
 	return { ...current, issued: incoming.issued, revision: Math.max(current.revision ?? 0, incoming.revision ?? 0) + 1 };
 }
 
+export const MERGE_ATTEMPTS = 20;
+
 // Writes one document by the rules, unless the result is what the target already holds. Returns 1 for a write.
+// The side written to still takes writes of its own while this runs (a reader's click during the hold, a late provider
+// event), so the write is a compare-and-swap: it replaces the document only if it is still exactly the one merged. One
+// changed in between is read again and merged again, the reader's change included. An insert that lost to the same
+// document arriving meanwhile is merged the same way.
 export async function upsertMerged({ collection, doc, merge, execute, filter = { _id: doc._id } }) {
-	const current = await collection.findOne(filter);
-	if (!current) {
-		if (execute) await collection.insertOne(doc);
-		return 1;
+	for (let attempt = 0; attempt < MERGE_ATTEMPTS; attempt += 1) {
+		const current = await collection.findOne(filter);
+		if (!current) {
+			if (!execute) return 1;
+			try {
+				await collection.insertOne(doc);
+				return 1;
+			} catch (error) {
+				// A duplicate of this very document (by the filter) is a race to merge; any other is a real collision.
+				if (error?.code !== 11000 || !(await collection.findOne(filter))) throw error;
+				continue;
+			}
+		}
+		const merged = merge ? merge(current, doc) : current;
+		if (same(merged, current)) return 0;
+		if (!execute) return 1;
+		const { matchedCount } = await collection.replaceOne(
+			{ _id: current._id, $expr: { $eq: ["$$ROOT", { $literal: current }] } },
+			{ ...merged, _id: current._id }
+		);
+		if (matchedCount === 1) return 1;
 	}
-	const merged = merge ? merge(current, doc) : current;
-	if (same(merged, current)) return 0;
-	if (execute) await collection.replaceOne({ _id: current._id }, { ...merged, _id: current._id });
-	return 1;
+	throw new Error(`${collection.collectionName}: a document kept changing during the merge (${MERGE_ATTEMPTS} attempts); nothing was overwritten`);
 }
 
 // What a side wrote at or after `since`: by its timestamps, or by its id's creation time for a document written
