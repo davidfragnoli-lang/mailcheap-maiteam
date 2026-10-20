@@ -1,0 +1,66 @@
+# PATCHES.md: maiteam's delta on upstream mailcheap
+
+This file lists everything our deployment (mailcheap.maiteam.ch) changes on top of `marclou/mailcheap`. The weekly upstream sync re-applies these patches. Each one has to stay small, separate and justified. A patch is not permission to cherry-pick old commits: each one is rebuilt against the upstream code it lands on.
+
+- Upstream base: `bb82ec6` (upstream/main, fetched 2026-10-20 14:40 UTC). License AGPL-3.0, Marc Lou's notices unchanged.
+- Old fork: `67d13b0` (MIT, 10 Oct) plus 28 commits up to `origin/production` `d190983`. Accepted but undeployed: `feat/maifortune-welcome` `69a87f1` (3 commits).
+- Classification: **drop** (upstream has a proven equivalent), **re-port** (upstream lacks it or is weaker), **config/docs**. Equivalence was checked in upstream code at `bb82ec6`, not by feature name.
+
+## Inventory of the 28 + 3 local commits
+
+| Commit | What it does | Upstream at bb82ec6 | Class | Patch |
+|---|---|---|---|---|
+| dd6dd62 | Pins functions to fra1 | No `vercel.json`, no `preferredRegion` | config | P1 |
+| cbb7de2 | Engines `node: 22.x` | `"node": ">=22"`, so Vercel may pick 24 | config | P1 |
+| e786486 | Portable UTC label test; slow-input budget | Slow-input test now measures against its own baseline. The UTC test still asserts a literal `"UTC"`, which prints `GMT+0` on Node 22 ICU | slow-input half: drop. UTC half: re-port | P9 |
+| 0c5e305 | SES rolling-24h quota precheck and reservation ledger; stale or missing quota refuses | `lib/ses.js:107-115` reads the quota, but only for admin display (`sending-capacity.js:78`, `app/admin/page.js:43`) | **re-port** | P4 |
+| ba7c850 | Rate = min(app target, configured, SES `MaxSendRate`); refuses on a Redis error | `lib/send-rate.js:44-60` uses a fixed `SEND_RATE_PER_SECOND` (default 14) and falls back to per-instance spacing when Redis fails | **re-port** | P4 |
+| ca28928, 0b61f26 | Per-newsletter UTC-day cap (0 = closed, missing = refuse); per-domain warm-up 50→1000/day | Plan caps and warm-up are off unless `MAILCHEAP_CLOUD=true` (`plans.js:81`, `sending.js:679,686`). Upstream's warm-up stretches a send and never refuses | **re-port** | P4 |
+| f1abfec | Public signup refuses when Redis is missing, throws or times out | `lib/rate-limit.js:77-87` falls back to process memory | **re-port** | P4 |
+| 6f54b49 | Missing demo ledger treated as empty | No demo ledger | drop | — |
+| 8d9679d, b7c056e | GitHub deployment provenance rule | Not in upstream AGENTS.md | docs | P0 |
+| 21bd02d | Welcome sequences: Sequence/Enrollment, QStash step job, dashboard, `sequence` on POST contacts | None. One welcome email per newsletter, never together with confirmation (`sending-rules.js:62`) | **re-port** | P6 |
+| 0a752eb | Sequence signup fix; an ambiguous provider result keeps the budget holds | None | re-port, folded into P6 | P6 |
+| d5c1be8 | Cancellation exclusive with provider handoff (compare-and-swap on in-flight) | None | re-port, folded into P6 | P6 |
+| 98e1bf6 | Saved welcome sent after a confirmed opt-in | Upstream sends welcome or confirmation, never both, on purpose | re-port as "a sequence replaces the welcome" at confirm, not by changing upstream's rule | P6 |
+| 77082f4 | Bilingual demo capped at six sends | None. The demo is spent | drop (ledger archived in the migration) | — |
+| 0f4f8d4, 2f1e1d5, 3f4ab7b | Script loading the accepted EN/FR series with a hashed receipt; warm-up tie-in | None | config (ops script, rewritten for `accountId`) | P6 |
+| 3a07003 | Turnstile, signed fill stamp, honeypot, address checks (typo, vendored disposable list, MX) | BotID Basic (free; no Pro feature used), but it **fails open** on the archive form (`bot-check.js:25-27`). Honeypot yes. Fill time only on embeds. Disposable check only at account sign-up. DNS errors pass (`mail-domains.js:29-37`). No bluewin typo | **re-port** on top of upstream's checks | P5 |
+| 6591df4, e227491 | AGENTS wording | — | docs | P0 |
+| d6791ba, f2d4629 | Merges | — | disappear | — |
+| 2da05c5, 4520f30 | Per-newsletter email looks (landing, letter), card, wordmark, dark-mode block | Presets with 3 colours. No email dark mode, no card, no wordmark, no separate link colour (`themes.js:375-414`) | **re-port** | P3 |
+| bddc10e | Picker at creation; per-issue and per-step look; maiteam look | Per newsletter only (`render-email.js:242`) | **re-port**: maiteam presets; per-issue look only if migrated data uses it | P3 |
+| d190983 | Four email-safe font stacks inline on every text element | Webfonts in head CSS plus an Outlook block. Gmail drops head CSS | **re-port**: email-safe entries | P3 |
+| a9781a2 | Signed waitlist webhook; cancel enrollments on bounce, complaint and unsubscribe; offline dry run | None. Embed form and REST API only | **re-port** on upstream's `addSignup` | P6 |
+| 54dd9e0 | Approved maiteam EN/FR copy fixtures | — | config (fixtures) | P6 |
+| 69a87f1 | Replay claim retryable while in progress; dashboard keeps step 1's day | — | re-port, folded into P6 | P6 |
+
+Upstream controls that are **stronger** than ours and are kept as they are:
+- Bounce/complaint pause with low minimums, checked every batch, plus account blocks at 5% / 0.3% (`config.js:136-137`, `account-health.js:60`).
+- First-send slice: 5% of never-mailed contacts, then a 3 h check (`sending.js:480-497`).
+- Global never-email list, and claim-before-send batches that stop when `SENDING_ENABLED` turns off (`sending.js:916-996`).
+
+Our gates are added on top of these. Upstream's own checks are not removed, so the stricter rule always applies.
+
+## Patches, in commit order
+
+| # | Patch | Kind | Why upstream lacks it | Propose upstream? |
+|---|---|---|---|---|
+| P0 | This file; AGENTS.md: GitHub provenance, standing send controls, what the source implements | docs | Deployment-specific | No |
+| P1 | `vercel.json` fra1; `engines.node` `22.x` | config | Deployment-specific | No |
+| P2 | Product names in lowercase wherever a person sees them: mailcheap, fortuna, quote-to-invoice (FRA-25997) | brand | Upstream brands itself "MailCheap" | No |
+| P3 | Email looks: maiteam company/fortuna/quote-to-invoice presets from the maiteam design system; davidfragnoli.ch landing look kept; button colour apart from link colour; email-safe Helvetica/Georgia stacks | brand + renderer | Upstream presets have one accent and webfonts only | The separate button/link colour and the email-safe fonts, yes |
+| P4 | Send gates on top of upstream's: SES 24 h quota reservation, rate ≤ SES `MaxSendRate` and fail-closed on Redis, per-newsletter daily cap and domain warm-up on self-hosted, fail-closed public signup limits | safety | Upstream's caps are Cloud-only; its rate and signup limits fail open | Quota reservation and fail-closed signup, yes, as options |
+| P5 | Turnstile (host + action bound, fail-closed), fill stamp on the archive form, vendored disposable list, DNS fail-closed, bluewin typo | safety | BotID Basic fails open on the archive form | Fail-closed BotID option, yes |
+| P6 | Welcome sequences 0/3/7 (EN/FR), enrollment state, waitlist webhook, cancellation on bounce/complaint/unsubscribe; account-scoped | feature | Upstream has a single welcome email | Possibly, if Marc wants sequences |
+| P7 | AGPL §13 "Source" link in the subscriber-facing footer to the exact deployed commit | compliance | Upstream's own source is already public | No |
+| P8 | Migration script from the single-admin fork: Account + `accountId` backfill, theme mapping, sequences, ledgers | data (script, run once) | Fork-specific | No |
+| P9 | UTC label test portable on Node 22 ICU | test | Upstream runs a different ICU | Yes |
+
+## Self-hosted configuration (env, not code)
+
+- `MAILCHEAP_CLOUD` unset: no Stripe, no plan limits, sign-in limited to `ADMIN_EMAILS` / `ALLOWED_EMAILS`. No `SHARED_DOMAIN`, `DNS_BROKER_*` or `ARCHIVE_CNAME_TARGET`, so no shared `*.mailcheap.ai` addresses. No Stripe or Crisp keys. If a Cloud-only function turns out to have no env switch, the gap goes to COO and is not patched silently.
+- `SES_REGION=eu-north-1`. `EMAIL_PROVIDER=ses`. `SENDING_ENABLED` keeps its current value. `SEND_RATE_PER_SECOND` keeps its current value.
+- OpenAI content check: off unless a key is configured.
+- **Link compatibility:** unsubscribe and confirmation tokens use the same HKDF info (`mailcheap-unsubscribe-v1`) and the same payload shape on both sides. Links in emails already sent keep working only if `BETTER_AUTH_SECRET` is set to the current `SESSION_SECRET` and every contact and newsletter keeps its ObjectId. This is a hard requirement of the migration.
+- New required secrets: `SUPPRESSION_HASH_KEY` (new, 32+ characters), `EMAIL_FROM` for sign-in codes (an address on the verified SES domain), `ADMIN_EMAILS`.

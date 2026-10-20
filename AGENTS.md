@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # MailCheap
 
-Read this before working on MailCheap. If `AGENTS.cloud.md` is next to it (MailCheap Cloud's own repository), read that too.
+Read this before working on MailCheap. If `AGENTS.cloud.md` is next to it (MailCheap Cloud's own repository), read that too. On maiteam's deployment, read `AGENTS.maiteam.md` too.
 
 ## What it is
 
