@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { accountScoped } from "../lib/account-scope.js";
+import { lookFields } from "./maiteam-look-fields.js";
 
 const newsletterSchema = new mongoose.Schema(
 	{
@@ -81,6 +82,9 @@ const newsletterSchema = new mongoose.Schema(
 			radius: { type: String },
 			shadow: { type: String },
 			spacing: { type: String },
+			// maiteam (PATCHES.md P3c): the email look its emails take instead of the theme above, stored as saved
+			// (lib/maiteam/email-look.js). Unset: upstream's email theme. The website keeps the theme above.
+			look: lookFields,
 		},
 	},
 	{ timestamps: true }

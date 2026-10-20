@@ -25,6 +25,7 @@ import CardSettings from "@/components/CardSettings";
 import DialogDiscardCampaign from "@/components/DialogDiscardCampaign";
 import DialogPreviewEmail from "@/components/DialogPreviewEmail";
 import EditorRich from "@/components/EditorRich";
+import RowLookCampaign from "@/components/maiteam/RowLookCampaign";
 import ListChecks from "@/components/ListChecks";
 import NavSteps from "@/components/NavSteps";
 import PanelSend from "@/components/PanelSend";
@@ -87,6 +88,8 @@ export default function FormCampaign({
 		subject: campaign.subject,
 		previewText: campaign.previewText,
 		body: initialBody,
+		// maiteam (PATCHES.md P3c): the issue's own email look; HTML issues keep their own design.
+		...(!isHtml && { look: campaign.look ?? null }),
 	});
 	const save = useCallback((snapshot) => saveCampaign(campaign._id, { ...snapshot, format }), [campaign._id, format]);
 	const { isDirty, isSaving, savedAt, error, flush } = useAutosave(values, save);
@@ -119,6 +122,7 @@ export default function FormCampaign({
 				subject: deferredValues.subject,
 				previewText: deferredValues.previewText,
 				newsletter,
+				look: deferredValues.look,
 			}),
 		[format, deferredValues, newsletter]
 	);
@@ -249,6 +253,7 @@ export default function FormCampaign({
 	}
 
 	const updateBody = useCallback((body) => setValues((current) => ({ ...current, body })), []);
+	const updateLook = useCallback((look) => setValues((current) => ({ ...current, look })), []);
 
 	const sendAction =
 		sending.choice === "now"
@@ -360,6 +365,7 @@ export default function FormCampaign({
 									className="h-11 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
 								/>
 							</RowCampaign>
+							{!isHtml && <RowLookCampaign value={values.look} onChange={updateLook} newsletter={newsletter} />}
 						</div>
 						{isHtml ? (
 							<div className="relative">

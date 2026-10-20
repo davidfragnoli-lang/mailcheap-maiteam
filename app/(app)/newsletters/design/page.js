@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import FormTheme from "@/components/FormTheme";
 import HeaderPage from "@/components/HeaderPage";
+import CardEmailLook from "@/components/maiteam/CardEmailLook";
 import { DESIGN_SECTION, SETTINGS_PATH } from "@/lib/newsletter-sections";
 import { scoped } from "@/lib/account-scope";
 import { ADD_NEWSLETTER_PATH } from "@/lib/newsletters";
@@ -29,6 +30,12 @@ export default async function DesignPage() {
 			<HeaderPage title={DESIGN_SECTION.label} backHref={SETTINGS_PATH} />
 			<FormTheme
 				key={String(newsletter._id)}
+				newsletter={serialize(newsletter)}
+				postalAddress={getPostalAddress(newsletter, siteExtensions.defaultPostalAddress)}
+			/>
+			{/* maiteam (PATCHES.md P3c): the email look, saved apart from the theme. */}
+			<CardEmailLook
+				key={`look-${newsletter._id}`}
 				newsletter={serialize(newsletter)}
 				postalAddress={getPostalAddress(newsletter, siteExtensions.defaultPostalAddress)}
 			/>

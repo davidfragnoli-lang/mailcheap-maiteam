@@ -32,6 +32,8 @@ export async function saveCampaign(id, values) {
 		previewText: String(values?.previewText ?? "").slice(0, MAX_PREVIEW_TEXT_LENGTH),
 		content: String(values?.body ?? ""),
 		...(values?.format && { format: values.format }),
+		// maiteam (PATCHES.md P3c): the issue's own email look, null for the newsletter's.
+		...(values && "look" in values && { look: values.look ?? null }),
 	});
 	if (failure) return toFormError(failure);
 	revalidatePath("/campaigns");

@@ -76,3 +76,11 @@ export async function saveTheme(newsletterId, theme) {
 	revalidatePath("/newsletters", "layout");
 	return { ok: true, theme: output.theme };
 }
+
+// maiteam (PATCHES.md P3c): the email look on the Design page (CardEmailLook); null takes it away.
+export async function saveEmailLook(newsletterId, look) {
+	const { output, failure } = await runDashboardAction("update_newsletter_email_look", { id: String(newsletterId ?? ""), look: look ?? null });
+	if (failure) return toFormError(failure);
+	revalidatePath("/newsletters", "layout");
+	return { ok: true, look: output.look };
+}

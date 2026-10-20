@@ -79,11 +79,26 @@ export default function DesignPage() {
 				changed colors included, looks the same for everyone, so a dark theme like Midnight stays dark.
 			</p>
 
+			<h2 id="email-looks">Email looks</h2>
+			<p>
+				Under the themes, Email look gives your emails a look of their own while your website keeps the theme: Landing page (paper,
+				a lighter card, serif text, a text wordmark with an orange full stop and one orange rule), Letter (white, the subject as a
+				serif headline) or maiteam (with who sends it: maiteam, fortuna or quote-to-invoice). Each look sets its fonts, which every
+				mail app already has, its colours, a layout, the wordmark, the headline and the footer, and can carry dark colours for mail
+				apps that follow the reader&apos;s dark mode. A warning shows colours that are hard to read. A link written as{" "}
+				<code>&lt;a href=&quot;…&quot; data-button&gt;</code> becomes the look&apos;s button.
+			</p>
+			<p>
+				In the editor, Email look under the preview text gives one issue its own look; Newsletter default keeps the
+				newsletter&apos;s. An issue sent as HTML keeps its own design.
+			</p>
+
 			<h2 id="api">From the API and AI assistants</h2>
 			<p>
 				<Link href="/docs/api#list-themes">List themes</Link> gives the themes, fonts and choices, and{" "}
-				<Link href="/docs/api#update-newsletter">update a newsletter</Link> sets the theme and what&apos;s changed on top of it. Your
-				AI assistant does the same through MCP. <Link href={getHelpHref("api-and-ai")}>API and AI assistants</Link>
+				<Link href="/docs/api#update-newsletter">update a newsletter</Link> sets the theme and what&apos;s changed on top of it.{" "}
+				<Link href="/docs/api#update-newsletter-email-look">Set a newsletter&apos;s email look</Link> sets the email look, and update
+				a campaign&apos;s look an issue&apos;s own. Your AI assistant does the same through MCP. <Link href={getHelpHref("api-and-ai")}>API and AI assistants</Link>
 			</p>
 		</ArticleHelp>
 	);

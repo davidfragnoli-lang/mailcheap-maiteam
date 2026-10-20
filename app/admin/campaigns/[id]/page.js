@@ -55,6 +55,7 @@ export default async function AdminCampaignPage({ params }) {
 		subject: campaign.subject,
 		previewText: campaign.previewText,
 		newsletter,
+		look: campaign.look,
 	});
 
 	return (

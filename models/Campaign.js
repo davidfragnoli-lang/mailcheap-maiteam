@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { accountScoped } from "../lib/account-scope.js";
+import { lookFields } from "./maiteam-look-fields.js";
 
 export const CAMPAIGN_STATUSES = ["draft", "scheduled", "sending", "paused", "sent", "canceled"];
 
@@ -38,6 +39,9 @@ const campaignSchema = new mongoose.Schema(
 		format: { type: String, enum: ["markdown", "html", "rich"], default: "rich" },
 		markdown: { type: String, default: "" },
 		html: { type: String, default: "" },
+		// maiteam (PATCHES.md P3c): this issue's own email look (lib/maiteam/email-look.js). Unset: the newsletter's
+		// (theme.look). HTML issues keep their own design.
+		look: lookFields,
 		status: { type: String, enum: CAMPAIGN_STATUSES, default: "draft" },
 		// Why a send paused itself; a code from lib/account-state.js when the account or plan stopped it.
 		pauseReason: { type: String },

@@ -68,6 +68,7 @@ export default function CampaignReport({
 		subject: campaign.subject,
 		previewText: campaign.previewText,
 		newsletter,
+		look: campaign.look,
 	});
 	const sender = {
 		name: newsletter.name,
