@@ -11,6 +11,7 @@
 // - an event is added once, by its id;
 // - otherwise the newer document (updatedAt) wins.
 
+import mongoose from "mongoose";
 import { canonical } from "./integrity.mjs";
 
 export const LEFT = ["unsubscribed", "bounced", "complained"];
@@ -91,19 +92,39 @@ export async function upsertMerged({ collection, doc, merge, execute, filter = {
 	return 1;
 }
 
-// The documents a side wrote at or after `since`.
-export function changedSince(collection, name, since) {
-	if (!TIMESTAMPED.includes(name)) return collection.find({}).toArray();
-	return collection.find({ $or: [{ updatedAt: { $gte: since } }, { createdAt: { $gte: since } }] }).toArray();
+// What a side wrote at or after `since`: by its timestamps, or by its id's creation time for a document written
+// without them.
+// An id holds whole seconds: rounded down, the copy can only take a document more; rounded up, the quiet check
+// below can only miss one written without timestamps in that same second.
+export function changedFilter(since, round = Math.floor) {
+	const at = new Date(since);
+	return { $or: [{ updatedAt: { $gte: at } }, { createdAt: { $gte: at } }, { _id: { $gte: mongoose.Types.ObjectId.createFromTime(round(at.getTime() / 1000)) } }] };
 }
 
-// Pass after pass until one changes nothing. Without execute, one counting pass.
-export async function converge({ pass, execute, maxPasses = 10 }) {
+export function changedSince(collection, name, since) {
+	if (!TIMESTAMPED.includes(name)) return collection.find({}).toArray();
+	return collection.find(changedFilter(since)).toArray();
+}
+
+// How many documents the source side wrote since `start`: a pass that changed nothing still doesn't count while the
+// source kept writing during it.
+export async function writtenSince(db, start) {
+	let count = 0;
+	for (const name of TIMESTAMPED) count += await db.collection(name).countDocuments(changedFilter(start, Math.ceil));
+	return count;
+}
+
+// Pass after pass, until one changes nothing and the source wrote nothing while it ran. Without execute, one counting
+// pass. `quietMs` reaches back before each pass's start, for clocks a little apart.
+export async function converge({ pass, execute, maxPasses = 10, source = null, quietMs = 2_000 }) {
 	const passes = [];
 	for (let index = 0; index < (execute ? maxPasses : 1); index += 1) {
+		const start = new Date(Date.now() - quietMs);
 		const result = await pass(index);
-		passes.push(result);
-		if (result.writes === 0) return { converged: true, passes };
+		const sourceWrites = source ? await writtenSince(source, start) : 0;
+		passes.push({ ...result, sourceWrites });
+		if (result.writes === 0 && sourceWrites === 0) return { converged: true, passes };
+		if (result.writes === 0) await new Promise((resolve) => setTimeout(resolve, quietMs));
 	}
-	return { converged: !execute ? passes[0].writes === 0 : false, passes };
+	return { converged: false, passes };
 }

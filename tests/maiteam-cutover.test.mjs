@@ -131,7 +131,8 @@ test("the migration lands in the hold: account blocked, running sequences paused
 });
 
 test("between the dump and the switch, the old server's writes and the new server's clicks are all kept", async () => {
-	const later = new Date(dumpedAt.getTime() + 1_000);
+	await new Promise((resolve) => setTimeout(resolve, 5));
+	const later = new Date();
 	// The old server, still serving: step 1 goes out, two readers sign up, an address bounces.
 	const sentMessage = id();
 	await oldDb.collection("messages").insertOne({ _id: sentMessage, kind: "sequence", newsletterId, contactId: readerA, sequenceId, enrollmentId: enrollmentA, stepPosition: 1, email: "a@reader.example.org", status: "sent", sentAt: later, sesMessageId: "old-ses-after-dump", createdAt: later, updatedAt: later });
@@ -211,7 +212,8 @@ test("the release unblocks the account; Resume rebuilds each job once and never 
 });
 
 test("a rollback carries the new server's writes back, with a write landing mid-pass, and finished steps stay finished", async () => {
-	const later = new Date(Math.max(Date.now(), releasedAt.getTime()) + 1_000);
+	await new Promise((resolve) => setTimeout(resolve, 5));
+	const later = new Date();
 	const [sentStep2, readerD, enrollmentD, queuedD] = [id(), id(), id(), id()];
 	// The new server after the release: A's step 2 sent, A then unsubscribes, D signs up and its step 1 is put off.
 	await newDb.collection("messages").insertOne({ _id: sentStep2, accountId, kind: "sequence", newsletterId, contactId: readerA, sequenceId, enrollmentId: enrollmentA, stepPosition: 2, email: "a@reader.example.org", status: "delivered", sentAt: later, providerMessageId: "new-ses-step-2", createdAt: later, updatedAt: later });

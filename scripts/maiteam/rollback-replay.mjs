@@ -63,7 +63,7 @@ export async function holdOldSequences({ oldDb, execute = false }) {
 
 // `since` defaults to the dump time in the new database's cutover record: everything the new server did from the hold on,
 // clicks during the hold included, goes back. Documents the old server already has merge to no change.
-export async function replay({ newDb, oldDb, since, execute = false, maxPasses = 10 }) {
+export async function replay({ newDb, oldDb, since, execute = false, maxPasses = 10, quietMs }) {
 	const cutover = await newDb.collection("maiteam_cutover").findOne({ _id: "fork-cutover" });
 	const at = new Date(since ?? cutover?.since ?? NaN);
 	if (!Number.isFinite(at.getTime())) throw new Error("No cutover record: pass --since, the time the dump began, as an ISO date");
@@ -132,7 +132,7 @@ export async function replay({ newDb, oldDb, since, execute = false, maxPasses =
 		return { writes, counts, ambiguousSteps };
 	};
 
-	const { converged, passes } = await converge({ pass, execute, maxPasses });
+	const { converged, passes } = await converge({ pass, execute, maxPasses, source: newDb, quietMs });
 	Object.assign(report, { converged, passes, ambiguousSteps: passes.at(-1).ambiguousSteps });
 	report.checks = await verifyReplay({ newDb, oldDb, since: at, contactIds });
 	return report;

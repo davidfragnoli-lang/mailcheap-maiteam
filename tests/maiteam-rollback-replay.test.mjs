@@ -31,7 +31,8 @@ before(async () => {
 after(() => app?.stop());
 
 test("a rollback replays what readers did on the new server, once", async () => {
-	const later = new Date(Date.now() + 60_000);
+	await new Promise((resolve) => setTimeout(resolve, 5));
+	const later = new Date();
 	const accountId = (await newDb.collection("accounts").findOne({}))._id;
 	await newDb.collection("contacts").updateOne({ _id: leaves }, { $set: { status: "unsubscribed", unsubscribedAt: later, updatedAt: later } });
 	await newDb.collection("contacts").updateOne({ _id: confirms }, { $set: { status: "active", confirmedAt: later, updatedAt: later } });
@@ -54,4 +55,45 @@ test("a rollback replays what readers did on the new server, once", async () => 
 	const again = await replay({ newDb, oldDb, execute: true });
 	assert.deepEqual([again.passes.length, again.passes[0].writes], [1, 0], "a second run changes nothing");
 	assert.equal(await oldDb.collection("suppressions").countDocuments({ email: "bounced@r.invalid" }), 1);
+});
+
+// QA r1 item 4: a write that lands during a pass with nothing else to do, and a document written without timestamps.
+test("a pass that changes nothing still repeats when the new side wrote meanwhile; untimestamped documents are found", async () => {
+	const accountId = (await newDb.collection("accounts").findOne({}))._id;
+	await newDb.collection("messages").insertOne({ _id: id(), accountId, kind: "campaign", newsletterId, status: "sent", sentAt: new Date(), providerMessageId: "no-timestamps-1" });
+	let injected = false;
+	const racing = new Proxy(newDb, {
+		get(target, prop) {
+			if (prop !== "collection") return Reflect.get(target, prop).bind?.(target) ?? Reflect.get(target, prop);
+			return (name) => {
+				const collection = target.collection(name);
+				if (name !== "contacts") return collection;
+				return new Proxy(collection, {
+					get(inner, key) {
+						if (key !== "find") return Reflect.get(inner, key).bind?.(inner) ?? Reflect.get(inner, key);
+						return (...args) => {
+							const cursor = inner.find(...args);
+							return {
+								project: (...more) => cursor.project(...more),
+								toArray: async () => {
+									if (!injected) {
+										injected = true;
+										await target.collection("suppressions").insertOne({ _id: id(), accountId, email: "midpass@r.invalid", reason: "complaint", createdAt: new Date(), updatedAt: new Date() });
+									}
+									return cursor.toArray();
+								},
+							};
+						};
+					},
+				});
+			};
+		},
+	});
+	const first = await replay({ newDb, oldDb, execute: true });
+	assert.ok(await oldDb.collection("messages").findOne({ sesMessageId: "no-timestamps-1" }), "found by its id's creation time");
+	assert.equal(first.converged, true);
+	const report = await replay({ newDb: racing, oldDb, execute: true, quietMs: 0 });
+	assert.equal(report.converged, true, JSON.stringify(report.passes));
+	assert.deepEqual(report.passes.map(({ writes, sourceWrites }) => [writes, sourceWrites > 0]), [[0, true], [1, false], [0, false]]);
+	assert.ok(await oldDb.collection("suppressions").findOne({ email: "midpass@r.invalid" }), "the mid-pass suppression reached the old database");
 });

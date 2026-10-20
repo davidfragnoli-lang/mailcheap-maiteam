@@ -93,7 +93,7 @@ async function cancelEnrollments({ targetDb, contactId }) {
 	}
 }
 
-export async function catchUp({ sourceDb, targetDb, execute = false, release = false, maxPasses = 10, now = new Date() }) {
+export async function catchUp({ sourceDb, targetDb, execute = false, release = false, maxPasses = 10, quietMs, now = new Date() }) {
 	const cutover = await targetDb.collection("maiteam_cutover").findOne({ _id: CUTOVER_ID });
 	if (!cutover) throw new Error("The target has no cutover record: run scripts/maiteam/migrate-from-fork.mjs first");
 	if (cutover.state !== "holding") throw new Error(`The cutover is ${cutover.state}: a catch-up now would overwrite the new server's own writes`);
@@ -156,7 +156,7 @@ export async function catchUp({ sourceDb, targetDb, execute = false, release = f
 		return { writes, unresolved, counts };
 	};
 
-	const { converged, passes } = await converge({ pass, execute, maxPasses });
+	const { converged, passes } = await converge({ pass, execute, maxPasses, source: sourceDb, quietMs });
 	report.converged = converged;
 	report.passes = passes;
 	report.checks = await verifyCatchUp({ sourceDb, targetDb, since, accountId });
