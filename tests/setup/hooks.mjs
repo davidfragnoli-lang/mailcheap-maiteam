@@ -29,6 +29,8 @@ const STUBS = {
 	"@/lib/mail-domains": stub("mail-domains.mjs"),
 	"@/lib/dns-broker": stub("dns-broker.mjs"),
 	"@/lib/remote-image": stub("remote-image.mjs"),
+	// maiteam (P5): off unless a test turns it on.
+	"@/lib/maiteam/signup-protection": stub("maiteam-signup-protection.mjs"),
 };
 
 // MailCheap Cloud's marketing site extends the shared pages through this module where its file exists, as in

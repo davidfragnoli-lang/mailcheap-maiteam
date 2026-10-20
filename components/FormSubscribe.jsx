@@ -1,14 +1,19 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { Check, Loader2, MailOpen } from "lucide-react";
 import { subscribe } from "@/app/archive/actions";
+import FieldsSignupProtection from "@/components/maiteam/FieldsSignupProtection";
 import { Button } from "@/components/ui/button";
+import { useSignupProtection } from "@/lib/maiteam/use-signup-protection";
 import { storeValue, subscribedKey } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 export default function FormSubscribe({ newsletterSlug, className }) {
 	const [state, action, isPending] = useActionState(subscribe, null);
+	// maiteam (P5): Turnstile, the fill stamp and typo suggestions.
+	const formRef = useRef(null);
+	const protection = useSignupProtection(state, formRef);
 
 	useEffect(() => {
 		if (state?.ok && !state.pending) storeValue(subscribedKey(newsletterSlug), 1);
@@ -31,7 +36,7 @@ export default function FormSubscribe({ newsletterSlug, className }) {
 	}
 
 	return (
-		<form action={action} className={cn("w-full", className)}>
+		<form ref={formRef} action={action} className={cn("w-full", className)}>
 			<input type="hidden" name="newsletter" value={newsletterSlug} />
 			<div aria-hidden="true" className="absolute -left-[10000px] size-px overflow-hidden">
 				<input type="text" name="website" tabIndex={-1} autoComplete="off" />
@@ -44,13 +49,16 @@ export default function FormSubscribe({ newsletterSlug, className }) {
 					autoComplete="email"
 					placeholder="you@example.com"
 					aria-label="Email"
+					value={protection.email}
+					onChange={protection.onEmailChange}
 					className="h-9 min-w-0 flex-1 bg-transparent px-2.5 text-base outline-none placeholder:text-muted-foreground"
 				/>
 				<Button type="submit" disabled={isPending} className="h-9 min-w-24 rounded-md px-4">
 					{isPending ? <Loader2 className="animate-spin" /> : "Subscribe"}
 				</Button>
 			</div>
-			{state?.error && (
+			<FieldsSignupProtection state={state} protection={protection} />
+			{state?.error && !state.suggestion && (
 				<p role="alert" className="mt-2 text-sm text-destructive">
 					{state.error}
 				</p>

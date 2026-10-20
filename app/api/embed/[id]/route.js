@@ -6,6 +6,7 @@ import { getAppSecret, getAppUrl } from "@/lib/config";
 import { cleanFirstName } from "@/lib/contact-fields";
 import { getSignupProblem } from "@/lib/contacts";
 import { connectDb } from "@/lib/db";
+import { checkFormSignup } from "@/lib/maiteam/signup-protection";
 import { findSignupNewsletter } from "@/lib/public-newsletters";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 import {
@@ -95,6 +96,9 @@ export async function POST(request, { params }) {
 	if (await isRateLimited({ ...PER_EMAIL, key: hashEmail(email) })) {
 		return reply.error(429, "This address signed up too many times today. Try again tomorrow.");
 	}
+	// maiteam (P5): a per-visitor limit that fails closed, the disposable list, bluewin typos, and DNS that fails closed.
+	const refusal = await checkFormSignup({ email, clientIp: getClientIp(request.headers) });
+	if (refusal) return reply.error(refusal.status, refusal.message);
 	const problem = await getSignupProblem(email);
 	if (problem) return reply.error(400, problem);
 

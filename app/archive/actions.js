@@ -8,6 +8,7 @@ import { isSendingEnabled } from "@/lib/config";
 import { getSignupProblem, upsertContact } from "@/lib/contacts";
 import { connectDb } from "@/lib/db";
 import { getInbox } from "@/lib/inbox-links";
+import { checkArchiveSignup, startArchiveSignup } from "@/lib/maiteam/signup-protection";
 import { findSignupNewsletter } from "@/lib/public-newsletters";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 import { queueConfirmationEmail, queueWelcomeEmail } from "@/lib/sending";
@@ -18,6 +19,11 @@ const PER_IP = { name: "subscribe-ip", limit: 5, window: "10 m" };
 // A flood from many IPs (list bombing) still needs a look: it fills the list with spam traps.
 const PER_NEWSLETTER = { name: "subscribe-newsletter", limit: 300, window: "10 m" };
 
+// maiteam (P5): signs when the form appeared, for the fill-time check. Archive pages are cached, so it can't be rendered in.
+export async function startSignup() {
+	return startArchiveSignup();
+}
+
 export async function subscribe(_state, formData) {
 	// People never see this field; bots fill in every input they find.
 	if (formData.get("website")) return { ok: true };
@@ -26,7 +32,10 @@ export async function subscribe(_state, formData) {
 	if (!email) return { error: "Enter a valid email" };
 
 	// Before the rate limit, so a script doesn't use up the signups of the network it shares with readers.
-	if (await isBotRequest("signup")) return { error: "Couldn't sign you up. Try again in a minute." };
+	// maiteam (P5): fail closed, then Turnstile, the fill stamp, the address checks and a per-visitor limit that fails closed.
+	if (await isBotRequest("signup", { failClosed: true })) return { error: "Couldn't sign you up. Try again in a minute." };
+	const refusal = await checkArchiveSignup(formData, { clientIp: getClientIp(await headers()) });
+	if (refusal) return refusal;
 	if (await isRateLimited({ ...PER_IP, key: getClientIp(await headers()) })) {
 		return { error: "Too many signups from your network. Try again in a few minutes." };
 	}

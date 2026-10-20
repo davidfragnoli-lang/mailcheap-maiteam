@@ -4,11 +4,24 @@ Read this as well as `AGENTS.md` when working on maiteam's deployment of mailche
 
 ## Not ready for production yet
 
-This branch is the migration onto upstream (FRA-26000). Until the send gates (P4), the signup protection (P5) and the sequences (P6) in `PATCHES.md` are re-ported and independently reviewed, upstream's own checks are the only ones in this code. Do not deploy it to production, and do not describe a gate as working unless `PATCHES.md` marks it as landed.
+This branch is the migration onto upstream (FRA-26000). The send gates (P4) and the sequences (P6) in `PATCHES.md` are not re-ported yet; the signup protection (P5) is, but has not been independently reviewed. Do not deploy it to production, and do not describe a gate as working unless `PATCHES.md` marks it as landed.
 
 ## Names
 
 Product names are lowercase wherever a person sees them: mailcheap, fortuna, quote-to-invoice (never "Q2I"), maiteam (David, 20 Oct 2026, FRA-25997). Machine identifiers (env names, URLs, slugs, Redis keys, token info strings) keep their current spelling.
+
+## Public signup protection (P5)
+
+The source implements these on top of upstream's own signup checks, which all still run (BotID, honeypot, upstream's typo list, trap addresses, global suppressions, MX, the embed limits); the stricter rule wins. Every refusal returns before a contact is written or any mail is queued. Code in `lib/maiteam/`, hooks listed in `PATCHES.md` (P5).
+
+- Archive form (`app/archive/actions.js`). BotID is called fail-closed. Then `checkArchiveSignup`: without `TURNSTILE_SECRET_KEY` and `TURNSTILE_HOSTNAMES`, or with a Cloudflare test secret on any Vercel deployment, every signup is refused. A missing, forged, expired or under-3-second signed fill stamp (`startSignup` issues it, because archive pages are cached) is refused. The Turnstile token must verify server-side for an exact `TURNSTILE_HOSTNAMES` host and the action `archive-signup`; a Cloudflare error or timeout refuses. Then the per-visitor limit and the address checks.
+- Forms on other sites (`app/api/embed/[id]/route.js`): upstream's checks plus a per-visitor limit and the address checks. No Turnstile, as in the old fork, which had no embeds.
+- `add_contact` from the REST API and MCP (not the dashboard): per-key and per-visitor limits and the address checks. No Turnstile: the caller's site runs its own bot checks. No input field skips a check.
+- Address checks (`lib/maiteam/email-check.js`): syntax, a typo suggestion for gmail, hotmail, outlook and bluewin that is only offered (the archive form and the API accept `keepAsTyped` repeating the exact address; embeds refuse with the suggestion), the vendored disposable list (`vendor/disposable-email-domains/`, upstream commit `d1a9c51`, CC0, update procedure in its `SOURCE.md`), then MX or an A/AAAA fallback; a null MX refuses. A DNS failure or timeout refuses with a retry message (503 `unavailable` on the API and embeds). Upstream's own typo list still refuses its listed misspellings even when kept.
+- Signup limits (`lib/maiteam/signup-limits.js`): missing Redis, a throw or a timeout refuses the signup and counts nothing in memory; over-limit still refuses. They are counted under their own `maiteam-*` names next to upstream's limits, which keep their memory fallback, as do login and every other limit.
+- Tests: `tests/maiteam-*.test.mjs`, with synthetic Cloudflare, DNS and Redis. Upstream's own tests run with these checks off (`tests/stubs/maiteam-signup-protection.mjs`).
+
+Not bound yet: the Turnstile keys and `TURNSTILE_HOSTNAMES` are not on any deployment of this code, and Upstash Redis was not bound on the old project at its last recorded read. Until they are, the archive form refuses every signup, and every public signup path refuses while Redis is missing. Bind them through the native secret path; never print or paste a key.
 
 ## Standing send controls
 
