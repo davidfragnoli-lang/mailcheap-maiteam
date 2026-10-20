@@ -19,13 +19,13 @@ export default function ButtonsSequenceRun({ sequenceId, status }) {
 
 	if (status === "active") {
 		return (
-			<Button type="button" variant="outline" disabled={isPending} onClick={() => run(pauseSequenceAction, () => "Paused")}>
+			<Button type="button" variant="outline" disabled={isPending} onClick={() => run(pauseSequenceAction, ({ inFlight }) => (inFlight ? `Paused. ${inFlight} already with the email provider will still arrive` : "Paused"))}>
 				Pause
 			</Button>
 		);
 	}
 	return (
-		<Button type="button" disabled={isPending} onClick={() => run(startSequenceAction, ({ scheduled }) => `Started, ${scheduled} next steps scheduled`)}>
+		<Button type="button" disabled={isPending} onClick={() => run(startSequenceAction, ({ scheduled, waiting }) => `Started, ${scheduled} next steps scheduled${waiting ? `, ${waiting} waiting on an earlier step` : ""}`)}>
 			{status === "paused" ? "Resume" : "Start"}
 		</Button>
 	);

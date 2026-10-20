@@ -371,9 +371,9 @@ describe("maiteam welcome sequences", () => {
 
 		await signUp(user, "reader@seq-dash.example.org", { sequence: "welcome" });
 		const enrollment = await m.Enrollment.findOne({ accountId: user.accountId }).lean();
-		assert.deepEqual(await as(user, () => m.sequencesActions.pauseSequenceAction(id)), { ok: true });
+		assert.deepEqual(await as(user, () => m.sequencesActions.pauseSequenceAction(id)), { ok: true, inFlight: 0 });
 		assert.equal((await runStepJobs())[0].result.outcome, "paused");
-		assert.deepEqual(await as(user, () => m.sequencesActions.startSequenceAction(id)), { ok: true, scheduled: 1 });
+		assert.deepEqual(await as(user, () => m.sequencesActions.startSequenceAction(id)), { ok: true, scheduled: 1, waiting: 0 });
 		assert.deepEqual(await as(user, () => m.sequencesActions.cancelEnrollmentAction(String(enrollment._id), id)), { ok: true, inFlight: false });
 		assert.equal((await runStepJobs()).at(-1).result.outcome, "cancelled");
 		assert.equal(emailsTo("reader@seq-dash.example.org").length, 0);
@@ -392,6 +392,127 @@ describe("maiteam welcome sequences", () => {
 		assert.match(detail, /reader@seq-dash\.example\.org/);
 		assert.match(detail, /1: cancelled · 2: cancelled/);
 		assert.equal(await as(other, () => catchNotFound(m.sequencePage.default({ params: Promise.resolve({ id }) }))), true, "another account's sequence is not found");
+	});
+
+	// QA r1 item 2 (FRA-25999): the batch read the sequence as active, then a pause landed before the provider call.
+	for (const [label, pause] of [
+		["the owner's pause", (user, id) => m.store.pauseSequence({ accountId: user.accountId, sequenceId: id })],
+		["the automatic pause on bad rates", (user, id) => m.Sequence.updateOne({ accountId: user.accountId, _id: id }, { $set: { status: "paused", pauseReason: "high rates" } })],
+	]) {
+		test(`${label}, landing after the batch read the sequence, stops the handoff; resuming sends the step once`, async () => {
+			const slug = label.startsWith("the owner") ? "seq-race-owner" : "seq-race-auto";
+			const user = await customer(slug);
+			const sequence = await createSequence(user, { name: "Race", slug: "race", steps: threeSteps("Race", [0, 1]) });
+			const email = `race@${slug}.example.org`;
+			await signUp(user, email, { sequence: "race" });
+			const find = m.Sequence.find;
+			let paused = false;
+			m.Sequence.find = function (...args) {
+				const query = find.apply(this, args);
+				const exec = query.exec.bind(query);
+				query.exec = async (...rest) => {
+					const found = await exec(...rest);
+					m.Sequence.find = find;
+					await pause(user, sequence.id);
+					paused = true;
+					return found;
+				};
+				return query;
+			};
+			let result;
+			try {
+				[{ result }] = await runStepJobs();
+			} finally {
+				m.Sequence.find = find;
+			}
+			assert.equal(paused, true, "the pause landed between the content read and the handoff");
+			assert.equal(result.outcome, "paused", JSON.stringify(result));
+			assert.equal(emailsTo(email).length, 0, "nothing reached the provider");
+			let enrollment = await m.Enrollment.findOne({ accountId: user.accountId, email }).lean();
+			assert.deepEqual(enrollment.steps.map(({ status }) => status), ["held", "pending"]);
+			const message = await m.Message.findOne({ accountId: user.accountId, enrollmentId: enrollment._id }).lean();
+			assert.equal(message.status, "queued");
+
+			const started = await m.store.startSequence({ accountId: user.accountId, sequenceId: sequence.id });
+			assert.deepEqual(started, { ok: true, scheduled: 1, waiting: 0 });
+			const results = await runStepJobs();
+			assert.deepEqual(results.map(({ job }) => job.body.position), [1]);
+			assert.equal(results[0].result.outcome, "sent");
+			assert.equal(emailsTo(email).length, 1);
+			assert.equal(await m.Message.countDocuments({ accountId: user.accountId, enrollmentId: enrollment._id, stepPosition: 1 }), 1, "the same email, not a second one");
+			enrollment = await m.Enrollment.findOne({ accountId: user.accountId, email }).lean();
+			assert.deepEqual(enrollment.steps.map(({ status }) => status), ["sent", "scheduled"]);
+		});
+	}
+
+	test("a handoff claimed before the pause is reported by the pause, not pulled back", async () => {
+		const user = await customer("seq-pause-flight");
+		const sequence = await createSequence(user, { name: "Flight", slug: "flight", steps: threeSteps("Flight", [0, 1]) });
+		const email = "flight@seq-pause-flight.example.org";
+		await signUp(user, email, { sequence: "flight" });
+		let report;
+		m.gate.setSendGateSeamsForTests({
+			waitForSlot: async () => {
+				report = await m.store.pauseSequence({ accountId: user.accountId, sequenceId: sequence.id });
+			},
+		});
+		const [{ result }] = await runStepJobs();
+		assert.deepEqual(report, { ok: true, inFlight: 1 });
+		assert.equal(result.outcome, "sent");
+		const enrollment = await m.Enrollment.findOne({ accountId: user.accountId, email }).lean();
+		assert.deepEqual(enrollment.steps.map(({ status }) => status), ["sent", "pending"], "nothing after it is scheduled while paused");
+	});
+
+	// QA r1 item 3: a retry acknowledged while paused left step 1 `sending` with no job; step 2 must not overtake it.
+	test("resuming publishes the earliest unresolved step: a deferred step 1 goes before step 2, an ambiguous or failed one holds it", async () => {
+		const user = await customer("seq-resume");
+		const sequence = await createSequence(user, { name: "Resume", slug: "resume", steps: threeSteps("Resume", [0, 1]) });
+		const email = "deferred@seq-resume.example.org";
+		await signUp(user, email, { sequence: "resume" });
+		sesState.failNext = { name: "sendSesEmail", error: m.outcomes.providerError(m.outcomes.SEND_OUTCOMES.throttled, "Rate exceeded", { retryAfter: 30 }) };
+		let [{ result }] = await runStepJobs();
+		assert.equal(result.outcome, "retry");
+		await m.store.pauseSequence({ accountId: user.accountId, sequenceId: sequence.id });
+		[{ result }] = await runStepJobs();
+		assert.equal(result.outcome, "paused", "the retry job is acknowledged while paused");
+		let enrollment = await m.Enrollment.findOne({ accountId: user.accountId, email }).lean();
+		assert.deepEqual(enrollment.steps.map(({ status }) => status), ["sending", "pending"]);
+		assert.equal(stepJobs(processed).length, 0, "step 1 has no job left");
+
+		// Two more enrollments of the same sequence, seeded at an ambiguous and a failed step 1.
+		const seeded = [];
+		for (const [local, status] of [["inflight", "in-flight"], ["failed", "failed"]]) {
+			const contact = await m.Contact.create({ accountId: user.accountId, newsletterId: user.newsletterId, email: `${local}@seq-resume.example.org`, status: "active" });
+			seeded.push(
+				await m.Enrollment.create({
+					accountId: user.accountId,
+					sequenceId: sequence.id,
+					newsletterId: user.newsletterId,
+					contactId: contact._id,
+					email: contact.email,
+					status: "active",
+					enrolledAt: new Date(),
+					steps: [
+						{ position: 1, status },
+						{ position: 2, status: "pending" },
+					],
+				})
+			);
+		}
+
+		const started = await m.store.startSequence({ accountId: user.accountId, sequenceId: sequence.id });
+		assert.deepEqual(started, { ok: true, scheduled: 1, waiting: 2 });
+		const jobs = stepJobs(processed);
+		assert.deepEqual(jobs.map(({ body }) => [body.enrollmentId, body.position]), [[String(enrollment._id), 1]]);
+		[{ result }] = await runStepJobs();
+		assert.equal(result.outcome, "sent");
+		assert.equal(emailsTo(email).length, 1);
+		enrollment = await m.Enrollment.findOne({ accountId: user.accountId, email }).lean();
+		assert.deepEqual(enrollment.steps.map(({ status }) => status), ["sent", "scheduled"]);
+		for (const { _id } of seeded) {
+			const held = await m.Enrollment.findOne({ accountId: user.accountId, _id }).lean();
+			assert.equal(held.steps[1].status, "pending", "step 2 never overtakes an unresolved step 1");
+		}
 	});
 
 	test("an unknown sequence is refused before the contact is written, and the step job only runs signed, with its account", async () => {

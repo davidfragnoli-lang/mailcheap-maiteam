@@ -38,15 +38,15 @@ export async function saveSequenceAction(_state, formData) {
 }
 
 export async function pauseSequenceAction(sequenceId) {
-	const { failure } = await runDashboardAction("pause_sequence", { id: String(sequenceId) });
+	const { output, failure } = await runDashboardAction("pause_sequence", { id: String(sequenceId) });
 	revalidatePath(`/sequences/${sequenceId}`);
-	return failure ? toFormError(failure) : { ok: true };
+	return failure ? toFormError(failure) : { ok: true, inFlight: output.inFlight };
 }
 
 export async function startSequenceAction(sequenceId) {
 	const { output, failure } = await runDashboardAction("start_sequence", { id: String(sequenceId) });
 	revalidatePath(`/sequences/${sequenceId}`);
-	return failure ? toFormError(failure) : { ok: true, scheduled: output.scheduled };
+	return failure ? toFormError(failure) : { ok: true, scheduled: output.scheduled, waiting: output.waiting };
 }
 
 export async function cancelEnrollmentAction(enrollmentId, sequenceId) {
