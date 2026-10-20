@@ -7,8 +7,14 @@
 #   --dry-run  (default) fetch, merge upstream/main into a sync branch, re-apply P2, run every gate. Nothing pushed.
 #   --push     the same, then push the sync branch to origin, so Vercel builds a Git-backed preview, and smoke it.
 #   --promote  the same as --push, then fast-forward the deployed branch to the sync branch and push it, so Vercel
-#              builds production through Git integration; smoke production; on failure, roll back to the previous
-#              production deployment and report. Only for runs David has authorized.
+#              builds production through Git integration, and read back that the production hostname serves it. On
+#              failure, roll back to the previous production deployment and read that back too. This is the weekly
+#              routine's mode once FRA-26000's release gates are met: weekly following is authorized, with no per-run card.
+#
+# Promotion needs a verified rollback target first (scripts/maiteam/vercel-release.zsh): the deployment production
+# serves now, READY, built from the deployed branch's exact commit, and what the hostname's alias points at. Without
+# one it stops before pushing. "ROLLED BACK" is printed only after the alias reads back to the previous deployment and
+# it answers healthily; otherwise "ROLLBACK FAILED" (exit 2): production state unverified, an operator acts.
 #
 # Any failed gate stops before anything is pushed or promoted: merge conflict, tests, lint, build, the lowercase
 # check, a lost maiteam hook (send gates, signup protection, source link), a LICENSE or notice change, a secret in
@@ -108,30 +114,28 @@ log "gates passed: $TESTS"
 [[ "$MODE" == dry-run ]] && finish "ready ${SYNC} (upstream ${UPSTREAM:0:7}, $NEW commits, $TESTS) dry run, nothing pushed"
 
 # From here on, only with --push or --promote. Vercel builds every pushed branch through Git integration.
+source "${0:A:h}/vercel-release.zsh"
+HOST="${MAILCHEAP_PRODUCTION_HOST:-mailcheap.maiteam.ch}"
+PRODUCTION_URL="${MAILCHEAP_PRODUCTION_URL:-https://$HOST}"
+if [[ "$MODE" == promote ]]; then
+	release_preflight "$BASE" "$HOST" || finish "STOP no verified rollback target: $RELEASE_PROBLEM" 1
+	log "rollback target $PREVIOUS (${PREVIOUS_SHA:0:7}) serves $HOST"
+fi
 git push --quiet origin "$SYNC" >>"$LOG" 2>&1 || finish "STOP push of $SYNC failed" 1
 SHA="$(git rev-parse HEAD)"
-smoke() {
-	local url="$1"
-	local code
-	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$url/api/health")"
-	[[ "$code" == 200 ]]
-}
-deployment_url() {
-	# The READY deployment Vercel built for this commit (team-scoped; VERCEL_TOKEN, VERCEL_TEAM_ID, VERCEL_PROJECT_ID from the routine's env).
-	curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_TEAM_ID&limit=20&target=$1" |
-		/usr/bin/python3 -c 'import json,sys; sha=sys.argv[1]; d=[x for x in json.load(sys.stdin).get("deployments",[]) if x.get("meta",{}).get("githubCommitSha")==sha and x.get("state")=="READY"]; print("https://"+d[0]["url"] if d else "")' "$SHA"
-}
-for _ in {1..40}; do PREVIEW="$(deployment_url preview)"; [[ -n "$PREVIEW" ]] && break; sleep 30; done
-[[ -n "${PREVIEW:-}" ]] || finish "STOP no READY preview for ${SHA:0:7} after 20 minutes" 1
-smoke "$PREVIEW" || finish "STOP preview smoke failed at $PREVIEW" 1
-[[ "$MODE" == push ]] && finish "preview ready $PREVIEW (${SHA:0:7}, $TESTS); promote with --promote after review"
+await_deployment "$SHA" preview || finish "STOP $RELEASE_PROBLEM" 1
+vercel_call GET "/v13/deployments/$DEPLOYMENT_ID" || finish "STOP $RELEASE_PROBLEM" 1
+PREVIEW="$(print -r -- "$VERCEL_REPLY" | json_field url)"
+[[ -n "$PREVIEW" ]] && smoke "https://$PREVIEW" || finish "STOP preview smoke failed for ${SHA:0:7}" 1
+[[ "$MODE" == push ]] && finish "preview ready https://$PREVIEW (${SHA:0:7}, $TESTS); promote with --promote after review"
 
-PREVIOUS="$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_TEAM_ID" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("targets",{}).get("production",{}).get("id",""))')"
 git checkout --quiet "$DEPLOYED" && git merge --ff-only --quiet "$SYNC" && git push --quiet origin "$DEPLOYED" >>"$LOG" 2>&1 || finish "STOP fast-forward push of $DEPLOYED failed" 1
-for _ in {1..40}; do PRODUCTION="$(deployment_url production)"; [[ -n "$PRODUCTION" ]] && break; sleep 30; done
-if [[ -z "${PRODUCTION:-}" ]] || ! smoke "${MAILCHEAP_PRODUCTION_URL:-https://mailcheap.maiteam.ch}"; then
-	# Instant rollback to the deployment that served before. The database is untouched: model changes never get here.
-	[[ -n "$PREVIOUS" ]] && curl -s -X POST -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID/rollback/$PREVIOUS?teamId=$VERCEL_TEAM_ID" >>"$LOG" 2>&1
-	finish "ROLLED BACK production smoke failed for ${SHA:0:7}; serving $PREVIOUS again" 1
+if await_deployment "$SHA" production && await_serving "$HOST" "$DEPLOYMENT_ID" "$PRODUCTION_URL"; then
+	finish "promoted ${SHA:0:7} (upstream ${UPSTREAM:0:7}, $NEW commits, $TESTS); $HOST serves $DEPLOYMENT_ID"
 fi
-finish "promoted ${SHA:0:7} (upstream ${UPSTREAM:0:7}, $NEW commits, $TESTS)"
+FAILURE="$RELEASE_PROBLEM"
+# Instant rollback to the deployment that served before. The database is untouched: model changes never get here.
+if rollback_to "$PREVIOUS" "$HOST" "$PRODUCTION_URL"; then
+	finish "ROLLED BACK ${SHA:0:7} ($FAILURE); $HOST serves $PREVIOUS (${PREVIOUS_SHA:0:7}) again, read back. $DEPLOYED is ahead of production until the commit is reverted" 1
+fi
+finish "ROLLBACK FAILED for ${SHA:0:7} ($FAILURE; rollback: $RELEASE_PROBLEM). Production state unverified: operator now" 2
