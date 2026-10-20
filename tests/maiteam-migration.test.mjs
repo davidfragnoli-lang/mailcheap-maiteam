@@ -30,6 +30,7 @@ const contacts = [
 	{ _id: id(), newsletterId: fortunaId, email: "d@reader.example.org", status: "pending" },
 ];
 const campaignId = id();
+const sequenceId = id();
 const messageId = id();
 const LANDING = {
 	preset: "landing",
@@ -69,6 +70,19 @@ before(async () => {
 	await sourceDb.collection("newsletter_daily_caps").insertOne({ _id: `${newsletterId}:2026-10-20`, revision: 3, issued: 2, holds: [] });
 	await sourceDb.collection("sender_warmups").insertOne({ _id: `${newsletterId}:mail.maiteam.ch`, newsletterId, domain: "mail.maiteam.ch", revision: 2, level: 1, startedAt: Date.now() - 9 * 86_400_000 });
 	await sourceDb.collection("sequence_demo_ledger").insertOne({ _id: "welcome-series-en-fr-2026-10-16", sent: 6 });
+	await sourceDb.collection("sequences").insertOne({
+		_id: sequenceId,
+		newsletterId,
+		name: "welcome",
+		slug: "welcome",
+		status: "draft",
+		steps: [
+			{ position: 1, delayDays: 0, delayFromEnrollmentMs: 0, subject: "Hi", markdown: "Hi", theme: { ...LANDING, preset: "letter" } },
+			{ position: 2, delayDays: 3, delayFromEnrollmentMs: 259_200_000, subject: "Day 3", markdown: "Day 3" },
+		],
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	});
 });
 
 after(() => app?.stop());
@@ -101,6 +115,10 @@ test("execute: same ids, states, keys and suppressions in one owner account, and
 	assert.equal((await targetDb.collection("newsletters").findOne({ _id: fortunaId })).theme.preset, "fortuna");
 	assert.equal((await targetDb.collection("campaigns").findOne({ _id: campaignId })).look.preset, "letter");
 	assert.equal(david.dailySendCap, 50);
+	const sequence = await targetDb.collection("sequences").findOne({ _id: sequenceId });
+	assert.equal(sequence.steps[0].look.preset, "letter", "a step's own look moves to steps[].look");
+	assert.equal(sequence.steps[0].theme, undefined);
+	assert.equal(sequence.steps[1].look, undefined);
 
 	// Messages and events: provider ids renamed, event names upstream's, marked as the fork's.
 	const message = await targetDb.collection("messages").findOne({ _id: messageId });

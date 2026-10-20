@@ -59,8 +59,8 @@ test("saved steps are whole days in order; only a welcome-email step 1 is pinned
 test("a step sends its own words, or the newsletter's saved welcome email", () => {
 	const sequence = { steps: [{ position: 1, useWelcome: true }, { position: 2, subject: " Day 2 ", previewText: "", markdown: "Hi" }, { position: 3, subject: "", markdown: "" }] };
 	const newsletter = { welcome: { enabled: false, subject: "Welcome", markdown: "Thanks" } };
-	assert.deepEqual(getSequenceStepContent(sequence, 1, newsletter), { format: "markdown", subject: "Welcome", markdown: "Thanks", previewText: "" });
-	assert.deepEqual(getSequenceStepContent(sequence, 2, newsletter), { format: "markdown", subject: "Day 2", markdown: "Hi", previewText: "" });
+	assert.deepEqual(getSequenceStepContent(sequence, 1, newsletter), { format: "markdown", subject: "Welcome", markdown: "Thanks", previewText: "", look: null });
+	assert.deepEqual(getSequenceStepContent(sequence, 2, newsletter), { format: "markdown", subject: "Day 2", markdown: "Hi", previewText: "", look: null });
 	assert.equal(getSequenceStepContent(sequence, 1, {}), null, "no welcome saved, nothing to send");
 	assert.equal(getSequenceStepContent(sequence, 3, newsletter), null);
 	assert.equal(getSequenceStepContent(sequence, 4, newsletter), null);

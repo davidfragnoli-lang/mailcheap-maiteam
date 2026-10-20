@@ -113,7 +113,15 @@ function converters({ accountId }) {
 		apikeys: { to: "apikeys", model: "ApiKey", convert: (doc) => ({ ...owned(doc), level: doc.level ?? "full" }) },
 		// Server-wide alerts.
 		alerts: { to: "alerts", model: "Alert", convert: (doc) => ({ ...doc, accountId: null }) },
-		sequences: { to: "sequences", model: "Sequence", convert: owned },
+		// A step's own look moves from steps[].theme to steps[].look (P3c).
+		sequences: {
+			to: "sequences",
+			model: "Sequence",
+			convert: (doc) => ({
+				...owned(doc),
+				steps: (doc.steps ?? []).map(({ theme, ...step }) => (theme ? { ...step, look: theme } : step)),
+			}),
+		},
 		enrollments: { to: "enrollments", model: "Enrollment", convert: owned },
 		// maiteam's ledgers: same collections, the same documents (their ids embed newsletter ids).
 		ses_quota_holds: { to: "ses_quota_holds", model: "SesQuota", convert: (doc) => doc },

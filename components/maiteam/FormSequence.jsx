@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { saveSequenceAction } from "@/app/(app)/sequences/actions";
+import FieldStepLook from "@/components/maiteam/FieldStepLook";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,9 @@ export default function FormSequence({ sequence, newsletters }) {
 	const saved = sequence?.steps ?? [];
 	const [steps, setSteps] = useState(() => [0, 1, 2].map((index) => toFields(saved[index])));
 	const [useWelcome, setUseWelcome] = useState(Boolean(saved[0]?.useWelcome) && hasWelcome);
+	// maiteam (P3c): each step's own email look; null is the newsletter's.
+	const [looks, setLooks] = useState(() => [0, 1, 2].map((index) => saved[index]?.look ?? null));
+	const newsletterName = newsletters.find((item) => item.id === newsletterId)?.name ?? "";
 	const [, action, isPending] = useActionState(async (previous, formData) => {
 		const result = await saveSequenceAction(previous, formData);
 		if (result?.error) toast.error(result.error);
@@ -37,6 +41,7 @@ export default function FormSequence({ sequence, newsletters }) {
 				[`step${index + 1}Subject`, step.subject],
 				[`step${index + 1}Preview`, step.previewText],
 				[`step${index + 1}Markdown`, step.markdown],
+				[`step${index + 1}Look`, looks[index]],
 			]).concat([["step1UseWelcome", useWelcome]])
 		)
 	);
@@ -149,6 +154,13 @@ export default function FormSequence({ sequence, newsletters }) {
 							</Field>
 						</>
 					)}
+					<Field label="Email look">
+						<FieldStepLook
+							value={looks[index]}
+							newsletterName={newsletterName}
+							onChange={(next) => setLooks((current) => current.map((look, lookIndex) => (lookIndex === index ? next : look)))}
+						/>
+					</Field>
 				</Section>
 			))}
 

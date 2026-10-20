@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { accountScoped } from "../lib/account-scope.js";
+import { lookFields } from "./maiteam-look-fields.js";
 
 // maiteam (PATCHES.md P6): a welcome sequence, ordered steps timed in whole days from a contact's confirmed enrollment
 // (lib/maiteam/sequence-plan.js). Same collection as the old fork's, so its documents carry over once they have an
@@ -14,6 +15,8 @@ const stepSchema = new mongoose.Schema(
 		subject: { type: String, trim: true, default: "" },
 		previewText: { type: String, trim: true, default: "" },
 		markdown: { type: String, default: "" },
+		// The step's own email look (PATCHES.md P3c); unset is the newsletter's.
+		look: lookFields,
 	},
 	{ _id: false }
 );
