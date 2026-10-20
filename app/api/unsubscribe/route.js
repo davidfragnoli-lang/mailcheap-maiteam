@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDb } from "@/lib/db";
+import { cancelEnrollmentsFor } from "@/lib/maiteam/sequence-store";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 import { verifyUnsubscribeToken } from "@/lib/unsubscribe";
 import Campaign from "@/models/Campaign";
@@ -48,6 +49,10 @@ async function unsubscribe({ contactId, newsletterId }) {
 	if (!previous) return;
 
 	console.log(`[unsubscribe] Contact ${contactId} unsubscribed from newsletter ${newsletterId}`);
+	// maiteam (P6): their welcome sequences end with it; a step in flight is left, every other one is cancelled.
+	await cancelEnrollmentsFor({ accountId: previous.accountId, contactIds: [previous._id] }).catch((error) =>
+		console.error("[unsubscribe] Could not cancel the sequences:", error.message)
+	);
 	await creditLatestCampaign({ accountId: previous.accountId, contactId, newsletterId }).catch((error) =>
 		console.error("[unsubscribe] Could not credit the campaign:", error.message)
 	);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Globe, KeyRound, LayoutGrid, Send, Settings, Shield, Users } from "lucide-react";
+import { Globe, KeyRound, LayoutGrid, ListOrdered, Send, Settings, Shield, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // The open newsletter's pages, then the account's, which every newsletter shares.
@@ -49,6 +49,8 @@ const NEWSLETTER_ITEMS = [
 ];
 
 const ACCOUNT_ITEMS = [
+	// maiteam (PATCHES.md P6): every newsletter's welcome sequences.
+	{ href: "/sequences", label: "Sequences", icon: ListOrdered },
 	{ href: "/domains", label: "Domains", icon: Globe },
 	{ href: "/api-keys", label: "API keys", icon: KeyRound },
 ];

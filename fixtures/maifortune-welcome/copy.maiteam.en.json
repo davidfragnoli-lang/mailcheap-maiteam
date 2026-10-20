@@ -1,0 +1,100 @@
+{
+  "status": "maiteam-approved",
+  "language": "en",
+  "source": {
+    "owner": "maiteam Design & Offer",
+    "issue": "QI-27055",
+    "approval": "David accepted QI-27055 card 87b8afae on 2026-10-19 (relayed by the board on FRA-25943, comment ced223b0)",
+    "retrieved": true,
+    "path": "/Users/davidfragnoli/Projects/maiteam-ships/maiteam-tracker-design (uncommitted working tree; bytes pinned by hash)",
+    "document": {
+      "file": "docs/MAIFORTUNE-WELCOME-SERIES.md",
+      "sha256": "aa0a0d7e96e69de195fa3e0c99c7f4ed0d68abfa8a8573f223067aa667bcb20a"
+    },
+    "files": {
+      "docs/MAIFORTUNE-WELCOME-SERIES.md": "aa0a0d7e96e69de195fa3e0c99c7f4ed0d68abfa8a8573f223067aa667bcb20a",
+      "docs/welcome-series/01-confirm.en.html": "dacd7b355cf31610e93ebf4f228699b5aa9aa8f7118a00525908097e88eae9ba",
+      "docs/welcome-series/01-confirm.en.txt": "0224c2e9633b4a3d212835f23754e56b588f59ddc0a7827acc4a46923ddeee23",
+      "docs/welcome-series/01-confirm.fr.html": "09388f03485b369de1652033dd535f8bad161f21c93349575db94449c119db9f",
+      "docs/welcome-series/01-confirm.fr.txt": "8d42791ddf3110ef9529d5acd40d3567e1bd2ab024b9496484210a52d9f56a27",
+      "docs/welcome-series/02-data.en.html": "9eeab387e41db1498f0165069d72a310a6d3477b8fe9128eb8efa1bf2da29be9",
+      "docs/welcome-series/02-data.en.txt": "86eb9cf53dce04c02b3d4fe2f6776989280f345c95e7b3ba000195cb951ac615",
+      "docs/welcome-series/02-data.fr.html": "18f8fc35c5edcb684130c8d3a69aa0fd3d5dd985d361c12d2fed0dcbfbfd5bc5",
+      "docs/welcome-series/02-data.fr.txt": "07faba50ff47272223bcd44ffe1e7f18406ed04a22c7cf7db35887205db63229",
+      "docs/welcome-series/03-agent.en.html": "f403496d1e0b774406e5088bf8e46259cd36864b55a426c628c0c3e5ad827c3e",
+      "docs/welcome-series/03-agent.en.txt": "c3b01c0497114c7e15edea3bfe95180ab28edbf32e1bb46a9f519f88c3e8cd30",
+      "docs/welcome-series/03-agent.fr.html": "03b81aa4db7c358cb62951f685077543ea75985023b132d821f1feed7d7581e6",
+      "docs/welcome-series/03-agent.fr.txt": "abfa66cf4da0dd04dacada7de4d791cce8dc10c45946d22f3b443e8b065ecdd8"
+    },
+    "transcription": [
+      "Words from the .txt mails unchanged except the product rename; checked by round trip to the renamed source bytes",
+      "Product renamed per David, 20 Oct 2026 (FRA-25997): \"mAIfortune Tracker\" and \"mAIfortune\" become \"fortuna\"; the URL maifortune.maiteam.ch is unchanged",
+      "Confirmation button line bound to mailcheap's {{confirm_url}} as upstream's built-in button markup (inline-block, #18181b on #ffffff, border-radius), which the renderer repaints in the newsletter's look",
+      "Footer lines end in two spaces (Markdown line break)",
+      "Subject 1 / preview 1 sent; subject 2 / preview 2 kept as the unsent alternative",
+      "Gated lines kept as marked: [pending QI-27046] in mail 2, \"your agent\" (no named client) in mail 3",
+      "Mail 4 is an outline only and is not in the sequence"
+    ]
+  },
+  "cadence": {
+    "note": "Mail 1 is the double opt-in email at signup. Mails 2 and 3 are timed from the confirmed enrollment.",
+    "stepDelaysMs": [
+      86400000,
+      259200000
+    ]
+  },
+  "confirmation": {
+    "subject": "Confirm your email for fortuna",
+    "previewText": "One click, then three short emails. Nothing else.",
+    "markdown": "Hi,\n\nSomeone, probably you, asked to join the fortuna waitlist with this address. fortuna is a personal finance tracker that your own AI agent can file into. Confirm, and here is exactly what you'll get:\n\n- Tomorrow: how your financial data is protected, in plain words.\n- In three days: what your agent actually does, shown on sample data.\n- When fortuna opens: your invite to sign in, with the price before anything costs you money.\n\nThree emails, then only the invite. No newsletter.\n\n<a href=\"{{confirm_url}}\" style=\"display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px;\">Confirm my email</a>\n\nIf you didn't ask for this, do nothing. Nothing more is sent.\n\nDavid\n\n--  \nDavid at fortuna · fortuna, by maiteam  \n[postal address: David to set], Switzerland  \nYou get this because you asked to join the fortuna waitlist at maifortune.maiteam.ch. Unsubscribe: [unsubscribe link]. One click, no questions.  \nYour email address is used only for this series and is never sold. Data protection: Swiss Federal Act on Data Protection (nLPD/FADP) and GDPR. Privacy policy: [link, published before sign-up opens].",
+    "mail": {
+      "source": "docs/welcome-series/01-confirm.en.txt",
+      "sha256": "0224c2e9633b4a3d212835f23754e56b588f59ddc0a7827acc4a46923ddeee23",
+      "html": "docs/welcome-series/01-confirm.en.html",
+      "htmlSha256": "dacd7b355cf31610e93ebf4f228699b5aa9aa8f7118a00525908097e88eae9ba"
+    },
+    "alternative": {
+      "subject": "Was that you? Confirm your place on the fortuna list",
+      "previewText": "What you'll get and how often, in one paragraph.",
+      "sent": false
+    }
+  },
+  "steps": [
+    {
+      "position": 1,
+      "delayDays": 1,
+      "mail": {
+        "source": "docs/welcome-series/02-data.en.txt",
+        "sha256": "86eb9cf53dce04c02b3d4fe2f6776989280f345c95e7b3ba000195cb951ac615",
+        "html": "docs/welcome-series/02-data.en.html",
+        "htmlSha256": "9eeab387e41db1498f0165069d72a310a6d3477b8fe9128eb8efa1bf2da29be9"
+      },
+      "subject": "How your money data is protected in fortuna",
+      "previewText": "Keys you can revoke, a change log you can undo, an export you own.",
+      "alternative": {
+        "subject": "Before you give an agent your card statement",
+        "previewText": "Where your data lives, who can touch it, and how you stop them.",
+        "sent": false
+      },
+      "markdown": "Hi,\n\nThe first question people ask: what if the agent gets something wrong, or gets more than I meant to give it? Here is what is true today.\n\n- Your agent gets a key, not your password. Read only or read and write, named by you, last use shown. Revoke stops it on the next request.\n- fortuna keeps only the key's fingerprint. You see it once.\n- Every agent change is on the Changes page with its name and time. Undo reverses it.\n- Export JSON from Settings any time. Delete my data removes the tracker's data.\n- Encryption at rest for the database and PDF archive. [pending QI-27046]\n- Export with your PDFs; account deletion that also clears the archive and backups. [pending QI-27046]\n\nOne honest limit: what your agent reads goes to your AI provider. Pick one you trust, or start read-only.\n\n[Reply with the line you'd want proof of] mailto:[sender address]\n\nDavid\n\n--  \nDavid at fortuna · fortuna, by maiteam  \n[postal address: David to set], Switzerland  \nYou get this because you asked to join the fortuna waitlist at maifortune.maiteam.ch. Unsubscribe: [unsubscribe link]. One click, no questions.  \nYour email address is used only for this series and is never sold. Data protection: Swiss Federal Act on Data Protection (nLPD/FADP) and GDPR. Privacy policy: [link, published before sign-up opens]."
+    },
+    {
+      "position": 2,
+      "delayDays": 3,
+      "mail": {
+        "source": "docs/welcome-series/03-agent.en.txt",
+        "sha256": "c3b01c0497114c7e15edea3bfe95180ab28edbf32e1bb46a9f519f88c3e8cd30",
+        "html": "docs/welcome-series/03-agent.en.html",
+        "htmlSha256": "f403496d1e0b774406e5088bf8e46259cd36864b55a426c628c0c3e5ad827c3e"
+      },
+      "subject": "What your agent actually does with a card statement",
+      "previewText": "One real flow, shown on sample data, from the PDF to the Changes page.",
+      "alternative": {
+        "subject": "The part of budgeting you skip, done by your agent",
+        "previewText": "Card statement in, transactions filed, one Undo button. Sample data.",
+        "sent": false
+      },
+      "markdown": "Hi,\n\nHere is the flow, on sample data (invented, no real account).\n\nYou, to your agent: “Here's the September card statement. File it in fortuna.”\n\nYour agent: “Done. 23 transactions added from card-statement-2026-09.pdf, 4 moved to Groceries. Two looked like duplicates of August, so I left them out. Everything is on the Changes page and can be undone.”\n\nIn fortuna, the Changes page now shows two rows signed by the key you named, say \"receipts\", each with an Undo button. The PDF sits in Documents, linked to its rows. Click Undo on the first row and the 23 transactions are gone. That undo can be undone too.\n\nThe agent does the filing you skip. The dashboard keeps the receipt of what it did.\n\nIt works with any agent that speaks MCP. A key from Settings → Agent access is all it needs.\n\n[See the sample Changes page] [landing link, sample mode]\n\nDavid\n\n--  \nDavid at fortuna · fortuna, by maiteam  \n[postal address: David to set], Switzerland  \nYou get this because you asked to join the fortuna waitlist at maifortune.maiteam.ch. Unsubscribe: [unsubscribe link]. One click, no questions.  \nYour email address is used only for this series and is never sold. Data protection: Swiss Federal Act on Data Protection (nLPD/FADP) and GDPR. Privacy policy: [link, published before sign-up opens]."
+    }
+  ]
+}

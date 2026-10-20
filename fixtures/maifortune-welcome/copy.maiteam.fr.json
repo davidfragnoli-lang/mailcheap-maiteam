@@ -1,0 +1,100 @@
+{
+  "status": "maiteam-approved",
+  "language": "fr",
+  "source": {
+    "owner": "maiteam Design & Offer",
+    "issue": "QI-27055",
+    "approval": "David accepted QI-27055 card 87b8afae on 2026-10-19 (relayed by the board on FRA-25943, comment ced223b0)",
+    "retrieved": true,
+    "path": "/Users/davidfragnoli/Projects/maiteam-ships/maiteam-tracker-design (uncommitted working tree; bytes pinned by hash)",
+    "document": {
+      "file": "docs/MAIFORTUNE-WELCOME-SERIES.md",
+      "sha256": "aa0a0d7e96e69de195fa3e0c99c7f4ed0d68abfa8a8573f223067aa667bcb20a"
+    },
+    "files": {
+      "docs/MAIFORTUNE-WELCOME-SERIES.md": "aa0a0d7e96e69de195fa3e0c99c7f4ed0d68abfa8a8573f223067aa667bcb20a",
+      "docs/welcome-series/01-confirm.en.html": "dacd7b355cf31610e93ebf4f228699b5aa9aa8f7118a00525908097e88eae9ba",
+      "docs/welcome-series/01-confirm.en.txt": "0224c2e9633b4a3d212835f23754e56b588f59ddc0a7827acc4a46923ddeee23",
+      "docs/welcome-series/01-confirm.fr.html": "09388f03485b369de1652033dd535f8bad161f21c93349575db94449c119db9f",
+      "docs/welcome-series/01-confirm.fr.txt": "8d42791ddf3110ef9529d5acd40d3567e1bd2ab024b9496484210a52d9f56a27",
+      "docs/welcome-series/02-data.en.html": "9eeab387e41db1498f0165069d72a310a6d3477b8fe9128eb8efa1bf2da29be9",
+      "docs/welcome-series/02-data.en.txt": "86eb9cf53dce04c02b3d4fe2f6776989280f345c95e7b3ba000195cb951ac615",
+      "docs/welcome-series/02-data.fr.html": "18f8fc35c5edcb684130c8d3a69aa0fd3d5dd985d361c12d2fed0dcbfbfd5bc5",
+      "docs/welcome-series/02-data.fr.txt": "07faba50ff47272223bcd44ffe1e7f18406ed04a22c7cf7db35887205db63229",
+      "docs/welcome-series/03-agent.en.html": "f403496d1e0b774406e5088bf8e46259cd36864b55a426c628c0c3e5ad827c3e",
+      "docs/welcome-series/03-agent.en.txt": "c3b01c0497114c7e15edea3bfe95180ab28edbf32e1bb46a9f519f88c3e8cd30",
+      "docs/welcome-series/03-agent.fr.html": "03b81aa4db7c358cb62951f685077543ea75985023b132d821f1feed7d7581e6",
+      "docs/welcome-series/03-agent.fr.txt": "abfa66cf4da0dd04dacada7de4d791cce8dc10c45946d22f3b443e8b065ecdd8"
+    },
+    "transcription": [
+      "Words from the .txt mails unchanged except the product rename; checked by round trip to the renamed source bytes",
+      "Product renamed per David, 20 Oct 2026 (FRA-25997): \"mAIfortune Tracker\" and \"mAIfortune\" become \"fortuna\"; the URL maifortune.maiteam.ch is unchanged",
+      "Confirmation button line bound to mailcheap's {{confirm_url}} as upstream's built-in button markup (inline-block, #18181b on #ffffff, border-radius), which the renderer repaints in the newsletter's look",
+      "Footer lines end in two spaces (Markdown line break)",
+      "Subject 1 / preview 1 sent; subject 2 / preview 2 kept as the unsent alternative",
+      "Gated lines kept as marked: [pending QI-27046] in mail 2, \"your agent\" (no named client) in mail 3",
+      "Mail 4 is an outline only and is not in the sequence"
+    ]
+  },
+  "cadence": {
+    "note": "Mail 1 is the double opt-in email at signup. Mails 2 and 3 are timed from the confirmed enrollment.",
+    "stepDelaysMs": [
+      86400000,
+      259200000
+    ]
+  },
+  "confirmation": {
+    "subject": "Confirmez votre adresse pour fortuna",
+    "previewText": "Un clic, puis trois courts e-mails. Rien d'autre.",
+    "markdown": "Bonjour,\n\nQuelqu'un, sans doute vous, a demandé à rejoindre la liste d'attente de fortuna avec cette adresse. fortuna est un suivi de finances personnelles dans lequel votre propre agent IA peut classer vos opérations. Confirmez, et voici exactement ce que vous recevrez :\n\n- Demain : comment vos données financières sont protégées, en termes simples.\n- Dans trois jours : ce que votre agent fait réellement, montré sur des données d'exemple.\n- À l'ouverture de fortuna : votre invitation à vous connecter, avec le prix avant que quoi que ce soit ne vous coûte.\n\nTrois e-mails, puis seulement l'invitation. Pas de newsletter.\n\n<a href=\"{{confirm_url}}\" style=\"display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px;\">Confirmer mon adresse</a>\n\nSi vous n'avez rien demandé, ne faites rien. Plus rien ne sera envoyé.\n\nDavid\n\n--  \nDavid, fortuna · fortuna, par maiteam  \n[adresse postale : à définir par David], Suisse  \nVous recevez cet e-mail parce que vous avez demandé à rejoindre la liste d'attente de fortuna sur maifortune.maiteam.ch. Se désinscrire : [lien de désinscription]. Un clic, sans question.  \nVotre adresse e-mail sert uniquement à cette série et n'est jamais vendue. Protection des données : loi fédérale suisse sur la protection des données (nLPD) et RGPD. Politique de confidentialité : [lien, publiée avant l'ouverture des inscriptions].",
+    "mail": {
+      "source": "docs/welcome-series/01-confirm.fr.txt",
+      "sha256": "8d42791ddf3110ef9529d5acd40d3567e1bd2ab024b9496484210a52d9f56a27",
+      "html": "docs/welcome-series/01-confirm.fr.html",
+      "htmlSha256": "09388f03485b369de1652033dd535f8bad161f21c93349575db94449c119db9f"
+    },
+    "alternative": {
+      "subject": "C'était bien vous ? Confirmez votre place sur la liste fortuna",
+      "previewText": "Ce que vous recevrez, et à quel rythme, en un paragraphe.",
+      "sent": false
+    }
+  },
+  "steps": [
+    {
+      "position": 1,
+      "delayDays": 1,
+      "mail": {
+        "source": "docs/welcome-series/02-data.fr.txt",
+        "sha256": "07faba50ff47272223bcd44ffe1e7f18406ed04a22c7cf7db35887205db63229",
+        "html": "docs/welcome-series/02-data.fr.html",
+        "htmlSha256": "18f8fc35c5edcb684130c8d3a69aa0fd3d5dd985d361c12d2fed0dcbfbfd5bc5"
+      },
+      "subject": "Comment vos données financières sont protégées dans fortuna",
+      "previewText": "Des clés que vous révoquez, un journal que vous annulez, un export qui vous appartient.",
+      "alternative": {
+        "subject": "Avant de confier un relevé de carte à un agent",
+        "previewText": "Où vivent vos données, qui peut y toucher, et comment l'arrêter.",
+        "sent": false
+      },
+      "markdown": "Bonjour,\n\nLa première question qu'on nous pose : et si l'agent se trompe, ou obtient plus que prévu ? Voici ce qui est vrai aujourd'hui.\n\n- Votre agent reçoit une clé, pas votre mot de passe. Lecture seule ou lecture et écriture, nommée par vous, dernière utilisation affichée. Révoquer l'arrête à la requête suivante.\n- fortuna ne garde que l'empreinte de la clé. Vous la voyez une seule fois.\n- Chaque modification de l'agent figure dans Modifications avec son nom et l'heure. Annuler la défait.\n- Exporter en JSON depuis les Réglages, quand vous voulez. Supprimer mes données efface les données du tracker.\n- Chiffrement au repos de la base et de l'archive PDF. [pending QI-27046]\n- Export avec vos PDF ; suppression du compte qui efface aussi l'archive et les sauvegardes. [pending QI-27046]\n\nUne limite, honnêtement : ce que votre agent lit passe par votre fournisseur d'IA. Choisissez-en un de confiance, ou commencez en lecture seule.\n\n[Répondre avec la ligne dont vous voudriez la preuve] mailto:[adresse d'expédition]\n\nDavid\n\n--  \nDavid, fortuna · fortuna, par maiteam  \n[adresse postale : à définir par David], Suisse  \nVous recevez cet e-mail parce que vous avez demandé à rejoindre la liste d'attente de fortuna sur maifortune.maiteam.ch. Se désinscrire : [lien de désinscription]. Un clic, sans question.  \nVotre adresse e-mail sert uniquement à cette série et n'est jamais vendue. Protection des données : loi fédérale suisse sur la protection des données (nLPD) et RGPD. Politique de confidentialité : [lien, publiée avant l'ouverture des inscriptions]."
+    },
+    {
+      "position": 2,
+      "delayDays": 3,
+      "mail": {
+        "source": "docs/welcome-series/03-agent.fr.txt",
+        "sha256": "abfa66cf4da0dd04dacada7de4d791cce8dc10c45946d22f3b443e8b065ecdd8",
+        "html": "docs/welcome-series/03-agent.fr.html",
+        "htmlSha256": "03b81aa4db7c358cb62951f685077543ea75985023b132d821f1feed7d7581e6"
+      },
+      "subject": "Ce que votre agent fait vraiment d'un relevé de carte",
+      "previewText": "Un vrai flux, sur des données d'exemple, du PDF à la page Modifications.",
+      "alternative": {
+        "subject": "La partie du budget que vous sautez, faite par votre agent",
+        "previewText": "Relevé de carte en entrée, opérations classées, un bouton Annuler. Données d'exemple.",
+        "sent": false
+      },
+      "markdown": "Bonjour,\n\nVoici le flux, sur des données d'exemple (inventées, aucun compte réel) :\n\nVous, à votre agent : « Voici le relevé de carte de septembre. Enregistre-le dans fortuna. »\n\nVotre agent : « C'est fait. 23 opérations ajoutées depuis releve-carte-2026-09.pdf, 4 déplacées vers Courses. Deux ressemblaient à des doublons d'août, je les ai laissées de côté. Tout est dans la page Modifications et peut être annulé. »\n\nDans fortuna, la page Modifications affiche maintenant deux lignes signées par la clé que vous avez nommée, disons « reçus », chacune avec un bouton Annuler. Le PDF est dans Documents, relié à ses opérations. Cliquez sur Annuler sur la première ligne : les 23 opérations disparaissent. Cette annulation s'annule aussi.\n\nL'agent fait le classement que vous sautez. Le tableau de bord garde la trace de ce qu'il a fait.\n\nÇa marche avec n'importe quel agent qui parle MCP. Une clé créée dans Réglages → Accès agents suffit.\n\n[Voir la page Modifications d'exemple] [lien landing, mode exemple]\n\nDavid\n\n--  \nDavid, fortuna · fortuna, par maiteam  \n[adresse postale : à définir par David], Suisse  \nVous recevez cet e-mail parce que vous avez demandé à rejoindre la liste d'attente de fortuna sur maifortune.maiteam.ch. Se désinscrire : [lien de désinscription]. Un clic, sans question.  \nVotre adresse e-mail sert uniquement à cette série et n'est jamais vendue. Protection des données : loi fédérale suisse sur la protection des données (nLPD) et RGPD. Politique de confidentialité : [lien, publiée avant l'ouverture des inscriptions]."
+    }
+  ]
+}

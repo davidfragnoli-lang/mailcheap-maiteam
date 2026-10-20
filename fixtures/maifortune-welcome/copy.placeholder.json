@@ -1,0 +1,41 @@
+{
+  "status": "placeholder",
+  "source": {
+    "owner": "maiteam Design & Offer",
+    "issue": "QI-27055",
+    "retrieved": false,
+    "note": "PLACEHOLDER. Not maiteam copy. QI-27055 returned 404 to the Fragno company API on 2026-10-18. Replace this file with the maiteam draft (same shape, status \"maiteam-draft\", source.retrieved true) and rerun."
+  },
+  "cadence": {
+    "note": "Placeholder cadence, three steps on days 0, 1 and 3 after confirmation.",
+    "stepDelaysMs": [
+      0,
+      86400000,
+      259200000
+    ]
+  },
+  "confirmation": null,
+  "steps": [
+    {
+      "position": 1,
+      "delayDays": 0,
+      "subject": "[PLACEHOLDER] fortuna welcome, step 1 of 3",
+      "previewText": "[PLACEHOLDER] Day 0 preview text",
+      "markdown": "[PLACEHOLDER, not maiteam copy]\n\nStep 1 body. Sent on day 0, right after the confirmation click."
+    },
+    {
+      "position": 2,
+      "delayDays": 1,
+      "subject": "[PLACEHOLDER] fortuna welcome, step 2 of 3",
+      "previewText": "[PLACEHOLDER] Day 1 preview text",
+      "markdown": "[PLACEHOLDER, not maiteam copy]\n\nStep 2 body. Sent 24 hours after the confirmation click."
+    },
+    {
+      "position": 3,
+      "delayDays": 3,
+      "subject": "[PLACEHOLDER] fortuna welcome, step 3 of 3",
+      "previewText": "[PLACEHOLDER] Day 3 preview text",
+      "markdown": "[PLACEHOLDER, not maiteam copy]\n\nStep 3 body. Sent 72 hours after the confirmation click."
+    }
+  ]
+}

@@ -30,3 +30,7 @@ export async function checkFormSignup(input) {
 export async function checkApiSignup(input) {
 	return deps ? real.checkApiSignup(input, deps) : null;
 }
+
+export async function checkWaitlistSignup(input) {
+	return deps ? real.checkWaitlistSignup(input, deps) : null;
+}

@@ -1,0 +1,53 @@
+{
+  "product": "maifortune",
+  "status": "unapproved",
+  "note": "Sender identity for the fortuna welcome series. Nothing here is approved for sending. David decides the address; until then only the synthetic fixture below is used.",
+  "provisional": {
+    "displayName": "fortuna",
+    "address": "<local part to be decided>@maiteam.ch",
+    "domainOnRecord": "mail.maiteam.ch is the only maiteam sending domain verified on record (the maiteam newsletter's hello@mail.maiteam.ch); whether fortuna uses it is undecided",
+    "approved": false
+  },
+  "dryRunFixture": {
+    "name": "fortuna",
+    "slug": "maifortune",
+    "fromName": "fortuna",
+    "fromEmail": "welcome@sender.fortuna.invalid",
+    "replyTo": "reply@sender.fortuna.invalid",
+    "postalAddress": "Synthetic postal address, dry run only (.invalid)",
+    "requireConfirmation": true,
+    "dailySendCap": 50,
+    "archiveEnabled": false,
+    "welcome": {
+      "enabled": false
+    },
+    "theme": {
+      "preset": "fortuna"
+    }
+  },
+  "productionIntent": {
+    "requireConfirmation": true,
+    "dailySendCap": 0,
+    "dailySendCapNote": "Zero keeps sends closed until David opens the cap, as for the maiteam newsletter.",
+    "sequence": {
+      "slug": "welcome",
+      "status": "draft",
+      "stepDelaysMs": [
+        86400000,
+        259200000
+      ],
+      "note": "The confirmation email goes at signup; the two steps follow on day 1 and day 3 after the confirmed enrollment (copy.maiteam.*.json cadence)."
+    },
+    "webhook": {
+      "path": "/api/webhooks/waitlist/maifortune",
+      "enabledBy": "WAITLIST_WEBHOOK_PRODUCTS includes maifortune",
+      "secretEnv": "WAITLIST_SECRET_MAIFORTUNE (Paperclip secret binding, at least 32 characters; not created)",
+      "active": false,
+      "name": "fortuna waitlist"
+    },
+    "theme": {
+      "preset": "fortuna",
+      "note": "Upstream's fortuna preset (P3), saved explicitly as the newsletter's theme; never inferred from the copy."
+    }
+  }
+}

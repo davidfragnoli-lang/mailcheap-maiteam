@@ -17,8 +17,12 @@ export const MESSAGE_STATUSES = [
 
 const messageSchema = new mongoose.Schema(
 	{
-		kind: { type: String, enum: ["campaign", "last-chance", "welcome", "confirmation", "test"], required: true },
+		// maiteam (PATCHES.md P6): "sequence", one step of a welcome sequence for one enrollment.
+		kind: { type: String, enum: ["campaign", "last-chance", "welcome", "confirmation", "test", "sequence"], required: true },
 		campaignId: { type: mongoose.Schema.Types.ObjectId, ref: "Campaign" },
+		sequenceId: { type: mongoose.Schema.Types.ObjectId, ref: "Sequence" },
+		enrollmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Enrollment" },
+		stepPosition: { type: Number },
 		newsletterId: { type: mongoose.Schema.Types.ObjectId, ref: "Newsletter", required: true },
 		contactId: { type: mongoose.Schema.Types.ObjectId, ref: "Contact" },
 		email: { type: String, required: true, lowercase: true, trim: true },
@@ -56,6 +60,11 @@ messageSchema.index(
 messageSchema.index(
 	{ campaignId: 1, contactId: 1, kind: 1 },
 	{ unique: true, partialFilterExpression: { kind: "last-chance" } }
+);
+// maiteam (P6): one email per enrollment and step, the old fork's index: sequence:<enrollmentId>:<position> sends once.
+messageSchema.index(
+	{ enrollmentId: 1, stepPosition: 1 },
+	{ unique: true, partialFilterExpression: { kind: "sequence" } }
 );
 messageSchema.index({ providerMessageId: 1 }, { sparse: true });
 messageSchema.index({ kind: 1, createdAt: -1 });

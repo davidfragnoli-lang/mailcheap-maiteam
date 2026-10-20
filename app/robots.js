@@ -16,6 +16,8 @@ const PRIVATE_PATHS = [
 	"/newsletters",
 	"/oauth/",
 	"/restore",
+	// maiteam (PATCHES.md P6).
+	"/sequences",
 	"/welcome",
 	"/c/",
 	"/o/",
