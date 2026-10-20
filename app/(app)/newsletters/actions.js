@@ -78,6 +78,14 @@ export async function saveTheme(newsletterId, theme) {
 }
 
 // maiteam (PATCHES.md P3c): the email look on the Design page (CardEmailLook); null takes it away.
+// maiteam (PATCHES.md P4b): the daily send cap, on the Sender page. An empty field is null: NEWSLETTER_DAILY_CAP.
+export async function saveSendCap(newsletterId, dailySendCap) {
+	const { output, failure } = await runDashboardAction("update_newsletter_send_cap", { id: String(newsletterId ?? ""), dailySendCap });
+	if (failure) return toFormError(failure);
+	revalidatePath("/newsletters", "layout");
+	return { ok: true, status: output };
+}
+
 export async function saveEmailLook(newsletterId, look) {
 	const { output, failure } = await runDashboardAction("update_newsletter_email_look", { id: String(newsletterId ?? ""), look: look ?? null });
 	if (failure) return toFormError(failure);
