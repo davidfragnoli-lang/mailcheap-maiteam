@@ -20,6 +20,7 @@
 
 import fs from "node:fs";
 import mongoose from "mongoose";
+import { checkDumpStart } from "./dump-start.mjs";
 import { checkRelationships, compareContent, idSetHash as sha } from "./integrity.mjs";
 
 export const CUTOVER_ID = "fork-cutover";
@@ -169,7 +170,7 @@ export async function migrateFork({ sourceDb, targetDb, owner, mailFrom, archive
 	const since = new Date(dumpedAt ?? NaN);
 	if (!Number.isFinite(since.getTime()) || since > now) throw new Error("--dumped-at must be the time the dump began, as an ISO date");
 	const models = await loadModels();
-	const report = { mode: execute ? "execute" : "plan", at: now.toISOString(), collections: {}, created: {}, legacy: {}, problems: [], checks: {} };
+	const report = { mode: execute ? "execute" : "plan", at: now.toISOString(), dumpedAt: since.toISOString(), collections: {}, created: {}, legacy: {}, problems: [], checks: {} };
 
 	const targetCollections = await targetDb.listCollections().toArray();
 	for (const { name } of targetCollections) {
@@ -377,7 +378,7 @@ if (isMain) {
 			owner: { email: args["owner-email"], name: args["owner-name"] },
 			mailFrom: args["mail-from"],
 			archiveHost: args["archive-host"],
-			dumpedAt: args["dumped-at"],
+			dumpedAt: checkDumpStart(args["dumped-at"]),
 			execute: args.execute === true,
 		});
 		const text = `${JSON.stringify(report, null, 2)}\n`;

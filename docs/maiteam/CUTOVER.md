@@ -45,7 +45,7 @@ Resume, after the release, publishes each enrollment's earliest unresolved step 
 
 1. Check that nothing is in flight: no campaign `sending` or `scheduled` (the migration refuses one), no sequence step due inside the window, and the QStash queue empty for the app's job URLs.
 2. Final dump. Record its start time and sha256.
-3. Rehearse once more on that dump: `scripts/maiteam/rehearse-migration.sh --dump <archive> --source-db <name> --owner-email <owner> --mail-from <MAIL FROM host> --out <dir>`. `migrationChecksOk` must be `true`, `countMismatches` empty, and `restoreSame` `true`. The restore proof compares every document and index.
+3. Rehearse once more on that dump: `scripts/maiteam/rehearse-migration.sh --dump <archive> --dumped-at <dump start> --source-db <name> --owner-email <owner> --mail-from <MAIL FROM host> --out <dir>`. `migrationChecksOk` must be `true`, `countMismatches` empty, `restoreSame` `true`, and `dumpedAt` the recorded start. The restore proof compares every document and index.
 4. Migrate into the new, empty database: `MIGRATE_SOURCE_URI=<old, read-only> MIGRATE_TARGET_URI=<new> node scripts/maiteam/migrate-from-fork.mjs --owner-email <owner> --mail-from <host> --archive-host <host> --dumped-at <dump start> --execute --report <file>`. A broken reference, a duplicate under a unique index or a campaign mid-send stops it before anything is written. Stop on any check that is not `true`.
 5. Set the new deployment's environment above. Push the candidate commit to the production branch on GitHub, so Vercel Git integration builds and promotes it. Never use `vercel deploy` for production. The alias now serves the new deployment, in the hold.
 6. Wait 300 s, until the old deployment's last requests have finished.

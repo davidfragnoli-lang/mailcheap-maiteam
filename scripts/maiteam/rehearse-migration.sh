@@ -5,22 +5,25 @@
 #   3. dump that, restore it into a third (upstream_restore) and compare every document and index: the restore proof.
 # The migration's own checks compare each document with its conversion and stop on a broken reference.
 # Everything runs in one mongo:7 container bound to 127.0.0.1 only, removed at the end. Reports hold counts and hashes.
+# --dumped-at is the dump's recorded START (QA r3): the catch-up looks back to it for writes made while mongodump ran.
+# It is required and checked (scripts/maiteam/dump-start.mjs), never read from the archive's file time.
 #
-#   scripts/maiteam/rehearse-migration.sh --dump <archive.gz> --source-db <name> --owner-email <email> --out <dir> \
-#     [--mail-from <host>] [--archive-host <host>]
+#   scripts/maiteam/rehearse-migration.sh --dump <archive.gz> --dumped-at <ISO start, UTC> --source-db <name> \
+#     --owner-email <email> --out <dir> [--mail-from <host>] [--archive-host <host>]
 set -euo pipefail
 IMAGE="mongo@sha256:c53852c00c23ca9f23fc39690350ffa9a80e3642fe8f96879726d8da0abe80a7" # mongo:7, tools 100.19.1
-DUMP="" SOURCE_DB="" OWNER="" OUT="" MAIL_FROM="" ARCHIVE_HOST=""
+DUMP="" DUMPED_AT="" SOURCE_DB="" OWNER="" OUT="" MAIL_FROM="" ARCHIVE_HOST=""
 while (( $# )); do
 	case "$1" in
-		--dump) DUMP="$2"; shift ;; --source-db) SOURCE_DB="$2"; shift ;; --owner-email) OWNER="$2"; shift ;;
+		--dump) DUMP="$2"; shift ;; --dumped-at) DUMPED_AT="$2"; shift ;; --source-db) SOURCE_DB="$2"; shift ;; --owner-email) OWNER="$2"; shift ;;
 		--out) OUT="$2"; shift ;; --mail-from) MAIL_FROM="$2"; shift ;; --archive-host) ARCHIVE_HOST="$2"; shift ;;
 		*) print -u2 "unknown option $1"; exit 2 ;;
 	esac
 	shift
 done
-[[ -f "$DUMP" && -n "$SOURCE_DB" && -n "$OWNER" && -n "$OUT" ]] || { print -u2 "Usage: --dump <archive.gz> --source-db <name> --owner-email <email> --out <dir>"; exit 2; }
+[[ -f "$DUMP" && -n "$DUMPED_AT" && -n "$SOURCE_DB" && -n "$OWNER" && -n "$OUT" ]] || { print -u2 "Usage: --dump <archive.gz> --dumped-at <ISO start, UTC> --source-db <name> --owner-email <email> --out <dir>"; exit 2; }
 REPO="${0:A:h:h:h}"
+DUMPED_AT="$(node "$REPO/scripts/maiteam/dump-start.mjs" "$DUMPED_AT" "$DUMP")" || exit 2
 mkdir -p "$OUT"
 # Under $HOME, which Docker shares with its VM, private to the user, and removed on exit: a real dump holds personal data.
 mkdir -p "$HOME/.cache/mailcheap-rehearsal" && chmod 700 "$HOME/.cache/mailcheap-rehearsal"
@@ -39,16 +42,22 @@ COMPARE_URI="$URI" node "$REPO/scripts/maiteam/compare-databases.mjs" fork_copy 
 
 MIGRATE_SOURCE_URI="$URI/fork_copy" MIGRATE_TARGET_URI="$URI/upstream_rehearsal" node "$REPO/scripts/maiteam/migrate-from-fork.mjs" \
 	--owner-email "$OWNER" ${MAIL_FROM:+--mail-from "$MAIL_FROM"} ${ARCHIVE_HOST:+--archive-host "$ARCHIVE_HOST"} \
-	--dumped-at "$(date -u -r "$DUMP" +%Y-%m-%dT%H:%M:%SZ)" --execute --report "$OUT/2-migration.json" >/dev/null
+	--dumped-at "$DUMPED_AT" --execute --report "$OUT/2-migration.json" >/dev/null
 docker exec "$NAME" mongodump --quiet --db upstream_rehearsal --archive=/work/upstream.archive.gz --gzip
 docker exec "$NAME" mongorestore --quiet --archive=/work/upstream.archive.gz --gzip --nsFrom "upstream_rehearsal.*" --nsTo "upstream_restore.*"
 COMPARE_URI="$URI" node "$REPO/scripts/maiteam/compare-databases.mjs" upstream_rehearsal upstream_restore >"$OUT/3-restore-proof.json"
+/usr/bin/python3 - "$OUT" "$DUMPED_AT" "$(shasum -a 256 "$DUMP" | cut -d' ' -f1)" "$(date -u -r "$DUMP" +%Y-%m-%dT%H:%M:%SZ)" <<'PY'
+import json, sys, os
+out, dumped_at, archive_sha, archive_written = sys.argv[1:]
+json.dump({"dumpedAt": dumped_at, "archiveSha256": archive_sha, "archiveWrittenAt": archive_written}, open(os.path.join(out, "0-dump.json"), "w"), indent=2)
+PY
 shasum -a 256 "$OUT"/*.json >"$OUT/SHA256SUMS"
 /usr/bin/python3 - "$OUT" <<'PY'
 import json, sys, os
 out = sys.argv[1]
+d = json.load(open(os.path.join(out, "0-dump.json")))
 m = json.load(open(os.path.join(out, "2-migration.json")))
 r = json.load(open(os.path.join(out, "3-restore-proof.json")))
 mismatch = [k for k, v in m["collections"].items() if v.get("target") != v.get("source")]
-print(json.dumps({"migrationChecksOk": m["checks"].get("ok"), "countMismatches": mismatch, "restoreSame": r["same"], "problems": m["problems"]}))
+print(json.dumps({"dumpedAt": m["dumpedAt"], "dumpedAtMatches": m["dumpedAt"] == d["dumpedAt"], "migrationChecksOk": m["checks"].get("ok"), "countMismatches": mismatch, "restoreSame": r["same"], "problems": m["problems"]}))
 PY
