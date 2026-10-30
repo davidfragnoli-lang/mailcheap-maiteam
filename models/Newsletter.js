@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { accountScoped } from "../lib/account-scope.js";
+import { EMAIL_LANGUAGES } from "../lib/maiteam/email-language.js";
 import { lookFields } from "./maiteam-look-fields.js";
 
 const newsletterSchema = new mongoose.Schema(
@@ -14,6 +15,8 @@ const newsletterSchema = new mongoose.Schema(
 		// Without one, emails print the server's default (lib/postal-address.js), unless the owner saved it empty.
 		postalAddress: { type: String, trim: true },
 		postalAddressCleared: { type: Boolean },
+		// maiteam (PATCHES.md P11): the language of the footer and "Read online" mailcheap adds to its emails.
+		language: { type: String, enum: EMAIL_LANGUAGES },
 		archiveEnabled: { type: Boolean, default: false },
 		// The account's verified archive subdomain (lib/domains.js syncArchiveHosts). Without one, the
 		// archive and the links in its emails use <slug>.<shared domain>.

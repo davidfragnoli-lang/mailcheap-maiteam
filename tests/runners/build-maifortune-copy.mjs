@@ -3,7 +3,7 @@
 //   node tests/runners/build-maifortune-copy.mjs --source <maiteam-tracker-design checkout> --lang en|fr|es
 //
 // Every source file must match its pinned hash, or nothing is written: EN/FR the hashes relayed on FRA-25943
-// (comment ced223b0, design cd801e6), ES the six-hash manifest of QI-27657 (comment ef04c5f5, design 64fe937).
+// (comment ced223b0, design cd801e6), ES the six-hash manifest of QI-27854 (design 846f6f5), which re-locked QI-27657's copy.
 // The design repository has moved on since cd801e6, so EN/FR and ES are pinned, and checked, apart.
 // The words come from the plain-text mails unchanged. Only four mechanical changes are made, and each is
 // checked by undoing it and comparing with the source bytes:
@@ -16,8 +16,8 @@
 //   4. the product is renamed (David, 20 Oct 2026, FRA-25997): "mAIfortune Tracker" and "mAIfortune" become
 //      "fortuna". The URL maifortune.maiteam.ch is left as written. Checked by comparing with the renamed
 //      source, and by finding no old name left.
-// Every other bracketed placeholder ([pending QI-27046], [sender address], [postal address: ...]) stays as
-// written. Mail 4 is an outline in the series document and is not part of the sequence.
+// Every other bracketed placeholder (EN/FR: [pending QI-27046], [sender address], [postal address: ...]) stays as
+// written; the ES copy has none left. Mail 4 is an outline in the series document and is not part of the sequence.
 
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -41,12 +41,12 @@ const EXPECTED = {
 	"docs/welcome-series/03-agent.fr.txt": "abfa66cf4da0dd04dacada7de4d791cce8dc10c45946d22f3b443e8b065ecdd8",
 };
 const EXPECTED_ES = {
-	"docs/welcome-series/01-confirm.es.html": "e708d2d56cec25667e9995774115d4d64be2389313955323850ce5ffac249ed1",
-	"docs/welcome-series/01-confirm.es.txt": "76c27c98a9aea2289e5fcc24baf68f4dc27c71d32ca62af9b8e2f795ba5ce575",
-	"docs/welcome-series/02-data.es.html": "a8f03f130fdba42f038eaa17f9ffa3ba6cb370168651e278b59f04580930d507",
-	"docs/welcome-series/02-data.es.txt": "654177bfd3a2e44a8b2ac76e7adb753e3f849bbae8d2df6fafd225610c21f080",
-	"docs/welcome-series/03-agent.es.html": "8261253474badc1f9a82b8c9b747ed0fea01060226ebf45b39093ef15f2ecc03",
-	"docs/welcome-series/03-agent.es.txt": "8ee9a07bc28c88e6582a55d54c45bebaee8925d624447462e1e755a1750420a8",
+	"docs/welcome-series/01-confirm.es.html": "613e82a43b079efab70d689e16c1be832f505c0a6be4d3d6785365a36ef7a307",
+	"docs/welcome-series/01-confirm.es.txt": "ce9dc0c88d98ece3377db9e48abbd31dd8937bf85ce642cb95f3386fc3755f59",
+	"docs/welcome-series/02-data.es.html": "3f2b64adcdf85b5aedb40dd80563ed2d92725c867c19250f11d1c2c19e76d67b",
+	"docs/welcome-series/02-data.es.txt": "2a6079fdf2f75231b954376b313954e7152bf35fdf3c89b0a8b448fe62decae6",
+	"docs/welcome-series/03-agent.es.html": "f72494643dfe726a8cac32c3dd20171aee96c6d8ebdb5ce73579505ee454271f",
+	"docs/welcome-series/03-agent.es.txt": "6ccf55901afccb57a714784a0c95fbdf0c5fe53b3144e882d43282a3f1ea3418",
 };
 const DAY = 86_400_000;
 // The series document, section 3: mail 1 straight after the form, mail 2 on day 1 and mail 3 on day 3
@@ -173,17 +173,17 @@ const SOURCE = {
 		status: "maiteam-locked",
 		source: {
 			owner: "maiteam Design & Offer",
-			issue: "QI-27657",
-			approval: "Locked in QI-27657 (Design & Offer delivery, comment ef04c5f5, hashes matched on FRA-25998 comment be70fae4); built on QI-27851 by Studio Lead's assignment. Not yet independently QA'd",
+			issue: "QI-27854",
+			approval: "Locked in QI-27657, re-locked by Design & Offer on QI-27854 (comment 3b52af10, design 846f6f5) with every placeholder resolved; built on QI-27851. Not yet independently QA'd",
 			retrieved: true,
-			path: "maiteam-ships/maiteam-tracker-design at 64fe937630e1ef4966e9bfde99b08436c105972d (QI-27657; bytes pinned by hash)",
+			path: "maiteam-ships/maiteam-tracker-design at 846f6f57329670586ae1b0017f5cc42257ba6ba2 (QI-27854; bytes pinned by hash)",
 			files: EXPECTED_ES,
 			transcription: [
 				"Words from the .txt mails unchanged; checked by round trip to the source bytes",
 				"Confirmation button line \"[Confirmar mi correo] [enlace de confirmación]\" bound to mailcheap's {{confirm_url}} as upstream's built-in button markup (inline-block, #18181b on #ffffff, border-radius), which the renderer repaints in the newsletter's look",
 				"Footer lines end in two spaces (Markdown line break)",
 				"Asunto 1 / vista previa 1 sent; asunto 2 / vista previa 2 kept as the unsent alternative",
-				"Placeholders kept as written, pending their owners: [pending QI-27046] twice in mail 2, [dirección postal: la fija David], [enlace de baja], [enlace, publicado antes de que abra la inscripción], mailto:[dirección del remitente] in mail 2, [enlace de la landing, modo de ejemplo] in mail 3",
+				"No placeholders: the in-copy unsubscribe and postal lines are gone, mailcheap's system footer prints them in the newsletter's language (QI-27854 option A)",
 			],
 		},
 	},

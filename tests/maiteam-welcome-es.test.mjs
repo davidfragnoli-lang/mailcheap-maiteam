@@ -17,20 +17,21 @@ const SECRET = "synthetic-es-test-secret-at-least-32-chars";
 const ENV = { WAITLIST_WEBHOOK_PRODUCTS: "maifortune,fortuna-es", WAITLIST_SECRET_FORTUNA_ES: SECRET };
 const PRODUCT = "fortuna-es";
 const COPY = JSON.parse(readFileSync(new URL("../fixtures/maifortune-welcome/copy.maiteam.es.json", import.meta.url), "utf8"));
-// The six-hash manifest of QI-27657 (comment ef04c5f5), design 64fe937.
+// The six-hash manifest of QI-27854 (comment 3b52af10), design 846f6f5, which re-locked QI-27657's copy.
 const MANIFEST = {
-	"01-confirm.es.txt": "76c27c98a9aea2289e5fcc24baf68f4dc27c71d32ca62af9b8e2f795ba5ce575",
-	"01-confirm.es.html": "e708d2d56cec25667e9995774115d4d64be2389313955323850ce5ffac249ed1",
-	"02-data.es.txt": "654177bfd3a2e44a8b2ac76e7adb753e3f849bbae8d2df6fafd225610c21f080",
-	"02-data.es.html": "a8f03f130fdba42f038eaa17f9ffa3ba6cb370168651e278b59f04580930d507",
-	"03-agent.es.txt": "8ee9a07bc28c88e6582a55d54c45bebaee8925d624447462e1e755a1750420a8",
-	"03-agent.es.html": "8261253474badc1f9a82b8c9b747ed0fea01060226ebf45b39093ef15f2ecc03",
+	"01-confirm.es.txt": "ce9dc0c88d98ece3377db9e48abbd31dd8937bf85ce642cb95f3386fc3755f59",
+	"01-confirm.es.html": "613e82a43b079efab70d689e16c1be832f505c0a6be4d3d6785365a36ef7a307",
+	"02-data.es.txt": "2a6079fdf2f75231b954376b313954e7152bf35fdf3c89b0a8b448fe62decae6",
+	"02-data.es.html": "3f2b64adcdf85b5aedb40dd80563ed2d92725c867c19250f11d1c2c19e76d67b",
+	"03-agent.es.txt": "6ccf55901afccb57a714784a0c95fbdf0c5fe53b3144e882d43282a3f1ea3418",
+	"03-agent.es.html": "f72494643dfe726a8cac32c3dd20171aee96c6d8ebdb5ce73579505ee454271f",
 };
+const PRIVACY_URL = "https://fortuna.maiteam.ch/privacy?locale=es";
 
 describe("fortuna's es-ES copy", () => {
-	test("is built from the six pinned QI-27657 files, with the EN/FR cadence", () => {
+	test("is built from the six pinned QI-27854 files, with the EN/FR cadence", () => {
 		assert.equal(COPY.language, "es");
-		assert.match(COPY.source.path, /64fe937630e1ef4966e9bfde99b08436c105972d/);
+		assert.match(COPY.source.path, /846f6f57329670586ae1b0017f5cc42257ba6ba2/);
 		assert.deepEqual(
 			Object.fromEntries(Object.entries(COPY.source.files).map(([file, hash]) => [file.split("/").at(-1), hash])),
 			MANIFEST
@@ -41,17 +42,22 @@ describe("fortuna's es-ES copy", () => {
 		assert.deepEqual(COPY.steps.map(({ mail }) => mail.sha256), [MANIFEST["02-data.es.txt"], MANIFEST["03-agent.es.txt"]]);
 	});
 
-	test("binds the confirmation button to {{confirm_url}} and keeps every pending placeholder as written", () => {
+	test("binds the confirmation button to {{confirm_url}}, has no placeholder left and leaves the footer to mailcheap", () => {
 		assert.equal(COPY.confirmation.subject, "Confirma tu correo para fortuna");
 		assert.match(COPY.confirmation.markdown, /<a href="\{\{confirm_url\}\}" style="display:inline-block;background:#18181b;[^"]*">Confirmar mi correo<\/a>/);
 		assert.doesNotMatch(COPY.confirmation.markdown, /enlace de confirmación/);
-		const all = [COPY.confirmation, ...COPY.steps].map(({ markdown }) => markdown).join("\n");
-		for (const placeholder of ["[dirección postal: la fija David]", "[enlace de baja]", "[enlace, publicado antes de que abra la inscripción]"]) {
-			assert.equal(all.split(placeholder).length - 1, 3, placeholder);
+		assert.match(COPY.confirmation.markdown, /Tres correos en total, el último con tu invitación\. Nada de boletines\./);
+		const mails = [COPY.confirmation, ...COPY.steps];
+		const all = mails.map(({ markdown }) => markdown).join("\n");
+		// Markdown links are the only brackets left.
+		assert.deepEqual(all.replace(/\[[^\]]+\]\(https:\/\/[^)\s]+\)/g, "").match(/\[[^\]]*\]/g), null);
+		assert.doesNotMatch(all, /pending QI-|mailto:|Darte de baja|dirección postal/);
+		for (const { markdown } of mails) {
+			const footer = markdown.split("\n--  \n")[1].split("\n");
+			assert.equal(footer.length, 2, "the sender line and the data-protection sentence");
+			assert.ok(footer[1].endsWith(`Aviso de privacidad: ${PRIVACY_URL}`));
 		}
-		assert.equal(COPY.steps[0].markdown.split("[pending QI-27046]").length - 1, 2);
-		assert.match(COPY.steps[0].markdown, /mailto:\[dirección del remitente\]/);
-		assert.match(COPY.steps[1].markdown, /\[enlace de la landing, modo de ejemplo\]/);
+		assert.match(COPY.steps[1].markdown, /\[Abrir la demo con datos de ejemplo\]\(https:\/\/fortuna\.maiteam\.ch\/demo\?locale=es\)/);
 		assert.doesNotMatch(all, /mAIfortune|maifortune\.maiteam\.ch/);
 		assert.ok([COPY.confirmation, ...COPY.steps].every(({ alternative }) => alternative.sent === false));
 	});
@@ -89,6 +95,9 @@ describe("fortuna-es waitlist webhook", () => {
 		user.newsletterId = url.split("/").at(-1);
 		await m.Newsletter.updateOne({ accountId: user.accountId, _id: user.newsletterId }, { $set: { requireConfirmation: true, confirmation: COPY.confirmation, theme: { preset: "fortuna" } } });
 		user.key = (await as(user, () => m.apiKeys.createApiKey(null, form({ name: "Admin", level: "full" })))).key;
+		const language = await callApi("PATCH", `/api/v1/newsletters/${user.newsletterId}`, { key: user.key, body: { language: "es" } });
+		assert.equal(language.status, 200, JSON.stringify(language.body));
+		assert.equal(language.body.language, "es");
 		const created = await callApi("POST", "/api/v1/sequences", {
 			key: user.key,
 			body: { name: "fortuna bienvenida", slug: "welcome", status: "active", steps: COPY.steps.map(({ delayDays, subject, previewText, markdown }) => ({ delayDays, subject, previewText, markdown })) },
@@ -132,6 +141,13 @@ describe("fortuna-es waitlist webhook", () => {
 	const contactOf = (email) => m.Contact.findOne({ accountId: user.accountId, email }).lean();
 	const emailsTo = (email) => sesEmails.filter((sent) => sent.to === email);
 	const kindOf = (sent) => sent.tags.find(({ name }) => name === "kind")?.value;
+	// QI-27854 option A: mailcheap's own footer in Spanish, with the one working unsubscribe link and the address.
+	function assertSpanishFooter(sent) {
+		assert.match(sent.html, /<html lang="es">/);
+		assert.match(sent.html, /Recibes este correo porque te suscribiste a fortuna\.<br>\n<a href="http[^"]+\/unsubscribe\?token=[^"]+"[^>]*>Darte de baja<\/a><br>1 Main St, Paris/);
+		assert.match(sent.text, /Recibes este correo porque te suscribiste a fortuna\.\nDarte de baja: http\S+\/unsubscribe\?token=\S+\n1 Main St, Paris/);
+		assert.doesNotMatch(`${sent.html}\n${sent.text}`, /receiving this|Unsubscribe<|Unsubscribe:/);
+	}
 
 	test("is off until listed and given its own secret, and maps to the Spanish newsletter only", () => {
 		assert.equal(resolveWaitlistProduct(PRODUCT, { WAITLIST_SECRET_FORTUNA_ES: SECRET }), null);
@@ -151,6 +167,7 @@ describe("fortuna-es waitlist webhook", () => {
 		assert.equal(kindOf(confirmation), "confirmation");
 		assert.equal(confirmation.subject, "Confirma tu correo para fortuna");
 		assert.match(confirmation.html, /href="http[^"]+\/confirm\?token=[^"]+" style="display:inline-block;background:#6e5c96;[^"]*">Confirmar mi correo</);
+		assertSpanishFooter(confirmation);
 		const contact = await contactOf(email);
 		assert.equal(contact.source, "waitlist:fortuna-es");
 		let enrollment = await m.Enrollment.findOne({ accountId: user.accountId, contactId: contact._id }).lean();
@@ -173,6 +190,7 @@ describe("fortuna-es waitlist webhook", () => {
 		const steps = emailsTo(email).filter((sent) => kindOf(sent) === "sequence");
 		assert.deepEqual(steps.map(({ subject }) => subject), COPY.steps.map(({ subject }) => subject));
 		assert.ok(steps.every(({ headers }) => headers["List-Unsubscribe-Post"] === "List-Unsubscribe=One-Click"));
+		steps.forEach(assertSpanishFooter);
 	});
 
 	test("unsubscribed, bounced and complained readers get nothing, and an unsubscribe after step 1 ends the series", async () => {

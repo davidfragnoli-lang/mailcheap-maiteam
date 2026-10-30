@@ -21,7 +21,7 @@ export default async function DesignPage() {
 	const { account, selected } = await getSelectedNewsletter();
 	if (!selected) redirect(ADD_NEWSLETTER_PATH);
 	const newsletter = await Newsletter.findOne(scoped(account, { _id: selected._id }))
-		.select({ name: 1, slug: 1, imageUrl: 1, description: 1, fromName: 1, fromEmail: 1, postalAddress: 1, postalAddressCleared: 1, theme: 1 })
+		.select({ name: 1, slug: 1, imageUrl: 1, description: 1, fromName: 1, fromEmail: 1, postalAddress: 1, postalAddressCleared: 1, language: 1, theme: 1 })
 		.lean();
 
 	return (
