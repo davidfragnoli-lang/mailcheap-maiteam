@@ -17,21 +17,21 @@ const SECRET = "synthetic-es-test-secret-at-least-32-chars";
 const ENV = { WAITLIST_WEBHOOK_PRODUCTS: "maifortune,fortuna-es", WAITLIST_SECRET_FORTUNA_ES: SECRET };
 const PRODUCT = "fortuna-es";
 const COPY = JSON.parse(readFileSync(new URL("../fixtures/maifortune-welcome/copy.maiteam.es.json", import.meta.url), "utf8"));
-// The six-hash manifest of QI-27854 (comment 3b52af10), design 846f6f5, which re-locked QI-27657's copy.
+// The six ES files at design 68c1696 (QI-27910): QI-27854's re-lock (846f6f5) plus the pricing v2 lines (QI-27885 §C2).
 const MANIFEST = {
-	"01-confirm.es.txt": "ce9dc0c88d98ece3377db9e48abbd31dd8937bf85ce642cb95f3386fc3755f59",
-	"01-confirm.es.html": "613e82a43b079efab70d689e16c1be832f505c0a6be4d3d6785365a36ef7a307",
+	"01-confirm.es.txt": "6ea79d69cb6492e936f7800b023296771ffa62e97743809a40d47ee188df1941",
+	"01-confirm.es.html": "f0216516d82f9f93eccab086876a0269b9167fae056fa07e676751df5dd33eff",
 	"02-data.es.txt": "2a6079fdf2f75231b954376b313954e7152bf35fdf3c89b0a8b448fe62decae6",
 	"02-data.es.html": "3f2b64adcdf85b5aedb40dd80563ed2d92725c867c19250f11d1c2c19e76d67b",
-	"03-agent.es.txt": "6ccf55901afccb57a714784a0c95fbdf0c5fe53b3144e882d43282a3f1ea3418",
-	"03-agent.es.html": "f72494643dfe726a8cac32c3dd20171aee96c6d8ebdb5ce73579505ee454271f",
+	"03-agent.es.txt": "17332656308d1ef2caadff8f98d4f0a7af2055e778a9b5abb55e0f6614a03a2e",
+	"03-agent.es.html": "2cd3baec1a522584c2dd27bbaa5c3d2ec349b39ebfb62a1173001d7670eca494",
 };
 const PRIVACY_URL = "https://fortuna.maiteam.ch/privacy?locale=es";
 
 describe("fortuna's es-ES copy", () => {
-	test("is built from the six pinned QI-27854 files, with the EN/FR cadence", () => {
+	test("is built from the six pinned QI-27910 files, with the EN/FR cadence", () => {
 		assert.equal(COPY.language, "es");
-		assert.match(COPY.source.path, /846f6f57329670586ae1b0017f5cc42257ba6ba2/);
+		assert.match(COPY.source.path, /68c1696280c8761592d34eda86785c0f2458b394/);
 		assert.deepEqual(
 			Object.fromEntries(Object.entries(COPY.source.files).map(([file, hash]) => [file.split("/").at(-1), hash])),
 			MANIFEST
