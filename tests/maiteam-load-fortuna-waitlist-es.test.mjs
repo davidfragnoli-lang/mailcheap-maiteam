@@ -48,6 +48,16 @@ describe("loading fortuna-waitlist-es", () => {
 			[newsletter.name, newsletter.slug, newsletter.language, newsletter.requireConfirmation, newsletter.fromEmail, newsletter.replyTo],
 			["fortuna", "fortuna-waitlist-es", "es", true, SPEC.fromEmail, SPEC.replyTo]
 		);
+		// QA r4d (FRA-25999): the list mails in the maiteam fortuna look, as David ruled on 2 Nov for every fortuna list.
+		const Newsletter = (await import("../models/Newsletter.js")).default;
+		const stored = await Newsletter.findOne({ accountId: user.accountId, _id: first.newsletterId }).lean();
+		assert.deepEqual([stored.theme.preset, stored.theme.look?.preset, stored.theme.look?.product], ["fortuna", "maiteam", "fortuna"]);
+		const { renderEmail } = await import("../lib/render-email.js");
+		const { getConfirmationContent } = await import("../lib/confirmation-content.js");
+		const html = renderEmail({ ...getConfirmationContent(stored), newsletter: stored }).html;
+		assert.ok(html.includes("prefers-color-scheme: dark") && html.includes("#ae9cd2"), "dark mode in fortuna's dark malva");
+		assert.match(html, /background:#6e5c96;/, "the button in malva");
+		assert.deepEqual(receiptOf(plan).look, { preset: "maiteam", product: "fortuna" }, "the dry-run receipt names the look");
 		const sequence = (await api("GET", `/sequences/${first.sequenceId}`)).body;
 		assert.equal(sequence.status, "draft");
 		assert.deepEqual(sequence.steps.map(({ delayDays, subject }) => [delayDays, subject]), COPY.steps.map(({ delayDays, subject }) => [delayDays, subject]));

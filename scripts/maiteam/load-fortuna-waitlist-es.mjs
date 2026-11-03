@@ -33,6 +33,8 @@ export function readSpec(spec) {
 	return spec;
 }
 
+export const FORTUNA_LOOK = Object.freeze({ preset: "maiteam", product: "fortuna" });
+
 // What the newsletter and the sequence must hold once loaded.
 export function planRecord(spec, copy) {
 	if (copy.language !== "es") throw new Error("the copy is not the es-ES series");
@@ -48,6 +50,9 @@ export function planRecord(spec, copy) {
 			confirmation: { subject, previewText, markdown },
 			theme: { preset: "fortuna" },
 		},
+		// David, 2 Nov: every fortuna list mails in the maiteam fortuna look (malva, dark mode, subject headline). The
+		// theme preset above is the website's; the email look is set apart, by update_newsletter_email_look (P3c).
+		look: FORTUNA_LOOK,
 		sequence: { ...SEQUENCE, status: "draft", steps: copy.steps.map(({ delayDays, subject, previewText, markdown }) => ({ delayDays, subject, previewText, markdown })) },
 	};
 }
@@ -78,6 +83,9 @@ export async function loadRecord({ api, plan }) {
 	for (const key of ["subject", "previewText"]) check(newsletter.confirmation[key] === plan.newsletter.confirmation[key], `confirmation ${key}`);
 	check(newsletter.confirmation.format === "markdown" && newsletter.confirmation.content === plan.newsletter.confirmation.markdown, "confirmation markdown");
 	check(newsletter.confirmation.isCustom, "the confirmation email is the locked copy");
+	// get_newsletter doesn't answer the email look (PATCHES.md P3c); its save action answers what it stored.
+	const { look } = expectStatus(await api("PATCH", `/newsletters/${newsletter.id}/email-look`, { look: plan.look }), [200], "update_newsletter_email_look");
+	check(look?.preset === plan.look.preset && look?.product === plan.look.product, "the maiteam fortuna email look");
 
 	const sequences = expectStatus(await api("GET", `/sequences?newsletter=${encodeURIComponent(newsletter.id)}`), [200], "list_sequences");
 	const current = (sequences.data ?? sequences.sequences ?? sequences).find?.((sequence) => sequence.slug === SEQUENCE.slug);
@@ -97,6 +105,7 @@ export async function loadRecord({ api, plan }) {
 export function receiptOf(plan) {
 	const { postalAddress, ...newsletter } = plan.newsletter;
 	return {
+		look: plan.look,
 		newsletter: { ...newsletter, confirmation: { subject: newsletter.confirmation.subject, markdownSha256: sha256(newsletter.confirmation.markdown) }, postalAddressSha256: sha256(postalAddress) },
 		sequence: { ...plan.sequence, steps: plan.sequence.steps.map(({ delayDays, subject, markdown }) => ({ delayDays, subject, markdownSha256: sha256(markdown) })) },
 	};
