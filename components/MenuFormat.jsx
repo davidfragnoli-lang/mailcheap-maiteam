@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef } from "react";
 import { useEditorState } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { NodeSelection } from "@tiptap/pm/state";
-import { Bold, CornerDownLeft, Heading1, Heading2, Italic, Link, Strikethrough, TextQuote, Unlink } from "lucide-react";
+import { Bold, CornerDownLeft, Heading1, Heading2, Italic, Link, SquareDashed, Strikethrough, TextQuote, Unlink } from "lucide-react";
+import { isInSection } from "@/components/BlockSection";
+import { findButton } from "@/lib/editor-button";
+import { normalizeUrl } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
 export default function MenuFormat({ editor, isEditingLink, onEditLink }) {
@@ -20,6 +23,8 @@ export default function MenuFormat({ editor, isEditingLink, onEditLink }) {
 			isTitle: current.isActive("heading", { level: 1 }),
 			isHeading: current.isActive("heading", { level: 2 }),
 			isQuote: current.isActive("blockquote"),
+			// The blocks selected into a section of their own (components/BlockSection.jsx), whose settings open.
+			canMakeSection: !isInSection(current.state) && current.can().wrapIn("section"),
 		}),
 	});
 	const options = useMemo(
@@ -135,6 +140,14 @@ export default function MenuFormat({ editor, isEditingLink, onEditLink }) {
 						>
 							<TextQuote />
 						</ButtonFormat>
+						{state.canMakeSection && (
+							<>
+								<span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
+								<ButtonFormat label="Who sees this" onClick={() => editor.chain().focus().wrapIn("section", { isNew: true }).run()}>
+									<SquareDashed />
+								</ButtonFormat>
+							</>
+						)}
 					</>
 				)}
 			</div>
@@ -171,17 +184,11 @@ function keepFocus(event) {
 	if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
 }
 
-// Text selections only: images and dividers have nothing to format.
+// Text selections only: images and dividers have nothing to format, and buttons have their own toolbar
+// (components/MenuButton.jsx).
 function shouldShowMenu({ editor, view, state, from, to }) {
-	if (!editor.isEditable || from === to || state.selection instanceof NodeSelection) return false;
+	if (!editor.isEditable || from === to || state.selection instanceof NodeSelection || findButton(state)) return false;
 	return view.hasFocus();
-}
-
-function normalizeUrl(value) {
-	const url = String(value ?? "").trim();
-	if (!url || /^(https?:|mailto:)/i.test(url)) return url;
-	if (/^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/.test(url)) return `mailto:${url}`;
-	return `https://${url}`;
 }
 
 const MENU_KEY = "formatMenu";

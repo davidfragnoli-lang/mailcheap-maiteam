@@ -3,7 +3,7 @@ import ArticleHelp from "@/components/ArticleHelp";
 import LinkApp from "@/components/LinkApp";
 import { MAX_ACTIVE_API_KEYS } from "@/lib/actions/api-keys";
 import { isCloud } from "@/lib/config";
-import { getHelpPageMetadata } from "@/lib/help";
+import { getHelpHref, getHelpPageMetadata } from "@/lib/help";
 
 export const metadata = getHelpPageMetadata("api-and-ai");
 
@@ -13,8 +13,9 @@ export default function ApiAndAiPage() {
 			<h2 id="same-actions">The same actions, from anywhere</h2>
 			<p>
 				Everything you do in the dashboard also works from code, through the REST API, and from AI assistants, through the MCP server:
-				writing drafts, sending tests, scheduling, adding contacts with their first name, tags and fields, tagging them, building
-				segments, reading reports. Each action runs the same checks
+				writing drafts, with <Link href={getHelpHref("writing", "sections")}>sections</Link> for some readers, previewing them as one
+				of your contacts, sending tests, scheduling, adding contacts with their first name, tags and fields, tagging them, seeing the
+				emails each one got, building segments, reading reports. Each action runs the same checks
 				and limits as in the dashboard.{isCloud() && " Both need a plan."} The <Link href="/docs">API and MCP docs</Link> have the setup
 				and every endpoint.
 			</p>

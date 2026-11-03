@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 import mongoose from "mongoose";
-import { activate, addVerifiedDomain, anonymous, as, catchRedirect, form, signIn, startTestApp, withEnv } from "./helpers/app.mjs";
+import { activate, addVerifiedDomain, anonymous, as, callApi, catchRedirect, form, signIn, startTestApp, withEnv } from "./helpers/app.mjs";
 
-// The dashboard's get-started panel: each step is done from what the account has, nothing another account has
-// counts, the list finishes for good once every step but the optional domain is done, and dismissing it hides
-// it for good, on every device.
+// The dashboard's get-started panel: each newsletter has its own. Its steps count the newsletter's own design, campaigns
+// and contacts, and the account's domain and AI agent; nothing another account has counts. A newsletter's list finishes
+// for good once every step but the optional domain is done, and closing it hides it for good, on every device, for that
+// newsletter only: the account's other newsletters, and the ones it adds later, keep theirs.
 let app;
 let m;
 
@@ -18,10 +19,11 @@ before(async () => {
 		contacts: await import("../app/(app)/contacts/actions.js"),
 		domains: await import("../app/(app)/domains/actions.js"),
 		apiKeys: await import("../app/(app)/api-keys/actions.js"),
-		auth: await import("../lib/auth.js"),
 		getStarted: await import("../lib/get-started.js"),
+		selection: await import("../lib/selected-newsletter.js"),
 		Account: (await import("../models/Account.js")).default,
 		ApiKey: (await import("../models/ApiKey.js")).default,
+		Newsletter: (await import("../models/Newsletter.js")).default,
 	};
 });
 
@@ -30,7 +32,12 @@ after(() => app?.stop());
 async function customer(email, { hasPlan = false } = {}) {
 	const user = await signIn(email);
 	if (hasPlan) await activate(user);
-	const slug = email.split("@")[0];
+	user.slug = email.split("@")[0];
+	user.newsletterId = await addNewsletter(user, user.slug);
+	return user;
+}
+
+async function addNewsletter(user, slug) {
 	const url = await as(user, () =>
 		catchRedirect(
 			m.newsletters.saveNewsletter(
@@ -39,9 +46,7 @@ async function customer(email, { hasPlan = false } = {}) {
 			)
 		)
 	);
-	user.newsletterId = url.split("/").at(-1);
-	user.slug = slug;
-	return user;
+	return url.split("/").at(-1);
 }
 
 async function draft(user, subject = "Issue") {
@@ -60,6 +65,11 @@ function createKey(user, level) {
 	return as(user, () => m.apiKeys.createApiKey(null, form({ name: level, level })));
 }
 
+// A tile of the panel's design step, or a theme on the Design page: both save it the same way.
+function pickTheme(user, preset = "garden", newsletterId = user.newsletterId) {
+	return as(user, () => m.newsletters.saveTheme(newsletterId, { preset }));
+}
+
 // What Better Auth keeps when someone clicks Allow on the consent page (tests/oauth.test.mjs goes through it).
 function connectApp(user) {
 	const now = new Date();
@@ -76,24 +86,33 @@ function loadAccount(user) {
 	return m.Account.findById(user.accountId).lean();
 }
 
-async function check(user) {
-	return m.getStarted.getGetStartedSteps(await loadAccount(user), user.newsletterId);
+function loadNewsletter(user, newsletterId = user.newsletterId) {
+	return m.Newsletter.findOne({ accountId: user.accountId, _id: newsletterId }).lean();
 }
 
-async function doneSteps(user) {
-	const { steps } = await check(user);
+async function isOpen(user, newsletterId = user.newsletterId) {
+	return m.getStarted.isGetStartedOpen(await loadAccount(user), await loadNewsletter(user, newsletterId));
+}
+
+async function check(user, newsletterId = user.newsletterId) {
+	return m.getStarted.getGetStartedSteps(await loadAccount(user), newsletterId);
+}
+
+async function doneSteps(user, newsletterId = user.newsletterId) {
+	const { steps } = await check(user, newsletterId);
 	return steps.filter(({ isDone }) => isDone).map(({ id }) => id);
 }
 
 describe("the steps", () => {
-	test("a new account has all five to do, the domain one optional and the AI agent last, and sees the list", async () => {
+	test("a new account has all six to do, its design first, the domain one optional and the AI agent last, and sees the list", async () => {
 		const user = await customer("gs-new@example.com");
 		const { steps, draftId, isFinished } = await check(user);
 		assert.deepEqual(
 			steps.map(({ id, isDone, isOptional }) => [id, isDone, Boolean(isOptional)]),
 			[
-				["write", false, false],
+				["design", false, false],
 				["subscribers", false, false],
+				["write", false, false],
 				["domain", false, true],
 				["send", false, false],
 				["agent", false, false],
@@ -101,7 +120,43 @@ describe("the steps", () => {
 		);
 		assert.equal(draftId, null);
 		assert.equal(isFinished, false);
-		assert.equal(m.getStarted.isGetStartedOpen(await loadAccount(user)), true);
+		assert.equal(await isOpen(user), true);
+		assert.equal(m.getStarted.isGetStartedOpen(await loadAccount(user), null), false, "no list without a newsletter");
+	});
+
+	test("its design: a preset picked, MailCheap's own as it was included, from the dashboard or the API, or a theme changed or picked before the step was there", async () => {
+		const user = await customer("gs-design@example.com", { hasPlan: true });
+		assert.deepEqual((await loadNewsletter(user)).theme, { preset: "mailcheap" }, "every newsletter has a theme from the start");
+		const { key } = await createKey(user, "full");
+		const patch = (body) => callApi("PATCH", `/api/v1/newsletters/${user.newsletterId}`, { key, body });
+		assert.equal((await patch({ description: "Notes from the road.", theme: {} })).status, 200);
+		assert.deepEqual(await doneSteps(user), ["agent"], "the other settings and a theme without a preset pick nothing");
+
+		assert.equal((await pickTheme(user, "mailcheap")).ok, true);
+		assert.deepEqual(await doneSteps(user), ["design", "agent"], "keeping MailCheap's counts");
+		assert.ok((await loadNewsletter(user)).getStarted.themeChosenAt instanceof Date);
+		assert.deepEqual(await doneSteps(user, await addNewsletter(user, "gs-design-b")), ["agent"], "each newsletter picks its own");
+
+		const viaApi = await customer("gs-design-api@example.com", { hasPlan: true });
+		const apiKey = (await createKey(viaApi, "full")).key;
+		const themed = await callApi("PATCH", `/api/v1/newsletters/${viaApi.newsletterId}`, { key: apiKey, body: { theme: { preset: "mailcheap" } } });
+		assert.equal(themed.status, 200);
+		assert.deepEqual(await doneSteps(viaApi), ["design", "agent"], "an AI agent can pick it");
+		const body = { name: "Design notes", postalAddress: "1 Main St, Paris", theme: { preset: "mailcheap" } };
+		const created = await callApi("POST", "/api/v1/newsletters", { key: apiKey, body });
+		assert.equal(created.status, 201);
+		assert.deepEqual(await doneSteps(viaApi, created.body.id), ["design", "agent"], "or create a newsletter with one");
+
+		const before = await customer("gs-design-before@example.com");
+		const _id = new mongoose.Types.ObjectId(before.newsletterId);
+		await mongoose.connection.db.collection("newsletters").updateOne({ _id }, { $set: { theme: { preset: "midnight" } } });
+		assert.deepEqual(await doneSteps(before), ["design"]);
+		await mongoose.connection.db.collection("newsletters").updateOne({ _id }, { $set: { theme: { preset: "mailcheap", radius: "none" } } });
+		assert.deepEqual(await doneSteps(before), ["design"], "MailCheap's, changed");
+
+		const stranger = await customer("gs-design-stranger@example.com");
+		assert.ok((await pickTheme(stranger, "garden", before.newsletterId)).error, "another account's newsletter");
+		assert.equal((await loadNewsletter(before)).getStarted?.themeChosenAt, undefined);
 	});
 
 	test("writing: any campaign but a discarded one; the send step opens the draft edited last", async () => {
@@ -160,57 +215,117 @@ describe("the steps", () => {
 		await addReader(user);
 		const id = await draft(user);
 		assert.deepEqual(await as(user, () => m.campaigns.scheduleCampaign(id, { scheduledAt: tomorrow() })), { ok: true });
-		assert.deepEqual(await doneSteps(user), ["write", "subscribers", "send"]);
+		assert.deepEqual(await doneSteps(user), ["subscribers", "write", "send"]);
 		assert.deepEqual(await as(user, () => m.campaigns.unscheduleCampaign(id)), { ok: true });
-		assert.deepEqual(await doneSteps(user), ["write", "subscribers"]);
+		assert.deepEqual(await doneSteps(user), ["subscribers", "write"]);
 		assert.deepEqual(await as(user, () => m.campaigns.sendCampaign(id, {})), { ok: true });
-		assert.deepEqual(await doneSteps(user), ["write", "subscribers", "send"]);
+		assert.deepEqual(await doneSteps(user), ["subscribers", "write", "send"]);
+	});
+
+	test("each newsletter counts its own design, issues, subscribers and sends; the domain and the AI agent count for all", async () => {
+		const user = await customer("gs-two@example.com", { hasPlan: true });
+		await pickTheme(user);
+		await addReader(user);
+		await createKey(user, "full");
+		await addVerifiedDomain(user, "gs-two.dev");
+		const id = await draft(user);
+		await as(user, () => m.campaigns.scheduleCampaign(id, { scheduledAt: tomorrow() }));
+		assert.deepEqual(await doneSteps(user), ["design", "subscribers", "write", "domain", "send", "agent"]);
+
+		const second = await addNewsletter(user, "gs-two-b");
+		const { steps, draftId, isFinished } = await check(user, second);
+		assert.deepEqual(steps.filter(({ isDone }) => isDone).map(({ id }) => id), ["domain", "agent"]);
+		assert.equal(draftId, null, "the first newsletter's draft isn't this one's");
+		assert.equal(isFinished, false);
 	});
 });
 
 describe("the list", () => {
-	test("finishes once every step but the optional domain is done, and stays finished", async () => {
+	test("finishes once every step but the optional domain is done, stays finished, and the next newsletter has its own", async () => {
 		const user = await customer("gs-finish@example.com", { hasPlan: true });
 		await addReader(user);
 		await createKey(user, "full");
 		const id = await draft(user);
 		await as(user, () => m.campaigns.scheduleCampaign(id, { scheduledAt: tomorrow() }));
+		assert.equal((await check(user)).isFinished, false, "not without its design");
+		await pickTheme(user);
 
 		const withoutSharedDomain = await withEnv({ SHARED_DOMAIN: "" }, () => check(user));
 		assert.equal(withoutSharedDomain.isFinished, false, "without a shared domain, newsletters need a domain of their own");
-		assert.equal(m.getStarted.isGetStartedOpen(await loadAccount(user)), true);
+		assert.equal(await isOpen(user), true);
 
 		assert.equal((await check(user)).isFinished, true);
-		const account = await loadAccount(user);
-		assert.ok(account.onboarding.checklistFinishedAt instanceof Date);
-		assert.equal(m.getStarted.isGetStartedOpen(account), false);
+		assert.ok((await loadNewsletter(user)).getStarted.finishedAt instanceof Date);
+		assert.equal(await isOpen(user), false);
 
 		const key = await m.ApiKey.findOne({ accountId: user.accountId, level: "full" }).lean();
 		await as(user, () => m.apiKeys.revokeApiKey(key._id));
-		assert.equal(m.getStarted.isGetStartedOpen(await loadAccount(user)), false, "a key revoked later doesn't bring it back");
+		assert.equal(await isOpen(user), false, "a key revoked later doesn't bring it back");
+
+		const added = await addNewsletter(user, "gs-finish-b");
+		assert.equal(await isOpen(user, added), true);
+		assert.equal((await loadAccount(user)).onboarding?.checklistFinishedAt, undefined, "nothing's kept on the account");
 	});
 
-	test("dismissed, it's hidden for good on every device, and the /welcome answers stay", async () => {
+	test("closed, it's hidden for good on every device for its newsletter alone, and the /welcome answers stay", async () => {
 		const user = await signIn("gs-dismiss@example.com");
 		await as(user, () => catchRedirect(m.welcome.completeOnboarding(null, form({ name: "Dismissed", listSize: "growth", listSource: "Substack" }))));
-		assert.equal(m.getStarted.isGetStartedOpen(await loadAccount(user)), true);
+		user.newsletterId = String((await m.Newsletter.findOne({ accountId: user.accountId }).lean())._id);
+		const sibling = await addNewsletter(user, "gs-dismiss-b");
+		assert.equal(await isOpen(user), true);
 
-		assert.deepEqual(await as(user, () => m.welcome.dismissGetStarted()), { ok: true });
+		assert.deepEqual(await as(user, () => m.welcome.dismissGetStarted(user.newsletterId)), { ok: true });
+		const { getStarted } = await loadNewsletter(user);
+		assert.ok(getStarted.dismissedAt instanceof Date);
+		assert.equal(await isOpen(user, sibling), true, "the account's other newsletter keeps its list");
 		const account = await loadAccount(user);
-		assert.ok(account.onboarding.checklistDismissedAt instanceof Date);
 		assert.deepEqual([account.onboarding.listSize, account.onboarding.listSource], ["growth", "Substack"]);
 		assert.ok(account.onboarding.completedAt);
+		assert.equal(account.onboarding.checklistDismissedAt, undefined);
 
 		const otherDevice = await signIn("gs-dismiss@example.com");
-		const { account: seen } = await as(otherDevice, () => m.auth.requireAccount());
-		assert.equal(m.getStarted.isGetStartedOpen(seen), false);
+		const { account: seen, selected } = await as(otherDevice, () => m.selection.getSelectedNewsletter());
+		assert.equal(String(selected._id), user.newsletterId);
+		assert.equal(m.getStarted.isGetStartedOpen(seen, selected), false);
 
-		await as(otherDevice, () => m.welcome.dismissGetStarted());
-		const again = await loadAccount(user);
-		assert.equal(again.onboarding.checklistDismissedAt.getTime(), account.onboarding.checklistDismissedAt.getTime(), "dismissing again keeps the first date");
+		await as(otherDevice, () => m.welcome.dismissGetStarted(user.newsletterId));
+		const again = await loadNewsletter(user);
+		assert.equal(again.getStarted.dismissedAt.getTime(), getStarted.dismissedAt.getTime(), "closing again keeps the first date");
+
+		const added = await addNewsletter(user, "gs-dismiss-c");
+		assert.equal(await isOpen(user, added), true, "a newsletter added after shows it again");
 	});
 
-	test("dismissing needs a session", async () => {
-		assert.equal(await anonymous(() => catchRedirect(m.welcome.dismissGetStarted())), "/signin");
+	test("closed or finished on the account, as before each newsletter had its own, it stays hidden for the newsletters it had then", async () => {
+		for (const [field, slug] of [
+			["checklistDismissedAt", "gs-was-closed"],
+			["checklistFinishedAt", "gs-was-finished"],
+		]) {
+			const user = await customer(`${slug}@example.com`);
+			const hourAgo = new Date(Date.now() - 3_600_000);
+			await mongoose.connection.db.collection("newsletters").updateOne({ _id: new mongoose.Types.ObjectId(user.newsletterId) }, { $set: { createdAt: hourAgo } });
+			await m.Account.updateOne({ _id: user.accountId }, { $set: { [`onboarding.${field}`]: new Date(Date.now() - 60_000) } });
+			assert.equal(await isOpen(user), false, field);
+
+			const added = await addNewsletter(user, `${slug}-b`);
+			assert.equal(await isOpen(user, added), true, `${field}: a newsletter added after has its own`);
+		}
+	});
+
+	test("closing takes one of the account's newsletters: another account's stays as it was", async () => {
+		const user = await customer("gs-mine@example.com");
+		const stranger = await customer("gs-stranger@example.com");
+		assert.deepEqual(await as(stranger, () => m.welcome.dismissGetStarted(user.newsletterId)), { ok: true });
+		assert.equal(await isOpen(user), true);
+		assert.equal((await loadNewsletter(user)).getStarted?.dismissedAt, undefined);
+
+		for (const id of [undefined, null, "", "not-an-id", { $ne: null }]) {
+			assert.deepEqual(await as(user, () => m.welcome.dismissGetStarted(id)), { error: "Couldn't close it" }, JSON.stringify(id));
+		}
+		assert.equal(await isOpen(user), true);
+	});
+
+	test("closing needs a session", async () => {
+		assert.equal(await anonymous(() => catchRedirect(m.welcome.dismissGetStarted("0123456789abcdef01234567"))), "/signin");
 	});
 });

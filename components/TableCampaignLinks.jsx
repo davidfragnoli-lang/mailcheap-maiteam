@@ -1,3 +1,5 @@
+import { Globe } from "lucide-react";
+import ImageFavicon from "@/components/ImageFavicon";
 import LinkHelp from "@/components/LinkHelp";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate, formatNumber, formatRate } from "@/lib/format";
@@ -7,13 +9,13 @@ const SHOWN = 50;
 
 // A sent issue's clicked links, most clicked first: the contacts who clicked each, every click, and each link's share of
 // the contacts who clicked any. Labels are what the email shows: the link's text, or its picture's alt text. Only for an
-// issue with clicked links: the report's Clicked card already says when there are none.
-export default function TableCampaignLinks({ stats, html, webUrl, style }) {
+// issue with clicked links: the report's Links tab says when there are none.
+export default function TableCampaignLinks({ stats, html, webUrl }) {
 	const labels = getLinkLabels(html, { webUrl });
 	const links = stats.links.slice(0, SHOWN);
 
 	return (
-		<div style={style} className="flex flex-col gap-2 animate-enter">
+		<div className="flex flex-col gap-2">
 			<div className="overflow-hidden rounded-xl shadow-border">
 				<Table className="table-fixed">
 					<TableHeader>
@@ -42,24 +44,32 @@ export default function TableCampaignLinks({ stats, html, webUrl, style }) {
 
 function RowLink({ link, label, total }) {
 	const url = formatLinkUrl(link.url);
+	const webUrl = normalizeLink(link.url);
 	const share = total ? Math.min(link.clickers / total, 1) : 0;
 	const urlClassName = label ? "truncate text-xs text-muted-foreground" : "truncate";
 
 	return (
 		<TableRow className="tabular-nums">
 			<TableCell className="max-w-0 pl-4">
-				<span className="flex min-w-0 flex-col">
-					{label && <span className="truncate font-medium">{label}</span>}
-					{/* Clicks only ever store web links; anything else stays text, never a link. */}
-					{normalizeLink(link.url) ? (
-						<a href={link.url} target="_blank" rel="noopener noreferrer nofollow" title={link.url} className={`${urlClassName} hover:underline`}>
-							{url}
-						</a>
+				<span className="flex min-w-0 items-center gap-2.5">
+					{webUrl ? (
+						<ImageFavicon domain={new URL(webUrl).hostname} size={16} />
 					) : (
-						<span title={link.url} className={urlClassName}>
-							{url}
-						</span>
+						<Globe className="size-4 shrink-0 text-muted-foreground" />
 					)}
+					<span className="flex min-w-0 flex-col">
+						{label && <span className="truncate font-medium">{label}</span>}
+						{/* Clicks only ever store web links; anything else stays text, never a link. */}
+						{webUrl ? (
+							<a href={link.url} target="_blank" rel="noopener noreferrer nofollow" title={link.url} className={`${urlClassName} hover:underline`}>
+								{url}
+							</a>
+						) : (
+							<span title={link.url} className={urlClassName}>
+								{url}
+							</span>
+						)}
+					</span>
 				</span>
 			</TableCell>
 			<TableCell className="text-right">{formatNumber(link.clickers)}</TableCell>

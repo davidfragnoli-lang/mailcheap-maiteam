@@ -9,6 +9,7 @@ import { createContactField, importContacts } from "@/app/(app)/contacts/actions
 import BadgeStatus from "@/components/BadgeStatus";
 import { notifyFinished } from "@/components/CardImports";
 import InputTags from "@/components/InputTags";
+import ListImportGuides from "@/components/ListImportGuides";
 import { useContactOptions } from "@/components/ProviderContactOptions";
 import ZoneUpload from "@/components/ZoneUpload";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ import { CONSENT_TEXT } from "@/lib/import-checks";
 import { toast } from "@/lib/toast";
 import { acceptsFile, useFileDrop, usePageFileDrop } from "@/lib/use-file-drop";
 import { usePaywall } from "@/lib/use-paywall";
+import { useHasRole } from "@/lib/use-team-role";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_MB = 100;
@@ -59,14 +61,27 @@ const PREVIEW_ROWS = 6;
 // column goes, then its rows go to MailCheap in chunks and are imported in the background, which the contacts page
 // follows (CardImports). Closing the dialog while the rows are sent doesn't stop them. A CSV dropped on the dialog, or
 // anywhere on the page, is read like one picked; without a plan, the page drop opens the paywall, like the button.
-export default function DialogImportContacts({ newsletter, label = "Import", variant = "outline" }) {
+// guides: how to export the file from other platforms, under the drop zone (siteExtensions.importGuides). isOpen and
+// onOpenChange: for a page that opens it from elsewhere, like the Contacts page's Add contacts, without its own button;
+// onCloseAutoFocus then says where the focus goes back.
+export default function DialogImportContacts({
+	newsletter,
+	guides = [],
+	label = "Import",
+	variant = "outline",
+	isOpen: isOpenProp,
+	onOpenChange,
+	onCloseAutoFocus,
+}) {
 	const router = useRouter();
 	const paywall = usePaywall();
 	const { fields, tags: tagOptions } = useContactOptions();
-	const [isOpen, setIsOpen] = useState(false);
+	const [isOpenState, setIsOpenState] = useState(false);
+	const isOpen = isOpenProp ?? isOpenState;
 	const [file, setFile] = useState(null);
 	const [parsed, setParsed] = useState(null);
 	const [plan, setPlan] = useState([]);
+	const canCreateFields = useHasRole("admin");
 	const [mode, setMode] = useState("file");
 	const [importTags, setImportTags] = useState([]);
 	const [hasConsent, setHasConsent] = useState(false);
@@ -87,6 +102,11 @@ export default function DialogImportContacts({ newsletter, label = "Import", var
 		}
 		return { rows: [...byEmail.values()], invalidRows: invalid, duplicates: parsed.rows.length - invalid.length - byEmail.size };
 	}, [parsed, columns, profile, mode, importTags]);
+
+	function setIsOpen(open) {
+		setIsOpenState(open);
+		onOpenChange?.(open);
+	}
 
 	function reset() {
 		setFile(null);
@@ -135,7 +155,9 @@ export default function DialogImportContacts({ newsletter, label = "Import", var
 				}
 				setFile(selected);
 				setParsed({ rows: data });
-				setPlan(planColumns(meta.fields ?? [], fields, data));
+				// The account's fields are shared by its newsletters: a team's members map columns to them, and leave the others out.
+				const planned = planColumns(meta.fields ?? [], fields, data);
+				setPlan(canCreateFields ? planned : planned.map((item) => (item.target.startsWith("new:") ? { ...item, target: "skip" } : item)));
 			},
 			error: () => toast.error("Could not read this file"),
 		});
@@ -194,16 +216,19 @@ export default function DialogImportContacts({ newsletter, label = "Import", var
 		if (isSending) return <StatusSending sending={sending} />;
 		if (!parsed) {
 			return (
-				<ZoneUpload
-					icon={FileUp}
-					title="Drop a CSV file or choose one"
-					hint={`Up to ${formatNumber(MAX_IMPORT_ROWS)} rows`}
-					dropTitle="Drop to read it"
-					accept={CSV_ACCEPT}
-					isDragging={isDragging}
-					onFile={takeFile}
-					className="py-10"
-				/>
+				<div className="flex flex-col gap-4">
+					<ZoneUpload
+						icon={FileUp}
+						title="Drop a CSV file or choose one"
+						hint={`Up to ${formatNumber(MAX_IMPORT_ROWS)} rows`}
+						dropTitle="Drop to read it"
+						accept={CSV_ACCEPT}
+						isDragging={isDragging}
+						onFile={takeFile}
+						className="py-10"
+					/>
+					<ListImportGuides guides={guides} />
+				</div>
 			);
 		}
 		return (
@@ -219,12 +244,7 @@ export default function DialogImportContacts({ newsletter, label = "Import", var
 						onChange={(event) => setHasConsent(event.target.checked)}
 						className="mt-0.5 size-4 shrink-0 accent-foreground"
 					/>
-					<span>
-						{CONSENT_TEXT}
-						<span className="block text-xs text-muted-foreground">
-							Role addresses, throwaway inboxes and addresses that bounced or complained are left out.
-						</span>
-					</span>
+					{CONSENT_TEXT}
 				</label>
 			</div>
 		);
@@ -240,14 +260,17 @@ export default function DialogImportContacts({ newsletter, label = "Import", var
 					if (!open && !isSending) reset();
 				}}
 			>
-				<DialogTrigger asChild>
-					<Button variant={variant} disabled={!newsletter}>
-						<Upload data-icon="inline-start" />
-						{label}
-					</Button>
-				</DialogTrigger>
+				{isOpenProp === undefined && (
+					<DialogTrigger asChild>
+						<Button variant={variant} disabled={!newsletter}>
+							<Upload data-icon="inline-start" />
+							{label}
+						</Button>
+					</DialogTrigger>
+				)}
 				<DialogContent
 					{...dropProps}
+					onCloseAutoFocus={onCloseAutoFocus}
 					className={cn(
 						"max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto]",
 						parsed && !isSending ? "sm:max-w-2xl" : "sm:max-w-md"
@@ -476,7 +499,8 @@ function GroupColumns({ title, items, hidden = [], hiddenLabel, isFolded = false
 function RowColumn({ item, plan, fields, onChange }) {
 	const options = getColumnTargetOptions(item);
 	const newTarget = `new:${item.newType}`;
-	const isNewFieldAllowed = canBeNewField(item, plan, fields);
+	const canCreateFields = useHasRole("admin");
+	const isNewFieldAllowed = canCreateFields && canBeNewField(item, plan, fields);
 	const describe = (target) => describeColumnTarget(target, { column: item.column, fields, newType: item.newType });
 	return (
 		<li className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-4">
@@ -543,7 +567,7 @@ function SectionOptions({ mode, onMode, tags, onTags, tagOptions }) {
 			</div>
 			<div className="flex flex-col gap-1.5">
 				<span className="text-sm font-medium">Tag everyone</span>
-				<InputTags value={tags} onChange={onTags} suggestions={tagOptions.map(({ name }) => name)} max={10} placeholder="Optional, e.g. from-beehiiv" />
+				<InputTags value={tags} onChange={onTags} suggestions={tagOptions} maxSuggestions={6} max={10} placeholder="Optional, e.g. from-beehiiv" />
 			</div>
 		</section>
 	);

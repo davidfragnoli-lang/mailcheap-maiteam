@@ -2,7 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Eye } from "lucide-react";
-import { previewSummaryEmail, updateSummaryFrequency } from "@/app/(account)/account/actions";
+import { previewSummaryEmail, saveNotifications } from "@/app/(app)/newsletters/actions";
+import AvatarUser from "@/components/AvatarUser";
 import CardSettings, { RowSettings } from "@/components/CardSettings";
 import DialogPreviewEmail from "@/components/DialogPreviewEmail";
 import { Segmented } from "@/components/FieldsTheme";
@@ -10,9 +11,10 @@ import LinkHelp from "@/components/LinkHelp";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 
-// The account's summary email (lib/summary.js): how often it comes, and a preview of it with the account's own numbers in
-// the editor's preview. isEligible: the account pays for a plan, without which none goes out.
-export default function CardSummaryEmail({ frequency: savedFrequency, isEligible, hour, sender, stagger }) {
+// A newsletter's summary email (lib/summary.js): how often it comes, the address it goes to, and a preview of it with
+// the newsletter's own numbers in the editor's preview. isEligible: the account pays for a plan, without which none goes
+// out. recipient: the owner, as AvatarUser shows them.
+export default function CardSummaryEmail({ newsletterId, frequency: savedFrequency, isEligible, hour, sender, recipient, stagger }) {
 	const [frequency, setFrequency] = useState(savedFrequency);
 	const [preview, setPreview] = useState(null);
 	const [isOpen, setIsOpen] = useState(false);
@@ -23,7 +25,7 @@ export default function CardSummaryEmail({ frequency: savedFrequency, isEligible
 		if (value === frequency) return;
 		const previous = frequency;
 		setFrequency(value);
-		const result = await updateSummaryFrequency(value);
+		const result = await saveNotifications(newsletterId, { summary: value });
 		if (result?.error) {
 			setFrequency(previous);
 			toast.error(result.error);
@@ -34,7 +36,7 @@ export default function CardSummaryEmail({ frequency: savedFrequency, isEligible
 
 	function openPreview() {
 		startLoading(async () => {
-			const result = await previewSummaryEmail();
+			const result = await previewSummaryEmail(newsletterId);
 			if (result?.error) {
 				toast.error(result.error);
 				return;
@@ -61,13 +63,19 @@ export default function CardSummaryEmail({ frequency: savedFrequency, isEligible
 					<>
 						{describe(frequency, hour)}
 						{!isEligible && frequency !== "off" && " It starts once you pick a plan."}{" "}
-						<LinkHelp article="account" section="summary-email" />
+						<LinkHelp article="newsletters" section="notifications" />
 					</>
 				}
 			>
 				<div className="max-w-72">
 					<Segmented label="How often" size="sm" value={frequency} onChange={choose} options={OPTIONS} />
 				</div>
+			</RowSettings>
+			<RowSettings label="Sent to" hint="The address you sign in with.">
+				<span className="flex min-w-0 items-center gap-2 text-sm sm:pt-2">
+					<AvatarUser {...recipient} />
+					<span className="truncate">{recipient.email}</span>
+				</span>
 			</RowSettings>
 			{preview && (
 				<DialogPreviewEmail
@@ -90,7 +98,7 @@ export default function CardSummaryEmail({ frequency: savedFrequency, isEligible
 function describe(frequency, hour) {
 	if (frequency === "daily") return `Every morning at ${hour} AM, your time, with yesterday's numbers. Days with no news are skipped.`;
 	if (frequency === "weekly") return `Every Monday at ${hour} AM, your time: last week's subscribers and your latest issue.`;
-	return "mailcheap won't send you summaries.";
+	return "MailCheap won't send you summaries of this newsletter.";
 }
 
 const OPTIONS = [

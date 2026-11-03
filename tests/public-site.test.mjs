@@ -265,8 +265,8 @@ describe("pricing", () => {
 	test("the price per 1,000 emails is a month's price over the plan's emails, yearly plans spread over 12 months", () => {
 		const { PLANS, getPricePerThousand } = m.plans;
 		const perThousand = (interval) => PLANS.map((plan) => m.format.formatUsdCents(getPricePerThousand(plan, interval)));
-		assert.deepEqual(perThousand("month"), ["$0.95", "$0.52", "$0.40", "$0.30", "$0.17"]);
-		assert.deepEqual(perThousand("year"), ["$0.79", "$0.43", "$0.33", "$0.25", "$0.15"]);
+		assert.deepEqual(perThousand("month"), ["$0.95", "$0.52", "$0.40", "$0.30", "$0.17", "$0.16"]);
+		assert.deepEqual(perThousand("year"), ["$0.79", "$0.43", "$0.33", "$0.25", "$0.15", "$0.13"]);
 	});
 });
 
@@ -370,11 +370,23 @@ describe("search engines", () => {
 		assert.ok(folders.includes("/campaigns") && folders.includes("/billing"));
 		for (const path of [...folders, "/admin", "/api/", "/mcp", "/welcome", "/oauth/"]) assert.ok(rules.disallow.includes(path), `${path} is crawlable`);
 
-		// Sign-in stays crawlable, so search engines that follow the public pages' links to it read its noindex.
+		// Sign-in stays crawlable: MailCheap Cloud's is indexed, and search engines read a self-hosted server's noindex.
 		const publicPaths = [...m.siteExtensions.publicPages, ...m.docs.DOC_PAGES.map(({ href }) => href), ...helpPaths(), "/signin"];
 		for (const path of publicPaths) {
 			assert.ok(!rules.disallow.some((rule) => path.startsWith(rule)), `${path} is blocked`);
 		}
+	});
+
+	// People look for MailCheap Cloud's sign-in by name; links to it carry ?next=, which the canonical address leaves out.
+	test("sign-in is indexed on MailCheap Cloud, at one address, and stays out of search on a self-hosted server", async () => {
+		const { generateMetadata } = await importFile("app/signin/page.js");
+		assert.deepEqual(await withEnv({ MAILCHEAP_CLOUD: "true", APP_URL: SITE_URL }, () => generateMetadata()), {
+			title: "Sign in",
+			robots: { index: true, follow: true },
+			alternates: { canonical: `${SITE_URL}/signin` },
+		});
+		assert.deepEqual(await withEnv({ MAILCHEAP_CLOUD: "" }, () => generateMetadata()), { title: "Sign in" });
+		assert.deepEqual((await importFile("app/layout.js")).metadata.robots, { index: false, follow: false }, "which the app's layout keeps out");
 	});
 
 	test("public pages name their canonical URL", () => {

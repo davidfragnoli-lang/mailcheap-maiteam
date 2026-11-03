@@ -18,7 +18,10 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ADD_NEWSLETTER_PARAM, MAX_NEWSLETTERS_PER_ACCOUNT, NEWSLETTER_COOKIE, NEWSLETTER_LIMIT_MESSAGE } from "@/lib/newsletters";
+import { readCookie } from "@/lib/storage";
+import { ROLE_LABELS } from "@/lib/team-rules";
 import { toast } from "@/lib/toast";
+import { useHasRole } from "@/lib/use-team-role";
 import { cn } from "@/lib/utils";
 
 // The sidebar and the phone's top bar each have this menu: one refresh does for both.
@@ -34,6 +37,7 @@ export default function MenuNewsletter({ newsletters, selectedId, savedId, isCom
 	const [shownId, setShownId] = useState(selectedId);
 	const [renderedId, setRenderedId] = useState(selectedId);
 	const [isAdding, setIsAdding] = useState(false);
+	const hasSettings = useHasRole("admin");
 	if (selectedId !== renderedId) {
 		setRenderedId(selectedId);
 		setShownId(selectedId);
@@ -84,7 +88,7 @@ export default function MenuNewsletter({ newsletters, selectedId, savedId, isCom
 					<span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted">
 						<Plus className="size-3.5" />
 					</span>
-					<span className="truncate text-sm font-medium">Add a newsletter</span>
+					<span className="truncate text-sm font-medium sidebar-label">Add a newsletter</span>
 				</button>
 				{dialog}
 			</>
@@ -102,31 +106,46 @@ export default function MenuNewsletter({ newsletters, selectedId, savedId, isCom
 		});
 	}
 
+	const own = newsletters.filter(({ role }) => !role);
+	const shared = newsletters.filter(({ role }) => role);
+
 	return (
 		<>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<button type="button" aria-label={`Newsletter: ${shown.name}`} className={cn(TRIGGER, isCompact ? TRIGGER_COMPACT : TRIGGER_FULL)}>
 						<AvatarNewsletter newsletter={shown} size={24} />
-						<span className="min-w-0 flex-1 truncate text-left text-sm font-medium">{shown.name}</span>
-						<span className="relative grid size-4 shrink-0 place-items-center text-muted-foreground">
+						<span className="min-w-0 flex-1 truncate text-left text-sm font-medium sidebar-label">{shown.name}</span>
+						<span className="relative grid size-4 shrink-0 place-items-center text-muted-foreground sidebar-label">
 							<ChevronsUpDown className={cn("absolute size-4", ICON_MOTION, isPending ? ICON_HIDDEN : ICON_SHOWN)} />
 							<Loader2 className={cn("absolute size-4 animate-spin", ICON_MOTION, isPending ? ICON_SHOWN : ICON_HIDDEN)} />
 						</span>
 					</button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start" sideOffset={6} className={cn("p-1.5", isCompact ? "w-64" : "min-w-60")}>
-					<DropdownMenuLabel className="px-2 pt-1 pb-1.5">Newsletters</DropdownMenuLabel>
-					<DropdownMenuRadioGroup value={shownId} onValueChange={select}>
-						{newsletters.map((newsletter) => (
-							<DropdownMenuRadioItem key={newsletter.id} value={newsletter.id} className="h-9 gap-2.5 rounded-lg pl-2">
-								<AvatarNewsletter newsletter={newsletter} size={20} />
-								<span className="truncate">{newsletter.name}</span>
-							</DropdownMenuRadioItem>
-						))}
-					</DropdownMenuRadioGroup>
+					{own.length > 0 && (
+						<>
+							<DropdownMenuLabel className="px-2 pt-1 pb-1.5">Newsletters</DropdownMenuLabel>
+							<DropdownMenuRadioGroup value={shownId} onValueChange={select}>
+								{own.map((newsletter) => (
+									<ItemNewsletter key={newsletter.id} newsletter={newsletter} />
+								))}
+							</DropdownMenuRadioGroup>
+						</>
+					)}
+					{shared.length > 0 && (
+						<>
+							{own.length > 0 && <DropdownMenuSeparator className="my-1.5" />}
+							<DropdownMenuLabel className="px-2 pt-1 pb-1.5">Shared with you</DropdownMenuLabel>
+							<DropdownMenuRadioGroup value={shownId} onValueChange={select}>
+								{shared.map((newsletter) => (
+									<ItemNewsletter key={newsletter.id} newsletter={newsletter} />
+								))}
+							</DropdownMenuRadioGroup>
+						</>
+					)}
 					<DropdownMenuSeparator className="my-1.5" />
-					{newsletters.length < MAX_NEWSLETTERS_PER_ACCOUNT ? (
+					{own.length < MAX_NEWSLETTERS_PER_ACCOUNT ? (
 						<DropdownMenuItem className={ITEM} onSelect={() => setAdding(true)}>
 							<Plus />
 							Add a newsletter
@@ -140,12 +159,14 @@ export default function MenuNewsletter({ newsletters, selectedId, savedId, isCom
 							<p className="mt-1 text-xs text-pretty text-muted-foreground">{NEWSLETTER_LIMIT_MESSAGE}</p>
 						</div>
 					)}
-					<DropdownMenuItem asChild className={ITEM}>
-						<Link href="/newsletters">
-							<Settings />
-							Newsletter settings
-						</Link>
-					</DropdownMenuItem>
+					{hasSettings && (
+						<DropdownMenuItem asChild className={ITEM}>
+							<Link href="/newsletters">
+								<Settings />
+								Newsletter settings
+							</Link>
+						</DropdownMenuItem>
+					)}
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{dialog}
@@ -153,15 +174,22 @@ export default function MenuNewsletter({ newsletters, selectedId, savedId, isCom
 	);
 }
 
-function readCookie(name) {
-	const value = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))?.[1];
-	return value ? decodeURIComponent(value) : null;
+// A shared newsletter shows the user's role on it.
+function ItemNewsletter({ newsletter }) {
+	return (
+		<DropdownMenuRadioItem value={newsletter.id} className="h-9 gap-2.5 rounded-lg pl-2">
+			<AvatarNewsletter newsletter={newsletter} size={20} />
+			<span className="truncate">{newsletter.name}</span>
+			{newsletter.role && <span className="ml-auto shrink-0 pr-5 text-xs text-muted-foreground">{ROLE_LABELS[newsletter.role]}</span>}
+		</DropdownMenuRadioItem>
+	);
 }
 
 const TRIGGER =
 	"flex min-w-0 items-center gap-2.5 outline-none transition-[background-color,box-shadow] duration-150 focus-visible:ring-3 focus-visible:ring-ring/50";
+// The folded sidebar only shows the avatar, where it was: the rest is cut at the edge as it fades.
 const TRIGGER_FULL =
-	"h-11 w-full rounded-xl bg-card pr-3 pl-2.5 shadow-border hover:bg-muted/50 hover:shadow-border-hover data-[state=open]:bg-muted/60";
+	"h-11 w-full overflow-hidden rounded-xl bg-card pr-3 pl-2.5 shadow-border hover:bg-muted/50 hover:shadow-border-hover data-[state=open]:bg-muted/60";
 const TRIGGER_COMPACT = "h-10 max-w-full rounded-lg pr-2 pl-1.5 hover:bg-muted data-[state=open]:bg-muted";
 const ITEM = "h-9 gap-2.5 rounded-lg px-2 text-muted-foreground focus:text-foreground [&_svg]:text-muted-foreground";
 // Both icons stay in place, so the spinner and the chevrons cross-fade instead of jumping.

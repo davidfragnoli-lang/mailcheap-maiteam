@@ -3,11 +3,14 @@ import { test } from "node:test";
 import { getDmarcHosts, getDmarcStatus } from "../lib/dmarc-rules.js";
 import { getDomainSetup } from "../lib/domain-records.js";
 
-test("DMARC is looked up on the domain, then on its parents up to the last two labels, from four labels at most", () => {
+test("DMARC is looked up on the domain, then on its parents down to the registrable domain, from four labels at most", () => {
 	assert.deepEqual(getDmarcHosts("example.com"), ["example.com"]);
 	assert.deepEqual(getDmarcHosts("news.example.com"), ["news.example.com", "example.com"]);
-	assert.deepEqual(getDmarcHosts("mail.example.co.uk"), ["mail.example.co.uk", "example.co.uk", "co.uk"]);
+	assert.deepEqual(getDmarcHosts("mail.example.co.uk"), ["mail.example.co.uk", "example.co.uk"]);
+	assert.deepEqual(getDmarcHosts("example.co.za"), ["example.co.za"], "co.za's own record isn't the domain's");
+	assert.deepEqual(getDmarcHosts("news.example.us.com"), ["news.example.us.com", "example.us.com"], "nor a private suffix's");
 	assert.deepEqual(getDmarcHosts("a.b.c.d.example.com"), ["a.b.c.d.example.com", "c.d.example.com", "d.example.com", "example.com"]);
+	assert.deepEqual(getDmarcHosts("a.news.example.k12.ca.us"), ["a.news.example.k12.ca.us", "example.k12.ca.us"], "four labels is the registrable domain");
 });
 
 test("a DMARC record is read as receivers read it: its strings joined, other TXT records ignored, tags in any case", () => {
@@ -31,8 +34,8 @@ test("a DMARC record is read as receivers read it: its strings joined, other TXT
 });
 
 test("the DMARC row says what the last check found, and names the parent domain whose record covers it", () => {
-	const domain = { domain: "news.example.com", mailFromDomain: "rp.news.example.com", archiveHost: "letters.example.com", records: [] };
-	const dmarc = (fields) => getDomainSetup({ ...domain, ...fields }, { cnameTarget: null }).find(({ key }) => key === "dmarc").status;
+	const domain = { domain: "news.example.com", mailFromDomain: "rp.news.example.com", records: [] };
+	const dmarc = (fields) => getDomainSetup({ ...domain, ...fields }).find(({ key }) => key === "dmarc").status;
 	assert.deepEqual(dmarc({}), { label: "Recommended", tone: "none" }, "never looked up");
 	assert.deepEqual(dmarc({ dmarc: { status: "missing" } }), { label: "Recommended", tone: "none" });
 	assert.deepEqual(dmarc({ dmarc: { status: "found", host: "news.example.com" } }), { label: "Found", tone: "good" });

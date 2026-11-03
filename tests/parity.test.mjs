@@ -19,6 +19,8 @@ const ALLOWED_IMPORTS = new Set([
 	"@/lib/actions/dashboard",
 	"@/lib/selected-newsletter",
 	"@/lib/newsletter-sections",
+	// The hash a contact's picture comes from, of an address the action answered with.
+	"@/lib/gravatar",
 ]);
 const VIEW_ACTIONS = new Set(["selectNewsletter"]);
 const SEND_TOOLS = ["schedule_campaign", "send_campaign", "send_campaign_to_more", "resume_campaign"];
@@ -167,7 +169,7 @@ describe("dashboard server actions", () => {
 			const source = await readFile(join(ROOT, file), "utf8");
 			assert.match(source, /^"use server";/, `${file} is a server action file`);
 			for (const [, specifier] of source.matchAll(/^import [^;]+ from "([^"]+)";$/gm)) {
-				assert.ok(ALLOWED_IMPORTS.has(specifier), `${file} imports ${specifier}: server actions go through runDashboardAction`);
+				assert.ok(ALLOWED_IMPORTS.has(specifier), `${file} imports ${specifier}: server actions go through runDashboardAction or runAccountAction`);
 			}
 		}
 	});
@@ -182,7 +184,7 @@ describe("dashboard server actions", () => {
 			for (const { name, isAsync, body } of functions) {
 				assert.ok(isAsync, `${file} ${name} is async`);
 				if (VIEW_ACTIONS.has(name)) continue;
-				const names = [...body.matchAll(/runDashboardAction\(\s*"([a-z_]+)"/g)].map(([, action]) => action);
+				const names = [...body.matchAll(/run(?:Dashboard|Account)Action\(\s*"([a-z_]+)"/g)].map(([, action]) => action);
 				assert.ok(names.length > 0, `${file} ${name} doesn't run a registered action`);
 				for (const action of names) {
 					assert.ok(m.registry.getAction(action), `${file} ${name} runs ${action}, which isn't registered`);

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 import { getConfirmationContent } from "../lib/confirmation-content.js";
+import { toDraftEmail } from "../lib/newsletter-emails.js";
 import { activate, as, callApi, catchRedirect, form, jsonRequest, signIn, startTestApp, withEnv } from "./helpers/app.mjs";
 import { flushAfter } from "./stubs/next-server.mjs";
 import { published } from "./stubs/qstash.mjs";
@@ -79,8 +80,9 @@ async function draft(user, fields = {}) {
 	return response.body.id;
 }
 
-// The settings form with confirmed opt-in on, as a browser sends it: a textarea's line breaks become CRLF.
+// The settings form with confirmed opt-in on, as the confirmation email's editor sends it.
 function saveSettingsForm(user, { description = "", confirmation }) {
+	const { subject, previewText, format, content } = toDraftEmail(confirmation);
 	const fields = {
 		id: user.newsletterId,
 		name: `${user.slug} news`,
@@ -88,9 +90,10 @@ function saveSettingsForm(user, { description = "", confirmation }) {
 		postalAddress: "1 Main St, Paris",
 		description,
 		requireConfirmation: "on",
-		confirmationSubject: confirmation.subject,
-		confirmationPreviewText: confirmation.previewText,
-		confirmationMarkdown: confirmation.markdown.replaceAll("\n", "\r\n"),
+		confirmationSubject: subject,
+		confirmationPreviewText: previewText,
+		confirmationFormat: format,
+		confirmationContent: content,
 	};
 	return as(user, () => m.newsletters.saveNewsletter(null, form(fields)));
 }
@@ -417,6 +420,42 @@ describe("contacts", () => {
 		assert.equal((await m.exportRoute.GET(new Request(forged))).status, 401);
 	});
 
+	test("a search finds any part of the address, where * stands for any characters, and the counts, the export and tags follow it", async () => {
+		const user = await customer("contacts-search@example.com");
+		const contact = (email, subscribedAt, status = "active") => ({
+			accountId: user.accountId,
+			newsletterId: user.newsletterId,
+			email,
+			status,
+			subscribedAt: new Date(subscribedAt),
+		});
+		await m.Contact.insertMany([
+			contact("jane@example.com", "2026-01-04"),
+			contact("mary-jane@example.org", "2026-01-03"),
+			contact("sam@example.org", "2026-01-02", "unsubscribed"),
+			contact("joe@example.net", "2026-01-01"),
+		]);
+		const search = async (text) => (await api(user.key, "GET", `/contacts?search=${encodeURIComponent(text)}`)).body;
+		const emails = async (text) => (await search(text)).contacts.map(({ email }) => email);
+
+		assert.deepEqual(await emails("@example.org"), ["mary-jane@example.org", "sam@example.org"], "everyone at a domain");
+		assert.deepEqual(await emails("*@Example.org"), ["mary-jane@example.org", "sam@example.org"]);
+		assert.deepEqual(await emails("jane"), ["jane@example.com", "mary-jane@example.org"], "anywhere in the address");
+		assert.deepEqual(await emails("jane*.org"), ["mary-jane@example.org"]);
+		assert.deepEqual(await emails("org*jane"), [], "in order");
+		assert.deepEqual(await emails("*"), ["jane@example.com", "mary-jane@example.org", "sam@example.org", "joe@example.net"]);
+		const { counts } = await search("*@example.org");
+		assert.deepEqual([counts.active, counts.unsubscribed], [1, 1]);
+
+		assert.equal((await api(user.key, "GET", `/contacts/export?search=${encodeURIComponent("*@example.org")}`)).body.count, 2);
+		const tagged = await api(user.key, "POST", "/contacts/tag", {
+			newsletter: user.newsletterId,
+			filter: { search: "*@example.org", status: "active" },
+			tags: ["org"],
+		});
+		assert.deepEqual(tagged.body, { matched: 1, changed: 1 });
+	});
+
 	test("signups from a site send the welcome email and answer browsers", async () => {
 		const user = await customer("signups-api@example.com");
 		await api(user.key, "PATCH", `/newsletters/${user.slug}`, { welcome: { enabled: true, subject: "Welcome", markdown: "Thanks." } });
@@ -485,6 +524,37 @@ describe("contacts", () => {
 		);
 	});
 
+	test("the dashboard's Add contact saves a first name and tags on a new contact, and leaves one already on the list as it is", async () => {
+		const user = await customer("signups-details@example.com");
+		const add = (email, { firstName, tags = [] } = {}) => {
+			const data = form({ newsletterId: user.newsletterId, email, consent: "on", ...(firstName !== undefined && { firstName }) });
+			for (const tag of tags) data.append("tags", tag);
+			return as(user, () => m.contacts.addContact(null, data));
+		};
+		const read = async (email) => {
+			const { firstName, tags, source } = (await api(user.key, "GET", `/contacts/${encodeURIComponent(email)}`)).body;
+			return { firstName, tags, source };
+		};
+
+		assert.deepEqual(await add("jane@example.org", { firstName: " Jane ", tags: ["VIP", "podcast"] }), { email: "jane@example.org", status: "active" });
+		assert.deepEqual(await read("jane@example.org"), { firstName: "Jane", tags: ["vip", "podcast"], source: "dashboard" });
+		assert.deepEqual(await add("sam@example.org", { firstName: "  " }), { email: "sam@example.org", status: "active" });
+		assert.deepEqual(await read("sam@example.org"), { firstName: null, tags: [], source: "dashboard" }, "both are optional");
+
+		assert.deepEqual(await add("jane@example.org", { firstName: "Janet", tags: ["customer"] }), { error: "jane@example.org is already a contact" });
+		assert.deepEqual(await add("sam@example.org", { firstName: "Sam", tags: ["customer"] }), { error: "sam@example.org is already a contact" });
+		assert.deepEqual(await read("jane@example.org"), { firstName: "Jane", tags: ["vip", "podcast"], source: "dashboard" }, "as the dashboard says");
+		assert.deepEqual(await read("sam@example.org"), { firstName: null, tags: [], source: "dashboard" }, "what's missing too");
+
+		const long = "x".repeat(41);
+		assert.deepEqual(await add("long@example.org", { tags: [long] }), { error: `tags: "${long}" isn't a tag (40 characters at most, no commas)` });
+		assert.equal(await m.Contact.countDocuments({ accountId: user.accountId, email: "long@example.org" }), 0);
+
+		const signup = await api(user.signupsKey, "POST", "/contacts", { email: "sam@example.org", firstName: "Sam", tags: ["customer"] });
+		assert.deepEqual([signup.status, signup.body.created], [200, false]);
+		assert.deepEqual(await read("sam@example.org"), { firstName: "Sam", tags: ["customer"], source: "dashboard" }, "a signup still fills in what's missing");
+	});
+
 	test("the empty contacts page's request adds a contact once YOUR_API_KEY is a key", async () => {
 		const user = await customer("curl-api@example.com");
 		const curl = m.reference.getAddContactCurl("http://localhost:3000", user.slug);
@@ -508,7 +578,15 @@ describe("newsletters and images", () => {
 		const user = await customer("settings-api@example.com");
 		await api(user.key, "PATCH", `/newsletters/${user.slug}`, { welcome: { enabled: true, subject: "Hi", markdown: "Hello." } });
 		const updated = await api(user.key, "PATCH", `/newsletters/${user.newsletterId}`, { welcome: { subject: "Hello there" }, replyTo: "Me@Example.org" });
-		assert.deepEqual(updated.body.welcome, { enabled: true, subject: "Hello there", previewText: "", markdown: "Hello.", paused: false });
+		assert.deepEqual(updated.body.welcome, {
+			enabled: true,
+			subject: "Hello there",
+			previewText: "",
+			format: "markdown",
+			content: "Hello.",
+			paused: false,
+			review: null,
+		});
 		assert.equal(updated.body.replyTo, "me@example.org");
 		assert.equal(updated.body.postalAddress, "1 Main St, Paris");
 		assert.equal(updated.body.fromEmail, `hello@${user.slug}.mailcheapmail.com`);
@@ -520,7 +598,7 @@ describe("newsletters and images", () => {
 
 	test("a new newsletter starts with list cleanup on and the default numbers, unless it says false", async () => {
 		const user = await customer("cleanup-new@example.com");
-		const totals = { waiting: 0, kept: 0, dormant: 0 };
+		const totals = { waiting: 0, kept: 0, dormant: 0, noMailServer: 0, spamDomain: 0 };
 		const created = await api(user.key, "POST", "/newsletters", { name: "Cleaned up" });
 		assert.equal(created.status, 201);
 		assert.deepEqual(created.body.cleanup, { enabled: true, issues: 6, days: 180, ...totals });
@@ -553,7 +631,7 @@ describe("newsletters and images", () => {
 		const filledIn = getConfirmationContent({ name, description: "One idea a week." });
 		assert.equal((await saveSettingsForm(user, { description: "One idea a week.", confirmation: filledIn })).ok, true);
 		const stored = await m.Newsletter.findOne({ accountId: user.accountId }).lean();
-		assert.deepEqual(stored.confirmation, { subject: "", previewText: "", markdown: "" }, "no copy of the built-in one");
+		assert.deepEqual(stored.confirmation, { subject: "", previewText: "", format: "markdown", markdown: "", html: "" }, "no copy of the built-in one");
 		assert.equal((await api(user.key, "GET", `/newsletters/${user.slug}`)).body.confirmation.isCustom, false);
 
 		await api(user.key, "PATCH", `/newsletters/${user.slug}`, { description: "Two ideas a week." });
@@ -563,8 +641,12 @@ describe("newsletters and images", () => {
 		assert.equal(sesEmails.length - before, 1);
 		assert.ok(sesEmails.at(-1).text.includes(`You asked to get ${name}. Two ideas a week.`), "the confirmation email has the new description");
 
-		const { subject, previewText, markdown } = (await api(user.key, "GET", `/newsletters/${user.slug}`)).body.confirmation;
-		const renamed = await api(user.key, "PATCH", `/newsletters/${user.slug}`, { name: "Field notes", confirmation: { subject, previewText, markdown } });
+		const { subject, previewText, format, content } = (await api(user.key, "GET", `/newsletters/${user.slug}`)).body.confirmation;
+		assert.equal(format, "rich");
+		const renamed = await api(user.key, "PATCH", `/newsletters/${user.slug}`, {
+			name: "Field notes",
+			confirmation: { subject, previewText, format, content },
+		});
 		assert.equal(renamed.body.confirmation.isCustom, false, "read before the rename, it's still the built-in one");
 		assert.equal(renamed.body.confirmation.subject, "Confirm your subscription to Field notes");
 	});
@@ -572,18 +654,73 @@ describe("newsletters and images", () => {
 	test("an edited confirmation email is stored and kept; one stored before stays through saves that leave it out", async () => {
 		const user = await customer("own-confirmation@example.com");
 		const builtIn = getConfirmationContent({ name: `${user.slug} news` });
-		const edited = { ...builtIn, markdown: `${builtIn.markdown}\n\nP.S. Reply to say hi.` };
+		const edited = { ...builtIn, html: `${builtIn.html}<p>P.S. Reply to say hi.</p>` };
 		assert.equal((await saveSettingsForm(user, { confirmation: edited })).ok, true);
 		await api(user.key, "PATCH", `/newsletters/${user.slug}`, { description: "One idea a week." });
 		const { confirmation } = (await api(user.key, "GET", `/newsletters/${user.slug}`)).body;
 		assert.equal(confirmation.isCustom, true);
-		assert.ok(confirmation.markdown.endsWith("P.S. Reply to say hi."));
-		assert.ok(!confirmation.markdown.includes("One idea a week."), "the description doesn't change it");
+		assert.equal(confirmation.format, "rich");
+		assert.ok(confirmation.content.endsWith("<p>P.S. Reply to say hi.</p>"));
+		assert.ok(!confirmation.content.includes("One idea a week."), "the description doesn't change it");
 
-		const { subject, previewText, markdown } = getConfirmationContent({ name: `${user.slug} news`, description: "One idea a week." });
-		await m.Newsletter.updateOne({ accountId: user.accountId }, { $set: { confirmation: { subject, previewText, markdown } } });
+		// Written in Markdown before the editor.
+		const markdown = `Confirm to get ${user.slug} news.\n\n<a href="{{confirm_url}}">Confirm</a>`;
+		await m.Newsletter.updateOne({ accountId: user.accountId }, { $set: { confirmation: { subject: "Confirm", previewText: "", markdown } } });
 		await api(user.key, "PATCH", `/newsletters/${user.slug}`, { postalAddress: "2 Main St, Paris" });
 		assert.equal((await m.Newsletter.findOne({ accountId: user.accountId }).lean()).confirmation.markdown, markdown);
+		const kept = (await api(user.key, "GET", `/newsletters/${user.slug}`)).body.confirmation;
+		assert.deepEqual([kept.isCustom, kept.format, kept.content], [true, "markdown", markdown]);
+	});
+
+	test("a newsletter's own last-chance email is the built-in one until it's written, in the editor's HTML or in Markdown, and keeps its button", async () => {
+		const user = await customer("own-last-chance@example.com");
+		const path = `/newsletters/${user.slug}`;
+		const builtIn = (await api(user.key, "GET", path)).body.lastChance;
+		assert.deepEqual([builtIn.isCustom, builtIn.format, builtIn.review], [false, "rich", null]);
+		assert.equal(builtIn.subject, `Do you still want ${user.slug} news?`);
+		assert.ok(builtIn.content.includes('<div data-button=""><a href="{{keep_url}}">Yes, keep sending it</a></div>'));
+
+		const content = '<p>Faz tempo que você não abre.</p><div data-button=""><a href="{{keep_url}}">Sim, quero continuar</a></div>';
+		const saved = await api(user.key, "PATCH", path, { lastChance: { subject: "Ainda quer receber?", format: "rich", content } });
+		assert.deepEqual(saved.body.lastChance, { subject: "Ainda quer receber?", previewText: "", format: "rich", content, isCustom: true, review: null });
+
+		const withoutButton = await api(user.key, "PATCH", path, { lastChance: { format: "rich", content: "<p>Faz tempo.</p>" } });
+		assert.match(assertError(withoutButton, 400, "validation_failed"), /^Last-chance email needs its button: a link to \{\{keep_url\}\}/);
+		assert.equal(assertError(await api(user.key, "PATCH", path, { lastChance: { format: "rich" } }), 400, "validation_failed"), "lastChance.format: send content with it");
+		const inMarkdown = await api(user.key, "PATCH", path, { lastChance: { content: 'Faz tempo.\n\n<a href="{{keep_url}}">Sim</a>' } });
+		assert.deepEqual([inMarkdown.body.lastChance.format, inMarkdown.body.lastChance.isCustom], ["markdown", true], "Markdown without a format");
+
+		const { subject, previewText, format, content: builtInContent } = builtIn;
+		const back = await api(user.key, "PATCH", path, { lastChance: { subject, previewText, format, content: builtInContent } });
+		assert.equal(back.body.lastChance.isCustom, false, "sent back as it was, it's the built-in one again");
+		assert.equal((await m.Newsletter.findOne({ accountId: user.accountId }).lean()).lastChance.subject, "");
+	});
+
+	test("the welcome and confirmation emails take content in the editor's HTML too, and markdown as before", async () => {
+		const user = await customer("email-formats@example.com");
+		const path = `/newsletters/${user.slug}`;
+		const welcome = await api(user.key, "PATCH", path, { requireConfirmation: false, welcome: { enabled: true, subject: "Bem-vindo", markdown: "Obrigado!" } });
+		assert.deepEqual([welcome.body.welcome.format, welcome.body.welcome.content], ["markdown", "Obrigado!"]);
+		const rich = await api(user.key, "PATCH", path, { welcome: { format: "rich", content: "<p>Obrigado, {{first_name|leitor}}!</p>" } });
+		assert.deepEqual([rich.body.welcome.subject, rich.body.welcome.format, rich.body.welcome.content], ["Bem-vindo", "rich", "<p>Obrigado, {{first_name|leitor}}!</p>"]);
+		assertError(await api(user.key, "PATCH", path, { welcome: { format: "rich", content: "<p></p>" } }), 400, "validation_failed");
+
+		const confirmation = '<p>Falta só um clique.</p><div data-button=""><a href="{{confirm_url}}">Confirmar</a></div>';
+		const confirming = await api(user.key, "PATCH", path, {
+			requireConfirmation: true,
+			welcome: { enabled: false },
+			confirmation: { subject: "Confirme sua inscrição", format: "rich", content: confirmation },
+		});
+		assert.deepEqual([confirming.body.confirmation.isCustom, confirming.body.confirmation.content], [true, confirmation]);
+		const withoutButton = await api(user.key, "PATCH", path, { confirmation: { content: "<p>Falta só um clique.</p>", format: "rich" } });
+		assert.match(assertError(withoutButton, 400, "validation_failed"), /^Confirmation email needs its button: a link to \{\{confirm_url\}\}/);
+
+		const before = sesEmails.length;
+		assert.equal((await api(user.signupsKey, "POST", "/contacts", { email: "leitor@example.org" })).body.status, "pending");
+		await flushAfter();
+		const sent = sesEmails.slice(before).find(({ to }) => [to].flat().includes("leitor@example.org"));
+		assert.equal(sent.subject, "Confirme sua inscrição");
+		assert.match(sent.html, /<a href="https:\/\/[^"]+\/confirm\?token=[^"]+" style="display:inline-block;[^"]*">Confirmar<\/a>/, "its button carries the reader's own link");
 	});
 
 	test("images upload as base64 or from a link, into the account's folder", async () => {

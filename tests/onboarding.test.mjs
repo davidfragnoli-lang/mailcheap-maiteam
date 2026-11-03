@@ -100,7 +100,8 @@ describe("/welcome", () => {
 		const suggest = (listSize) => m.onboarding.getRecommendedPlanId({ onboarding: { listSize } });
 		// About 4.33 emails per subscriber a month: 15,000 subscribers take 64,950 of Growth's 75,000, 45,000 take 194,850 of
 		// Pro's 200,000 and 100,000 take 433,000 of Scale's 500,000. Starter's 20,000 hold about 4,600, and Under 5,000 stays
-		// on it: most new lists are far smaller. Max's 2,000,000 hold about 460,000.
+		// on it: most new lists are far smaller. Max's 2,000,000 hold about 460,000, so Over 100,000 starts on it and not on
+		// Ultra, the largest plan.
 		assert.deepEqual(
 			m.onboarding.LIST_SIZES.map(({ id, label }) => [label, suggest(id)]),
 			[
@@ -115,7 +116,12 @@ describe("/welcome", () => {
 	});
 
 	test("while Max isn't on sale, Over 100,000 suggests the largest plan that is", () => {
-		const onSale = m.plans.PLANS.filter(({ id }) => id !== "max");
+		const suggestOver = (offSale) =>
+			m.onboarding.getRecommendedPlanId({ onboarding: { listSize: "more" } }, m.plans.PLANS.filter(({ id }) => !offSale.includes(id)));
+		assert.equal(suggestOver(["ultra"]), "max", "Ultra's prices not in yet");
+		assert.equal(suggestOver(["max"]), "ultra");
+		assert.equal(suggestOver(["max", "ultra"]), "scale");
+		const onSale = m.plans.PLANS.filter(({ id }) => !["max", "ultra"].includes(id));
 		const suggest = (listSize) => m.onboarding.getRecommendedPlanId({ onboarding: { listSize } }, onSale);
 		assert.deepEqual(["none", "starter", "growth", "pro", "scale", "more"].map(suggest), ["starter", "starter", "growth", "pro", "scale", "scale"]);
 	});
@@ -232,7 +238,7 @@ describe("without a plan", () => {
 		await welcome(user, { name: "Welcome trial" });
 		const { _id, name, slug } = await m.Newsletter.findOne({ accountId: user.accountId }).lean();
 		const newsletterId = String(_id);
-		const settings = { id: newsletterId, name, slug, postalAddress: "1 Main St, Paris", welcomeEnabled: "on", welcomeSubject: "Welcome", welcomeMarkdown: "Thanks." };
+		const settings = { id: newsletterId, name, slug, postalAddress: "1 Main St, Paris", welcomeEnabled: "on", welcomeSubject: "Welcome", welcomeContent: "Thanks." };
 		assert.equal((await as(user, () => m.newsletters.saveNewsletter(null, form(settings)))).ok, true, "signups don't confirm, so the welcome email is on");
 		const add = (email) => as(user, () => m.contacts.addContact(null, form({ newsletterId, email, consent: "on" })));
 

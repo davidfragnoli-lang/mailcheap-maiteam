@@ -3,13 +3,15 @@ import ArticleHelp from "@/components/ArticleHelp";
 import LinkApp from "@/components/LinkApp";
 import { TRIAL_CONTACTS } from "@/lib/actions/contacts";
 import { isGoogleEnabled } from "@/lib/auth";
-import { WARMUP, getSharedDomain, isCloud } from "@/lib/config";
+import { getSharedDomain, isCloud } from "@/lib/config";
 import { getHelpHref, getHelpPageMetadata } from "@/lib/help";
+import { BAR_DAYS, PERIODS, PERIOD_DAYS } from "@/lib/overview-series";
 
 export const metadata = getHelpPageMetadata("getting-started");
 
 export default function GettingStartedPage() {
 	const sharedDomain = getSharedDomain();
+	const otherSpans = PERIODS.filter(({ days }) => days !== PERIOD_DAYS).map(({ span }) => span);
 
 	return (
 		<ArticleHelp slug="getting-started">
@@ -18,6 +20,8 @@ export default function GettingStartedPage() {
 				{isGoogleEnabled() ? "Sign in with Google, or with your email address: " : "Sign in with your email address: "}
 				mailcheap emails you a code to type in. Each code works once, for 5 minutes, so there&apos;s no password to remember.
 				{!isCloud() && " On this server, only the addresses its admin allowed can sign in."}
+				{isCloud() &&
+					" Codes only go to addresses that can receive email: a misspelled one like gmail.co gets the right spelling back, and throwaway inboxes can't open an account."}
 			</p>
 
 			<h2 id="setup">Set up your newsletter</h2>
@@ -48,16 +52,34 @@ export default function GettingStartedPage() {
 
 			<h2 id="first-issue">Send your first issue</h2>
 			<p>
-				The <LinkApp href="/">overview page</LinkApp> lists these steps until they&apos;re done.
+				Until they&apos;re done, a list of these steps sits at the bottom right of the <LinkApp href="/">dashboard</LinkApp>, for the
+				newsletter that&apos;s open: its design, issues and subscribers count for it alone, while your domain and AI agent count for
+				all your newsletters. The step to do next is open, and a click on any other shows what it takes, one step at a time. Close
+				the list and it stays closed for that newsletter, on every device. Your other newsletters, and the ones you add later, keep
+				theirs.
+				{isCloud() && (
+					<>
+						{" "}
+						With a plan, that corner then offers an email from MailCheap to reply to, so its next emails reach your inbox.{" "}
+						<Link href={getHelpHref("newsletters", "inbox-check")}>Getting MailCheap&apos;s emails in your inbox</Link>
+					</>
+				)}
 			</p>
 			<ol>
 				<li>
-					<strong>Write your first issue.</strong> Start a draft from the <LinkApp href="/campaigns">Campaigns page</LinkApp>. It
-					saves as you type. <Link href={getHelpHref("writing")}>Writing an issue</Link>
+					<strong>Choose your design.</strong> Click one of the themes in the list, and your website and emails take its colors
+					and fonts: Customize, in the message that follows, changes them. Preview all themes opens the{" "}
+					<LinkApp href="/newsletters/design">Design page</LinkApp>, which shows each one on your website and in an email.{" "}
+					<Link href={getHelpHref("design")}>Design and themes</Link>
 				</li>
 				<li>
-					<strong>Add your subscribers.</strong> Import a CSV file from the platform you&apos;re leaving, or add people one by one on
-					the <LinkApp href="/contacts">Contacts page</LinkApp>. <Link href={getHelpHref("importing-contacts")}>Importing contacts</Link>
+					<strong>Add your subscribers.</strong> On the <LinkApp href="/contacts">Contacts page</LinkApp>, import a CSV file from the
+					platform you&apos;re leaving, take signups with a form on your site, or add people with the API or by hand.{" "}
+					<Link href={getHelpHref("contacts", "add")}>Adding contacts</Link>
+				</li>
+				<li>
+					<strong>Write your first issue.</strong> Start a draft from the <LinkApp href="/campaigns">Campaigns page</LinkApp>. It
+					saves as you type. <Link href={getHelpHref("writing")}>Writing an issue</Link>
 				</li>
 				<li>
 					<strong>Send from your domain{sharedDomain ? ", if you want to" : ""}.</strong>{" "}
@@ -79,12 +101,40 @@ export default function GettingStartedPage() {
 					schedule issues for you. <Link href={getHelpHref("api-and-ai")}>API and AI assistants</Link>
 				</li>
 			</ol>
-			{isCloud() && (
-				<p>
-					Your first campaign also starts your account&apos;s {WARMUP.days}-day warm-up, when bigger sends go out over a few hours.{" "}
-					<Link href={getHelpHref("warm-up")}>Warm-up and sending pace</Link>
-				</p>
-			)}
+
+			<h2 id="overview">The overview</h2>
+			<p>
+				The <LinkApp href="/">overview</LinkApp> shows how the newsletter that&apos;s open is doing over a period, the last{" "}
+				{PERIOD_DAYS} days at first: the emails it sent, the share delivered, opened and clicked, bounces and spam complaints, each
+				next to the period before, and its subscribers day by day, or hour by hour over {BAR_DAYS.hour} days or less, with the period
+				before as a dashed line. Opened from the sidebar, the overview starts on the last {PERIOD_DAYS} days.
+			</p>
+			<p>
+				To see another period, click Last {PERIOD_DAYS} days, the button at the top right, and pick the last{" "}
+				{otherSpans.slice(0, -1).join(", ")} or {otherSpans.at(-1)}. Under Custom range, pick the first and last day of any period
+				up to {PERIODS.at(-1).span} long, like a launch week, then Apply: the numbers cover those days, today at the latest, next to
+				as many days before them.
+			</p>
+			<p>
+				Below, a chart shows the issues and welcome emails sent over the same period, in front of the period before&apos;s, in your
+				timezone: a bar for each hour over {BAR_DAYS.hour} days or less, each day up to {BAR_DAYS.day} days, each week up to{" "}
+				{BAR_DAYS.week} days, and each month over longer periods. Over the last 24 hours, Now marks the hour you&apos;re in. Then come
+				your latest campaigns.
+				{isCloud() && " With a plan, the overview ends on how much of your plan you've used this month."} The API and AI assistants
+				get the same numbers, for any of these periods.
+			</p>
+
+			<h2 id="sidebar">The sidebar</h2>
+			<p>
+				The sidebar lists your newsletter&apos;s pages, then your account&apos;s, like the <LinkApp href="/domains">Domains page</LinkApp>.
+				The button next to MailCheap at its top folds it down to its icons, for more room on the page. Folded, it opens over the
+				page while your mouse is on it and folds back when you move away. To keep it open, click that button again, or the
+				MailCheap logo on a touch screen. Your browser remembers your choice.
+			</p>
+			<p>
+				While you edit a campaign, the sidebar also folds down on its own to leave the issue more room. The next page shows it
+				open again, unless you folded it yourself.
+			</p>
 		</ArticleHelp>
 	);
 }

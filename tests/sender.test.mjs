@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { getDomainSetup, getDomainSummary } from "../lib/domain-records.js";
 import {
-	getArchiveHostProblem,
 	getDomainProblem,
 	getFromEmailSaveProblem,
 	getOwnDomainLocalPart,
@@ -81,7 +80,7 @@ test("saving a newsletter takes the shared address or a domain the account added
 	assert.match(getFromEmailSaveProblem({ fromEmail: "hi@stranger.com", slug: "x", domains: [], sharedDomain: null }), /Domains page first$/);
 });
 
-test("customers can't claim mailcheap's domains, and archive hosts are subdomains of theirs", () => {
+test("customers can't claim MailCheap's domains", () => {
 	const options = { sharedDomain: SHARED, appHost: "mailcheap.ai" };
 	assert.equal(getDomainProblem("example.com", options), null);
 	assert.equal(getDomainProblem("news.example.co.uk", options), null);
@@ -89,15 +88,9 @@ test("customers can't claim mailcheap's domains, and archive hosts are subdomain
 		assert.match(getDomainProblem(domain, options), /can't be added/, domain);
 	}
 	for (const domain of ["example", "-bad.com", "a..b.com", "exa mple.com"]) assert.match(getDomainProblem(domain, options), /Enter a domain/, domain);
-
-	assert.equal(getArchiveHostProblem("news.example.com", "example.com"), null);
-	assert.match(getArchiveHostProblem("news.other.com", "example.com"), /end with .example.com/);
-	assert.match(getArchiveHostProblem("example.com", "example.com"), /end with .example.com/);
-	assert.match(getArchiveHostProblem("bounce.example.com", "example.com"), /return path/);
-	assert.match(getArchiveHostProblem("rp.example.com", "example.com"), /return path/);
 });
 
-test("with the app's own domain shared, <slug>.mailcheap.ai is the shared address and the rest of mailcheap.ai stays mailcheap's", () => {
+test("with the app's own domain shared, <slug>.mailcheap.ai is the shared address and the rest of mailcheap.ai stays MailCheap's", () => {
 	const sharedDomain = "mailcheap.ai";
 	const options = { sharedDomain, appHost: "mailcheap.ai" };
 	for (const domain of ["mailcheap.ai", "r.mailcheap.ai", "weekly.mailcheap.ai", "news.weekly.mailcheap.ai"]) {
@@ -114,7 +107,7 @@ test("with the app's own domain shared, <slug>.mailcheap.ai is the shared addres
 	const ready = { domain: "weekly.mailcheap.ai", provider: "postshiba", verified: true };
 	const from = (fromEmail) => resolveFrom({ newsletter: { slug: "weekly", fromEmail, sharedSender: ready }, ownerEmail: "jane@example.com", sharedDomain, providerId: "postshiba" });
 	assert.deepEqual(from("hello@weekly.mailcheap.ai"), { identity: "weekly.mailcheap.ai", replyTo: "jane@example.com", isShared: true });
-	assert.match(from("hello@r.mailcheap.ai").problem, /The shared address for this newsletter is hello@weekly.mailcheap.ai/, "never mailcheap's own sender");
+	assert.match(from("hello@r.mailcheap.ai").problem, /The shared address for this newsletter is hello@weekly.mailcheap.ai/, "never MailCheap's own sender");
 	assert.equal(getOwnDomainLocalPart("hello@weekly.mailcheap.ai", sharedDomain), "hi");
 });
 
@@ -150,43 +143,26 @@ test("on a domain of its own, a newsletter keeps the name before its @, and hi a
 	assert.equal(getOwnDomainLocalPart(undefined, null), "hi");
 });
 
-test("the domains page lists every record with its status in words", () => {
+test("the domains page lists every record with its status in words, and a verified domain is ready", () => {
 	const domain = {
 		domain: "example.com",
 		mailFromDomain: "bounce.example.com",
 		archiveHost: "news.example.com",
 		dkimStatus: "SUCCESS",
 		mailFromStatus: "PENDING",
-		archiveHostVerified: false,
 		verified: true,
 		records: [
 			{ purpose: "dkim", type: "CNAME", name: "a._domainkey.example.com", value: "a.dkim.amazonses.com" },
 			{ purpose: "mail-from", type: "MX", name: "bounce.example.com", value: "10 feedback-smtp.us-east-1.amazonses.com" },
 		],
 	};
-	const steps = Object.fromEntries(getDomainSetup(domain, { cnameTarget: "cname.mailcheap.ai" }).map((step) => [step.key, step]));
+	const setup = getDomainSetup(domain);
+	assert.deepEqual(setup.map(({ key }) => key), ["dkim", "mail-from", "dmarc"], "the website has a domain of its own, in its settings");
+	const steps = Object.fromEntries(setup.map((step) => [step.key, step]));
 	assert.equal(steps.dkim.status.label, "Found");
 	assert.equal(steps["mail-from"].status.label, "Waiting for DNS");
-	assert.deepEqual(steps.archive.records, [{ type: "CNAME", name: "news.example.com", host: "news", value: "cname.mailcheap.ai" }]);
 	assert.deepEqual(steps.dmarc.records, [{ type: "TXT", name: "_dmarc.example.com", host: "_dmarc", value: "v=DMARC1; p=none;" }]);
-	const withTarget = { cnameTarget: "cname.mailcheap.ai" };
-	assert.equal(getDomainSummary(domain, withTarget).label, "Sending ready, website waiting");
-	assert.equal(getDomainSummary({ ...domain, archiveHostVerified: true }, withTarget).label, "Ready");
-	assert.equal(getDomainSummary({ ...domain, verified: false, dkimStatus: "FAILED" }, withTarget).label, "Records not found");
-});
-
-test("without an archive target, the domains page has no archive step and a verified domain is ready", () => {
-	const domain = {
-		domain: "example.com",
-		mailFromDomain: "rp.example.com",
-		archiveHost: "news.example.com",
-		dkimStatus: "SUCCESS",
-		mailFromStatus: "SUCCESS",
-		archiveHostVerified: false,
-		verified: true,
-		records: [],
-	};
-	assert.deepEqual(getDomainSetup(domain, { cnameTarget: null }).map(({ key }) => key), ["dkim", "mail-from", "dmarc"]);
-	assert.deepEqual(getDomainSummary(domain, { cnameTarget: null }), { label: "Ready", tone: "good" });
-	assert.equal(getDomainSummary({ ...domain, verified: false }, { cnameTarget: null }).label, "Waiting for DNS");
+	assert.deepEqual(getDomainSummary(domain), { label: "Ready", tone: "good" });
+	assert.equal(getDomainSummary({ ...domain, verified: false }).label, "Waiting for DNS");
+	assert.equal(getDomainSummary({ ...domain, verified: false, dkimStatus: "FAILED" }).label, "Records not found");
 });

@@ -7,8 +7,13 @@ import { platformSent, sent as sesEmails } from "./stubs/ses.mjs";
 // Who carries MailCheap's own emails (sign-in codes, alerts): on MailCheap Cloud always Resend, never the
 // email provider; on a self-hosted server Resend when it's set up, else the provider. Customers' emails
 // (issues, welcome, confirmation, last-chance, tests) always go through the provider.
-const SELF_HOSTED = { MAILCHEAP_CLOUD: "", EMAIL_FROM: "mailcheap <login@mail.selfhost.dev>" };
-const CODE_SUBJECT = /^\d{6} is your mailcheap code$/;
+const SELF_HOSTED = { MAILCHEAP_CLOUD: "", EMAIL_FROM: "MailCheap <login@mail.selfhost.dev>" };
+const CODE_SUBJECT = /^\d{6} is your MailCheap code$/;
+
+// The header mail apps read the code from, bound to APP_URL's origin.
+function otpToken(subject) {
+	return `"${subject.slice(0, 6)}"; origin="http://localhost:3000"`;
+}
 
 let app;
 let fake;
@@ -56,7 +61,7 @@ before(async () => {
 
 after(() => app?.stop());
 
-describe("mailcheap Cloud", () => {
+describe("MailCheap Cloud", () => {
 	test("sign-in codes and alerts go through Resend, never through the email provider, even with SES or PostShiba set up", async () => {
 		const before = counts();
 		assert.deepEqual(await requestCode("cloud@example.com"), { email: "cloud@example.com" });
@@ -64,10 +69,27 @@ describe("mailcheap Cloud", () => {
 		await withEnv(POSTSHIBA_ENV, async () => assert.deepEqual(await requestCode("cloud-ps@example.com"), { email: "cloud-ps@example.com" }));
 		assert.deepEqual(added(before), { resend: 3, ses: 0, postshiba: 0, customer: 0 });
 		assert.deepEqual(platformEmails.at(-3).to, ["cloud@example.com"]);
-		assert.equal(platformEmails.at(-3).from, "mailcheap <hello@r.mailcheap.ai>", "from a subdomain, apart from mailcheap.ai");
+		assert.equal(platformEmails.at(-3).from, "MailCheap <hello@r.mailcheap.ai>", "from a subdomain, apart from mailcheap.ai");
 		assert.equal(platformEmails.at(-3).reply_to, "hello@mailcheap.ai", "replies reach support");
+		assert.deepEqual(platformEmails.at(-3).headers, { "OTP-Token": otpToken(platformEmails.at(-3).subject) });
 		assert.deepEqual(platformEmails.at(-2).to, ["admin@example.com"]);
-		assert.equal(platformEmails.at(-2).subject, "[mailcheap] Cloud alert");
+		assert.equal(platformEmails.at(-2).subject, "[MailCheap] Cloud alert");
+		assert.equal(platformEmails.at(-2).headers, undefined, "an alert carries no code");
+	});
+
+	test("replies to an owner's urgent email reach URGENT_REPLY_TO, and every other email's still reach support", async () => {
+		const user = await signIn("urgent-owner@example.com");
+		await withEnv({ URGENT_REPLY_TO: "owner-help@example.com" }, async () => {
+			await m.alerts.sendAlert({ accountId: user.accountId, key: "urgent-block", title: "Blocked for the test", detail: "Blocked.", isUrgent: true });
+			await m.alerts.sendAlert({ accountId: user.accountId, key: "urgent-warning", title: "Warned for the test", detail: "Careful." });
+			await m.alerts.sendAlert({ accountId: null, key: "urgent-admins", title: "For the admins", detail: "Admins.", isUrgent: true });
+			assert.deepEqual(await requestCode("urgent-owner@example.com"), { email: "urgent-owner@example.com" });
+		});
+		const replyTo = (subject) => platformEmails.findLast((email) => email.subject === subject).reply_to;
+		assert.equal(replyTo("[MailCheap] Blocked for the test"), "owner-help@example.com");
+		assert.equal(replyTo("[MailCheap] Warned for the test"), "hello@mailcheap.ai", "a warning");
+		assert.equal(replyTo("[MailCheap] For the admins"), "hello@mailcheap.ai", "the admins' own alerts");
+		assert.equal(platformEmails.at(-1).reply_to, "hello@mailcheap.ai", "a sign-in code");
 	});
 
 	test("without RESEND_API_KEY nothing goes out: the cloud never falls back to the email provider", async () => {
@@ -75,7 +97,7 @@ describe("mailcheap Cloud", () => {
 		await withEnv({ RESEND_API_KEY: "" }, async () => {
 			const { result, logged } = await capturingErrors(() => requestCode("no-resend@example.com"));
 			assert.equal(result.error, "Couldn't send the code. Try again in a minute.");
-			assert.match(logged, /RESEND_API_KEY is not set: mailcheap Cloud sends its own emails through Resend only/);
+			assert.match(logged, /RESEND_API_KEY is not set: MailCheap Cloud sends its own emails through Resend only/);
 			assert.equal(m.platform.canSendPlatformEmail(), false, "alerts stay in the logs");
 			await m.alerts.sendAlert({ accountId: null, key: "cloud-no-resend", title: "Unsent", detail: "Logged only" });
 		});
@@ -108,8 +130,9 @@ describe("self-hosted server", () => {
 			assert.deepEqual(await requestCode("self-resend@example.com"), { email: "self-resend@example.com" });
 		});
 		assert.deepEqual(added(before), { resend: 1, ses: 0, postshiba: 0, customer: 0 });
-		assert.equal(platformEmails.at(-1).from, "mailcheap <login@mail.selfhost.dev>");
-		assert.equal(platformEmails.at(-1).reply_to, undefined, "no mailcheap support address on a self-hosted server");
+		assert.equal(platformEmails.at(-1).from, "MailCheap <login@mail.selfhost.dev>");
+		assert.equal(platformEmails.at(-1).reply_to, undefined, "no MailCheap support address on a self-hosted server");
+		assert.deepEqual(platformEmails.at(-1).headers, { "OTP-Token": otpToken(platformEmails.at(-1).subject) });
 	});
 
 	test("without it, codes and alerts go through SES outside every tenant, even with sending off", async () => {
@@ -120,9 +143,16 @@ describe("self-hosted server", () => {
 		});
 		assert.deepEqual(added(before), { resend: 0, ses: 2, postshiba: 0, customer: 0 });
 		const [code, alert] = platformSent.slice(-2);
-		assert.deepEqual([code.from, code.to, code.tenantName, code.configurationSet], ["mailcheap <login@mail.selfhost.dev>", "self-ses@example.com", undefined, undefined]);
+		assert.deepEqual([code.from, code.to, code.tenantName, code.configurationSet], ["MailCheap <login@mail.selfhost.dev>", "self-ses@example.com", undefined, undefined]);
 		assert.match(code.subject, CODE_SUBJECT);
-		assert.deepEqual([alert.to, alert.subject], ["admin@example.com", "[mailcheap] Self-hosted alert"]);
+		assert.deepEqual(code.headers, { "OTP-Token": otpToken(code.subject) }, "SES carries the header too");
+		assert.deepEqual([alert.to, alert.subject], ["admin@example.com", "[MailCheap] Self-hosted alert"]);
+		assert.equal(alert.replyTo, null, "replies go to EMAIL_FROM");
+
+		await withEnv({ ...SELF_HOSTED, RESEND_API_KEY: "" }, () =>
+			m.platform.sendPlatformEmail({ to: "owner@example.com", subject: "Blocked", text: "Blocked.", replyTo: "owner-help@example.com" })
+		);
+		assert.equal(platformSent.at(-1).replyTo, "owner-help@example.com", "an urgent email's reply-to reaches SES too");
 	});
 
 	test("without it on PostShiba, a tenant of their own sends them once EMAIL_FROM's domain is verified there", async () => {
@@ -144,8 +174,9 @@ describe("self-hosted server", () => {
 			assert.deepEqual(added(before), { resend: 0, ses: 0, postshiba: 1, customer: 0 });
 			const { clusterId, body } = fake.state.sends.at(-1);
 			assert.equal(clusterId, POSTSHIBA.transactionalClusterId);
-			assert.deepEqual([body.tenant, body.from, body.to], [tenants[0].id, "mailcheap <login@mail.selfhost.dev>", ["self-ps@example.com"]]);
+			assert.deepEqual([body.tenant, body.from, body.to], [tenants[0].id, "MailCheap <login@mail.selfhost.dev>", ["self-ps@example.com"]]);
 			assert.match(body.subject, CODE_SUBJECT);
+			assert.deepEqual(body.headers, { "OTP-Token": otpToken(body.subject) }, "PostShiba carries the header too");
 			assert.deepEqual(body.unique_args, { kind: "platform" });
 			assert.equal(credentials().length, 1, "the credential is made once");
 			assert.equal([...fake.state.tenants.values()].filter(({ slug }) => slug === "mc-platform").length, 1);

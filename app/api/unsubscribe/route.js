@@ -3,9 +3,9 @@ import { connectDb } from "@/lib/db";
 import { recordPendingAction } from "@/lib/maiteam/cutover";
 import { cancelEnrollmentsFor } from "@/lib/maiteam/sequence-store";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
+import { moveContact } from "@/lib/status-changes";
 import { verifyUnsubscribeToken } from "@/lib/unsubscribe";
 import Campaign from "@/models/Campaign";
-import Contact from "@/models/Contact";
 import Message from "@/models/Message";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -15,38 +15,42 @@ const RECENT_CAMPAIGNS = 5;
 // Gmail and Yahoo send one-click requests from shared mail servers, so keep this generous.
 const RATE_LIMIT = { name: "unsubscribe", limit: 60, window: "1 m" };
 
-// Links don't carry the campaign, so the unsubscribe counts for the latest campaign sent to them.
-async function creditLatestCampaign({ accountId, contactId, newsletterId }) {
+// Links don't carry the campaign, so the unsubscribe counts for the latest campaign sent to them, whose email keeps when:
+// once per email, however many times they come back and leave through it.
+async function creditLatestCampaign({ accountId, contactId, newsletterId, at }) {
 	const campaigns = await Campaign.find({ accountId, newsletterId, startedAt: { $ne: null } })
 		.sort({ startedAt: -1 })
 		.limit(RECENT_CAMPAIGNS)
 		.select({ _id: 1 })
 		.lean();
 	for (const { _id } of campaigns) {
-		const wasSent = await Message.exists({
-			accountId,
-			kind: "campaign",
-			campaignId: _id,
-			contactId,
-			sentAt: { $ne: null },
-		});
-		if (!wasSent) continue;
-		await Campaign.updateOne({ accountId, _id }, { $inc: { "stats.unsubscribed": 1 } });
+		const { matchedCount, modifiedCount } = await Message.updateOne(
+			{ accountId, kind: "campaign", campaignId: _id, contactId, sentAt: { $ne: null } },
+			{ $min: { unsubscribedAt: at } },
+			{ timestamps: false }
+		);
+		if (!matchedCount) continue;
+		if (modifiedCount) await Campaign.updateOne({ accountId, _id }, { $inc: { "stats.unsubscribed": 1 } });
 		return;
 	}
 }
 
 // The token is signed, so the contact it names is found whatever the account. Unsubscribing always works,
-// even for an account that canceled.
-async function unsubscribe({ contactId, newsletterId }) {
+// even for an account that canceled. via: link for the page in the email, mail-app for its unsubscribe button.
+async function unsubscribe({ contactId, newsletterId }, via) {
 	await connectDb();
-	const previous = await Contact.findOneAndUpdate(
-		{ _id: contactId, newsletterId, status: { $in: SUBSCRIBED_STATUSES } },
-		{ $set: { status: "unsubscribed", unsubscribedAt: new Date() } }
-	)
-		.setOptions({ crossAccount: true })
-		.select({ _id: 1, accountId: 1 })
-		.lean();
+	const at = new Date();
+	const previous = await moveContact(
+		{ _id: contactId, newsletterId },
+		{
+			from: SUBSCRIBED_STATUSES,
+			to: "unsubscribed",
+			via,
+			at,
+			update: { $set: { unsubscribedAt: at } },
+			options: { crossAccount: true, projection: { _id: 1, accountId: 1 } },
+		}
+	);
 	// maiteam (P8d): a contact the old server took in after its dump, during the cutover hold: kept for the catch-up.
 	if (!previous) {
 		await recordPendingAction("unsubscribe", { contactId, newsletterId });
@@ -58,7 +62,7 @@ async function unsubscribe({ contactId, newsletterId }) {
 	await cancelEnrollmentsFor({ accountId: previous.accountId, contactIds: [previous._id] }).catch((error) =>
 		console.error("[unsubscribe] Could not cancel the sequences:", error.message)
 	);
-	await creditLatestCampaign({ accountId: previous.accountId, contactId, newsletterId }).catch((error) =>
+	await creditLatestCampaign({ accountId: previous.accountId, contactId, newsletterId, at }).catch((error) =>
 		console.error("[unsubscribe] Could not credit the campaign:", error.message)
 	);
 }
@@ -98,7 +102,7 @@ export async function POST(request) {
 	if (!reference) return respond(400, "invalid");
 
 	try {
-		await unsubscribe(reference);
+		await unsubscribe(reference, isPageForm ? "link" : "mail-app");
 		return respond(200, "done");
 	} catch (error) {
 		console.error("[unsubscribe] Failed:", error);

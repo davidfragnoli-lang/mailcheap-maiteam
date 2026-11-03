@@ -26,6 +26,10 @@ function fullForm(section) {
 		authorBio: "I write.",
 		authorImageUrl: "https://cdn.example.com/jane.png",
 		socialLinks: "https://x.com/jane\nhttps://youtube.com/@jane",
+		googleAnalytics: "G-PSW1MY7HB4",
+		googleTagManager: "",
+		metaPixel: " 123456789012345 ",
+		customCode: '<script async src="https://static.example.com/101234567.js"></script>\n',
 		requireConfirmation: "on",
 		cleanupEnabled: "on",
 		cleanupIssues: "8",
@@ -33,10 +37,16 @@ function fullForm(section) {
 		welcomeEnabled: "on",
 		welcomeSubject: "Welcome",
 		welcomePreviewText: "",
-		welcomeMarkdown: "Hi",
+		welcomeFormat: "rich",
+		welcomeContent: "<p>Hi</p>",
 		confirmationSubject: "Confirm",
 		confirmationPreviewText: "",
-		confirmationMarkdown: "Click",
+		confirmationFormat: "rich",
+		confirmationContent: "<p>Click</p>",
+		lastChanceSubject: "Still reading?",
+		lastChancePreviewText: "",
+		lastChanceFormat: "rich",
+		lastChanceContent: "<p>Keep it coming</p>",
 	};
 	for (const [key, value] of Object.entries(fields)) form.set(key, value);
 	if (section) form.set("section", section);
@@ -55,12 +65,17 @@ test("a section's page sends its own fields only, so saving it leaves the other 
 		replyTo: "reply@example.com",
 		postalAddress: "1 Main St, Paris",
 	});
-	assert.deepEqual(readSettingsForm(fullForm("cleanup")), { cleanup: { enabled: true, issues: 8, days: null } });
+	assert.deepEqual(readSettingsForm(fullForm("cleanup")), {
+		cleanup: { enabled: true, issues: 8, days: null },
+		lastChance: { subject: "Still reading?", previewText: "", format: "rich", content: "<p>Keep it coming</p>" },
+	});
 	assert.deepEqual(readSettingsForm(fullForm("website")), {
 		archiveEnabled: true,
 		description: "One idea a week.",
 		author: { bio: "I write.", imageUrl: "https://cdn.example.com/jane.png" },
 		socialLinks: ["https://x.com/jane", "https://youtube.com/@jane"],
+		analytics: { googleAnalytics: "G-PSW1MY7HB4", googleTagManager: "", metaPixel: "123456789012345" },
+		customCode: '<script async src="https://static.example.com/101234567.js"></script>',
 	});
 	// Double opt-in and the welcome email, on here, also turn the other off.
 	const linked = { signups: ["welcome"], welcome: ["requireConfirmation"] };
@@ -92,19 +107,33 @@ test("a switch only counts on its own page: off there, untouched elsewhere", () 
 });
 
 test("a collapsed email section sends nothing of it, so what it saved stays", () => {
+	const fieldsOf = (name) => ["Subject", "PreviewText", "Format", "Content"].map((field) => `${name}${field}`);
 	const signupsOff = fullForm("signups");
 	signupsOff.delete("requireConfirmation");
-	for (const key of ["confirmationSubject", "confirmationPreviewText", "confirmationMarkdown"]) signupsOff.delete(key);
+	for (const key of fieldsOf("confirmation")) signupsOff.delete(key);
 	assert.deepEqual(readSettingsForm(signupsOff), { requireConfirmation: false });
 
 	const welcomeCollapsed = fullForm("welcome");
-	for (const key of ["welcomeEnabled", "welcomeSubject", "welcomePreviewText", "welcomeMarkdown"]) welcomeCollapsed.delete(key);
+	for (const key of ["welcomeEnabled", ...fieldsOf("welcome")]) welcomeCollapsed.delete(key);
 	assert.deepEqual(readSettingsForm(welcomeCollapsed), {});
 
+	const cleanupOff = fullForm("cleanup");
+	for (const key of ["cleanupEnabled", ...fieldsOf("lastChance")]) cleanupOff.delete(key);
+	assert.deepEqual(readSettingsForm(cleanupOff), { cleanup: { enabled: false, issues: 8, days: null } }, "the last-chance email shows while the cleanup is on");
+
 	assert.deepEqual(readSettingsForm(fullForm("welcome")), {
-		welcome: { enabled: true, subject: "Welcome", previewText: "", markdown: "Hi" },
+		welcome: { enabled: true, subject: "Welcome", previewText: "", format: "rich", content: "<p>Hi</p>" },
 		requireConfirmation: false,
 	});
+});
+
+test("an email the editor never changed comes back in the Markdown it was saved in", () => {
+	const untouched = fullForm("welcome");
+	untouched.set("welcomeFormat", "markdown");
+	untouched.set("welcomeContent", "Thanks for joining.");
+	assert.deepEqual(readSettingsForm(untouched).welcome, { enabled: true, subject: "Welcome", previewText: "", format: "markdown", content: "Thanks for joining." });
+	untouched.delete("welcomeFormat");
+	assert.equal(readSettingsForm(untouched).welcome.format, "markdown");
 });
 
 test("without a section the form sends every field, as the one-page settings did; a section with no fields here sends none", () => {
@@ -122,7 +151,9 @@ test("links to a field of the one-page settings open its section's page, and set
 	assert.equal(getFieldPath("postal-address"), "/newsletters/sender#postal-address");
 	assert.equal(getFieldPath("unknown"), null);
 	assert.equal(getFieldPath(""), null);
-	for (const path of ["/newsletters/general", "/newsletters/website", "/newsletters/design"]) assert.equal(isSectionPagePath(path), true, path);
+	for (const path of ["/newsletters/general", "/newsletters/website", "/newsletters/design", "/newsletters/notifications"]) {
+		assert.equal(isSectionPagePath(path), true, path);
+	}
 	for (const path of ["/newsletters", "/newsletters/new", "/newsletters/6a1b2c3d4e5f60718293a4b5", "/newsletters/sender/x"]) {
 		assert.equal(isSectionPagePath(path), false, path);
 	}
@@ -143,12 +174,13 @@ const context = { sharedDomain: "mailcheap.ai", appUrl: "https://mailcheap.ai", 
 test("the overview says where each section stands", () => {
 	assert.deepEqual(getSettingsSummary({ newsletter, ...context }), {
 		general: { text: "Field notes · field-notes", tone: "none" },
-		sender: { text: "hello@field-notes.mailcheap.ai", tone: "none" },
+		sender: { text: "Shared address · hello@field-notes.mailcheap.ai", tone: "none" },
 		signups: { text: "Double opt-in on", tone: "on" },
 		welcome: { text: "Replaced by the confirmation email", tone: "none" },
 		cleanup: { text: "On · after 8 ignored issues", tone: "on" },
 		website: { text: "Live · field-notes.mailcheap.ai", tone: "on" },
 		form: { text: "Off", tone: "off" },
+		notifications: { text: "Weekly summary", tone: "on" },
 	});
 
 	const plain = { ...newsletter, requireConfirmation: false, welcome: { enabled: false }, cleanup: { enabled: false }, archiveEnabled: false };
@@ -178,6 +210,13 @@ test("the form for the owner's site says whether it's on, on which sites, and wh
 		tone: "warning",
 	});
 	assert.deepEqual(getSettingsSummary({ newsletter: withForm({ enabled: false }), ...context, hasPlan: false }).form, { text: "Off", tone: "off" });
+});
+
+test("notifications say how often the newsletter's own summary comes", () => {
+	const withSummary = (summary) => getSettingsSummary({ newsletter: { ...newsletter, notifications: { summary } }, ...context }).notifications;
+	assert.deepEqual(withSummary("daily"), { text: "Daily summary", tone: "on" });
+	assert.deepEqual(withSummary("weekly"), { text: "Weekly summary", tone: "on" });
+	assert.deepEqual(withSummary("off"), { text: "Summary off", tone: "off" });
 });
 
 test("the welcome email shows paused while the month's emails are used up", () => {

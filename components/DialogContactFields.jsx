@@ -1,57 +1,73 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, Plus, Rows3, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { createContactField, deleteContactField } from "@/app/(app)/contacts/actions";
+import ButtonMergeTag from "@/components/ButtonMergeTag";
+import LinkHelpFields from "@/components/LinkHelpFields";
 import { useContactOptions } from "@/components/ProviderContactOptions";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FIELD_TYPES, MAX_CONTACT_FIELDS, MAX_FIELD_LABEL } from "@/lib/contact-fields";
+import { SAMPLE_FIRST_NAME, fieldTag, firstNameTag } from "@/lib/merge-tags";
+import { OWNER_ROLE } from "@/lib/team-rules";
 import { toast } from "@/lib/toast";
+import { useHasRole } from "@/lib/use-team-role";
 
 // The account's own contact fields, shared by its newsletters: add one, or delete one (contacts keep their values).
-export default function DialogContactFields() {
+// onCloseAutoFocus: where the focus goes back, as what opened it is outside the dialog. onAdded(field) and
+// onDeleted(key): after one is added or deleted, for the editor, which puts one added where its slash was.
+export default function DialogContactFields({ isOpen, onOpenChange, onCloseAutoFocus, onAdded, onDeleted }) {
 	const { fields } = useContactOptions();
+	// The account's fields are shared by its newsletters: a team's admins add them.
+	const canAdd = useHasRole("admin");
 
 	return (
-		<Dialog>
-			<DialogTrigger asChild>
-				<Button variant="outline">
-					<Rows3 data-icon="inline-start" />
-					Fields
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="sm:max-w-md">
+		<Dialog open={isOpen} onOpenChange={onOpenChange}>
+			<DialogContent className="sm:max-w-md" onCloseAutoFocus={onCloseAutoFocus}>
 				<DialogHeader>
 					<DialogTitle>Contact fields</DialogTitle>
-					<DialogDescription>Every contact has a first name and tags. Add your own, like a company or a birthday.</DialogDescription>
+					<DialogDescription className="text-pretty">
+						Every contact has a first name and tags. Add your own, like a company or a birthday. In your emails, a field between
+						double braces prints each reader&apos;s own value:
+					</DialogDescription>
+					<div className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1.5 rounded-lg bg-muted/60 px-3 py-2.5 text-sm">
+						<span className="text-xs text-muted-foreground">You write</span>
+						<code className="truncate font-mono text-[13px]">Hi {firstNameTag("")},</code>
+						<span className="text-xs text-muted-foreground">{SAMPLE_FIRST_NAME} gets</span>
+						<span className="truncate">Hi {SAMPLE_FIRST_NAME},</span>
+					</div>
+					<LinkHelpFields className="self-start text-sm" />
 				</DialogHeader>
 
 				{fields.length > 0 && (
 					<ul className="flex flex-col divide-y divide-border/60 rounded-xl shadow-border">
 						{fields.map((field) => (
-							<RowField key={field.key} field={field} />
+							<RowField key={field.key} field={field} onDeleted={onDeleted} />
 						))}
 					</ul>
 				)}
 
-				{fields.length < MAX_CONTACT_FIELDS && <FormAddField />}
+				{fields.length < MAX_CONTACT_FIELDS && canAdd && <FormAddField onAdded={onAdded} />}
 			</DialogContent>
 		</Dialog>
 	);
 }
 
-function RowField({ field }) {
+function RowField({ field, onDeleted }) {
 	const [isConfirming, setIsConfirming] = useState(false);
 	const [isDeleting, startDeleting] = useTransition();
+	// Fields are shared by every newsletter of the account: its owner deletes them.
+	const canDelete = useHasRole(OWNER_ROLE);
 
 	function remove() {
 		if (!isConfirming) return setIsConfirming(true);
 		startDeleting(async () => {
 			const result = await deleteContactField(field.key);
 			if (result?.error) toast.error(result.error);
+			else onDeleted?.(field.key);
 			setIsConfirming(false);
 		});
 	}
@@ -60,27 +76,28 @@ function RowField({ field }) {
 		<li className="flex items-center gap-3 py-2 pr-1.5 pl-3 animate-enter">
 			<span className="min-w-0 flex-1">
 				<span className="block truncate text-sm font-medium">{field.label}</span>
-				<span className="block truncate text-xs text-muted-foreground">
-					{FIELD_TYPES[field.type]?.label} · <code className="font-mono">{field.key}</code>
-				</span>
+				<span className="block truncate text-xs text-muted-foreground">{FIELD_TYPES[field.type]?.label}</span>
 			</span>
-			<Button
-				type="button"
-				variant="ghost"
-				size={isConfirming ? "sm" : "icon-sm"}
-				onClick={remove}
-				onBlur={() => setIsConfirming(false)}
-				disabled={isDeleting}
-				aria-label={isConfirming ? undefined : `Delete ${field.label}`}
-				className="shrink-0 text-muted-foreground hover:text-destructive"
-			>
-				{isDeleting ? <Loader2 className="animate-spin" /> : isConfirming ? "Delete it?" : <Trash2 />}
-			</Button>
+			<ButtonMergeTag tag={fieldTag(field.key)} className="max-w-[65%] shrink-0" />
+			{canDelete && (
+				<Button
+					type="button"
+					variant="ghost"
+					size={isConfirming ? "sm" : "icon-sm"}
+					onClick={remove}
+					onBlur={() => setIsConfirming(false)}
+					disabled={isDeleting}
+					aria-label={isConfirming ? undefined : `Delete ${field.label}`}
+					className="shrink-0 text-muted-foreground hover:text-destructive"
+				>
+					{isDeleting ? <Loader2 className="animate-spin" /> : isConfirming ? "Delete it?" : <Trash2 />}
+				</Button>
+			)}
 		</li>
 	);
 }
 
-function FormAddField() {
+function FormAddField({ onAdded }) {
 	const [label, setLabel] = useState("");
 	const [type, setType] = useState("text");
 	const [isAdding, startAdding] = useTransition();
@@ -91,12 +108,14 @@ function FormAddField() {
 			const result = await createContactField({ label, type });
 			if (result?.error) return void toast.error(result.error);
 			setLabel("");
+			onAdded?.(result.field);
 		});
 	}
 
 	return (
 		<form onSubmit={add} className="flex gap-2">
 			<Input
+				autoFocus
 				value={label}
 				onChange={(event) => setLabel(event.target.value)}
 				placeholder="New field, e.g. Company"

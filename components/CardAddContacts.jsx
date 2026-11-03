@@ -1,15 +1,17 @@
 import Link from "next/link";
-import { ArrowUpRight, Users } from "lucide-react";
+import { ArrowUpRight, CodeXml, Users } from "lucide-react";
 import BlockCode from "@/components/BlockCode";
-import DialogAddContact from "@/components/DialogAddContact";
+import ButtonAddContact from "@/components/ButtonAddContact";
 import DialogImportContacts from "@/components/DialogImportContacts";
 import GatePlan from "@/components/GatePlan";
 import IconBrand from "@/components/IconBrand";
 import { Button } from "@/components/ui/button";
+import { FORM_SECTION, getSectionPath } from "@/lib/newsletter-sections";
 import { cn } from "@/lib/utils";
 
-// The contacts page of a newsletter without contacts: the two ways in, side by side, and adding one by hand to try it.
-export default function CardAddContacts({ newsletter, curl }) {
+// The contacts page of a newsletter without contacts: the ways in, an import and the API side by side then the form for
+// the owner's site, and adding one by hand to try it.
+export default function CardAddContacts({ newsletter, curl, importGuides }) {
 	return (
 		<section
 			aria-labelledby="add-contacts-title"
@@ -24,7 +26,7 @@ export default function CardAddContacts({ newsletter, curl }) {
 					<h2 id="add-contacts-title" className="font-semibold tracking-tight">
 						No contacts yet
 					</h2>
-					<p className="text-sm text-muted-foreground">Add them in one of two ways.</p>
+					<p className="text-sm text-muted-foreground">Add them in one of three ways.</p>
 				</div>
 			</header>
 			{/* The request's lines are the longest: side by side, it gets the wider column. */}
@@ -46,7 +48,7 @@ export default function CardAddContacts({ newsletter, curl }) {
 					</ul>
 					<div className="flex items-center">
 						<GatePlan reason="import">
-							<DialogImportContacts newsletter={newsletter} label="Import contacts" variant="default" />
+							<DialogImportContacts newsletter={newsletter} guides={importGuides} label="Import contacts" variant="default" />
 						</GatePlan>
 					</div>
 				</ColumnWay>
@@ -72,9 +74,21 @@ export default function CardAddContacts({ newsletter, curl }) {
 					</div>
 				</ColumnWay>
 			</div>
+			<div className="flex flex-col gap-4 border-t border-border/60 p-5 @2xl:flex-row @2xl:items-center @2xl:justify-between">
+				<div className="min-w-0">
+					<h3 className="text-sm font-semibold">Take signups on your site</h3>
+					<p className="mt-1 text-sm text-muted-foreground">Paste a signup form on your site, blog or link page.</p>
+				</div>
+				<Button asChild variant="outline" className="self-start @2xl:self-auto">
+					<Link href={getSectionPath(FORM_SECTION.id)}>
+						<CodeXml data-icon="inline-start" />
+						Set up the form
+					</Link>
+				</Button>
+			</div>
 			<div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border/60 bg-muted/40 px-5 py-3">
 				<p className="text-sm text-muted-foreground">Trying it out? Add yourself as a contact.</p>
-				<DialogAddContact newsletter={newsletter} variant="outline" size="sm" />
+				<ButtonAddContact newsletter={newsletter} size="sm" />
 			</div>
 		</section>
 	);

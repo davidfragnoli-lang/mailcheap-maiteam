@@ -1,9 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { after } from "next/server";
 import { isSendingEnabled } from "@/lib/config";
 import { verifyConfirmToken } from "@/lib/confirmation";
 import { confirmContact } from "@/lib/contacts";
+import { readCountry } from "@/lib/countries";
 import { connectDb } from "@/lib/db";
 import { recordPendingAction } from "@/lib/maiteam/cutover";
 import { activateAwaitingEnrollments } from "@/lib/maiteam/sequence-store";
@@ -17,7 +19,7 @@ export async function confirmSubscription(token) {
 	await connectDb();
 	const newsletter = await findOpenNewsletter({ _id: reference.newsletterId });
 	if (!newsletter) return { error: "invalid" };
-	const { contact, confirmed } = await confirmContact({ accountId: newsletter.accountId, ...reference });
+	const { contact, confirmed } = await confirmContact({ accountId: newsletter.accountId, ...reference, country: readCountry(await headers()) });
 	// maiteam (P8d): a signup the old server took after its dump, clicked during the cutover hold: the catch-up confirms it.
 	if (!contact && (await recordPendingAction("confirm", reference))) return { ok: true };
 	if (contact?.status !== "active") return { error: "invalid" };

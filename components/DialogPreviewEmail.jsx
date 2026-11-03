@@ -11,52 +11,90 @@ import {
 	Forward,
 	Mail,
 	Monitor,
+	MousePointerClick,
 	Pencil,
 	Reply,
 	Smartphone,
 	Star,
 	Trash2,
 	Video,
-	Wifi,
 	X,
 } from "lucide-react";
 import AvatarNewsletter from "@/components/AvatarNewsletter";
+import IconWifi from "@/components/IconWifi";
 import LogoGmail from "@/components/LogoGmail";
+import OverlayClicks from "@/components/OverlayClicks";
+import PickerReader from "@/components/PickerReader";
 import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
+import { forwardEscape, openLinksOutside } from "@/lib/email-preview";
+import { SAMPLE_READER, fillForReader } from "@/lib/merge-tags";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { cn } from "@/lib/utils";
 
 // The email over the whole dashboard on a dimmed backdrop: in a mail app's window as wide as a desktop gives it, or in
 // Gmail on a phone. Escape, the close button and a click on the dimmed space close it; Radix keeps the focus inside
-// meanwhile.
+// meanwhile. With a newsletterId, html, subject and previewText keep their merge tags for the preview to fill in as the
+// reader it shows gets them: the sample reader, or one of the newsletter's contacts picked in it, who stays picked for
+// the next look. contactFields: the account's fields, whose tags print the reader's values. sections: for an issue with
+// sections (lib/sections.js), the email each reader gets, getHtml(reader), the sample reader's tags and segments, the
+// readers its sections name (groups) and their segments' IDs, which each contact listed gets its own of. clicks: a sent issue's clicked
+// links, shown on the email until Clicks hides them (components/OverlayClicks.jsx).
 export default function DialogPreviewEmail({ isOpen, onOpenChange, onCloseAutoFocus, ...email }) {
+	const [contact, setContact] = useState(null);
+
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
 			<DialogPortal>
-				<DialogOverlay className="bg-black/70" />
+				{/* Dark and blurred enough that the dashboard's text never reads through the controls on top. */}
+				<DialogOverlay className="bg-black/80 supports-backdrop-filter:backdrop-blur-md" />
 				<DialogPrimitive.Content
 					aria-describedby={undefined}
 					onCloseAutoFocus={onCloseAutoFocus}
 					className="fixed inset-0 z-50 outline-none duration-200 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-2 data-closed:animate-out data-closed:fade-out-0"
 				>
 					<DialogTitle className="sr-only">Preview</DialogTitle>
-					<Stage {...email} onClose={() => onOpenChange(false)} />
+					<Stage {...email} contact={contact} onContactChange={setContact} onClose={() => onOpenChange(false)} />
 				</DialogPrimitive.Content>
 			</DialogPortal>
 		</Dialog>
 	);
 }
 
-// Narrower than the device (a phone showing the desktop), the device scales down whole instead of reflowing.
-function Stage({ html, sender, subject, previewText, onClose }) {
+// Narrower than the device (a phone showing the desktop), the device scales down whole instead of reflowing. On an
+// actual phone, the mobile version is the email itself, edge to edge, instead of a smaller phone drawn inside it.
+function Stage({
+	html: emailHtml,
+	subject: emailSubject,
+	previewText: emailPreviewText,
+	sender,
+	newsletterId,
+	contactFields,
+	clicks,
+	sections,
+	contact,
+	onContactChange,
+	onClose,
+}) {
+	const { html, subject, previewText } = useMemo(() => {
+		const source = sections ? sections.getHtml(contact ?? sections.sample) : emailHtml;
+		const email = { html: source, subject: emailSubject, previewText: emailPreviewText };
+		// The readers a section names are all called Jane.
+		return newsletterId ? fillForReader(email, contact && !contact.isGroup ? contact : SAMPLE_READER, contactFields) : email;
+	}, [emailHtml, emailSubject, emailPreviewText, newsletterId, contact, contactFields, sections]);
 	const [device, setDevice] = useState(() => (window.matchMedia(SMALL_SCREEN).matches ? "mobile" : "desktop"));
 	const [space, setSpace] = useState(null);
+	const [hasOpenedEmail, setHasOpenedEmail] = useState(false);
+	const [isClicksShown, setIsClicksShown] = useState(true);
+	const isSmallScreen = useMediaQuery(SMALL_SCREEN);
 	const spaceRef = useRef(null);
 	const isPressOnDim = useRef(false);
 	const isDesktop = device === "desktop";
+	const isEdgeToEdge = isSmallScreen && !isDesktop;
 	const width = isDesktop ? clamp(space?.width ?? DESKTOP.maxWidth, DESKTOP.minWidth, DESKTOP.maxWidth) : PHONE.width;
 	const scale = space ? Math.min(1, space.width / width) : 1;
 	const fullHeight = space ? space.height / scale : null;
 	const height = isDesktop ? fullHeight : fullHeight && Math.min(PHONE.height, fullHeight);
+	const shownClicks = isClicksShown ? clicks : null;
 
 	useLayoutEffect(() => {
 		const observer = new ResizeObserver(([entry]) => setSpace({ width: entry.contentRect.width, height: entry.contentRect.height }));
@@ -71,7 +109,25 @@ function Stage({ html, sender, subject, previewText, onClose }) {
 			onClick={(event) => isPressOnDim.current && isDim(event.target) && onClose()}
 			className="flex h-full flex-col"
 		>
-			<div data-dim className="relative flex h-16 shrink-0 items-center justify-center px-16">
+			{/* The reader picker takes the room a phone has left, so there the devices show their icons only. */}
+			<div
+				data-dim
+				className={cn(
+					"grid h-16 shrink-0 items-center gap-2 px-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-4 sm:px-5",
+					newsletterId ? "grid-cols-[minmax(0,1fr)_auto_auto]" : "grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+				)}
+			>
+				<div data-dim className="flex min-w-0">
+					{newsletterId && (
+						<PickerReader
+							newsletterId={newsletterId}
+							contact={contact}
+							groups={sections?.groups ?? []}
+							segmentIds={sections?.segmentIds ?? []}
+							onChange={onContactChange}
+						/>
+					)}
+				</div>
 				<div role="radiogroup" aria-label="Device" className="flex items-center gap-1 rounded-full bg-white/10 p-1">
 					{DEVICES.map(({ id, label, icon: Icon }) => (
 						<button
@@ -86,33 +142,61 @@ function Stage({ html, sender, subject, previewText, onClose }) {
 							)}
 						>
 							<Icon className="size-4" aria-hidden="true" />
-							{label}
+							<span className={cn(newsletterId && "max-sm:sr-only")}>{label}</span>
 						</button>
 					))}
 				</div>
-				<button
-					type="button"
-					onClick={onClose}
-					aria-label="Close preview"
-					className="absolute top-1/2 right-3 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white outline-none transition-[background-color,scale] duration-150 ease-out hover:bg-white/20 focus-visible:ring-3 focus-visible:ring-white/40 active:scale-[0.96] sm:right-5"
-				>
-					<X className="size-4" />
-				</button>
-			</div>
-			<div data-dim className="min-h-0 flex-1 px-3 pb-3 sm:px-8 sm:pb-8">
-				<div ref={spaceRef} data-dim className="relative h-full">
-					{space && (
-						<div
-							key={device}
-							style={{ width, height, transform: `translateX(-50%) scale(${scale})` }}
-							className="absolute top-0 left-1/2 origin-top animate-fade-in"
-						>
-							{isDesktop ? (
-								<FrameDesktop sender={sender} subject={subject} html={html} />
-							) : (
-								<FramePhone sender={sender} subject={subject} previewText={previewText} html={html} />
+				<div data-dim className="flex justify-end gap-2">
+					{clicks && (
+						<button
+							type="button"
+							aria-pressed={isClicksShown}
+							onClick={() => setIsClicksShown(!isClicksShown)}
+							className={cn(
+								"flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium outline-none transition-[color,background-color,scale] duration-150 ease-out focus-visible:ring-3 focus-visible:ring-white/40 active:scale-[0.97] max-sm:w-9 max-sm:justify-center max-sm:px-0",
+								isClicksShown ? "bg-white text-zinc-900" : "bg-white/10 text-white/70 hover:text-white"
 							)}
-						</div>
+						>
+							<MousePointerClick className="size-4" aria-hidden="true" />
+							<span className="max-sm:sr-only">Clicks</span>
+						</button>
+					)}
+					<button
+						type="button"
+						onClick={onClose}
+						aria-label="Close preview"
+						className="grid size-9 place-items-center rounded-full bg-white/10 text-white outline-none transition-[background-color,scale] duration-150 ease-out hover:bg-white/20 focus-visible:ring-3 focus-visible:ring-white/40 active:scale-[0.96]"
+					>
+						<X className="size-4" />
+					</button>
+				</div>
+			</div>
+			<div data-dim className={cn("min-h-0 flex-1", !isEdgeToEdge && "px-3 pb-3 sm:px-8 sm:pb-8")}>
+				<div ref={spaceRef} data-dim className="relative h-full">
+					{isEdgeToEdge ? (
+						<ViewEmail key="edge" sender={sender} subject={subject} html={html} clicks={shownClicks} />
+					) : (
+						space && (
+							<div
+								key={device}
+								style={{ width, height, transform: `translateX(-50%) scale(${scale})` }}
+								className="absolute top-0 left-1/2 origin-top animate-fade-in"
+							>
+								{isDesktop ? (
+									<FrameDesktop sender={sender} subject={subject} html={html} clicks={shownClicks} />
+								) : (
+									<FramePhone
+										sender={sender}
+										subject={subject}
+										previewText={previewText}
+										html={html}
+										clicks={shownClicks}
+										hasOpened={hasOpenedEmail}
+										onOpen={() => setHasOpenedEmail(true)}
+									/>
+								)}
+							</div>
+						)
 					)}
 				</div>
 			</div>
@@ -122,7 +206,7 @@ function Stage({ html, sender, subject, previewText, onClose }) {
 
 // A mail app's reading pane: the window's bar, then the message's header scrolling with the email, which takes the
 // pane's whole width and centers itself like inboxes show it. The phone shows the preview text, as an inbox's list does.
-function FrameDesktop({ sender, subject, html }) {
+function FrameDesktop({ sender, subject, html, clicks }) {
 	return (
 		<div className="flex h-full flex-col overflow-hidden rounded-xl bg-white text-zinc-900 shadow-2xl ring-1 ring-black/10">
 			<div className="flex h-10 shrink-0 items-center gap-2 border-b border-zinc-200 bg-zinc-50 px-4">
@@ -146,15 +230,16 @@ function FrameDesktop({ sender, subject, html }) {
 						<span className="shrink-0 text-xs text-zinc-500">Now</span>
 					</div>
 				</div>
-				<FrameEmail html={html} />
+				<FrameEmail html={html} clicks={clicks} />
 			</div>
 		</div>
 	);
 }
 
 // A phone in Gmail: the inbox first, with the issue on top as it lands, then the email once it's tapped, the way an
-// app pushes a screen. The screen out of view is inert, and the focus follows the one in view.
-function FramePhone({ sender, subject, previewText, html }) {
+// app pushes a screen. The screen out of view is inert, and the focus follows the one in view. Until the issue has been
+// opened once, a fingertip taps its row now and then, so it reads as something to tap.
+function FramePhone({ sender, subject, previewText, html, clicks, hasOpened, onOpen }) {
 	const [isEmailOpen, setIsEmailOpen] = useState(false);
 	const rowRef = useRef(null);
 	const backRef = useRef(null);
@@ -164,6 +249,7 @@ function FramePhone({ sender, subject, previewText, html }) {
 	function openEmail() {
 		flushSync(() => setIsEmailOpen(true));
 		backRef.current?.focus({ preventScroll: true });
+		onOpen();
 	}
 
 	function closeEmail() {
@@ -176,15 +262,23 @@ function FramePhone({ sender, subject, previewText, html }) {
 			<div className="relative flex h-full flex-col overflow-hidden rounded-[2.25rem] bg-white text-zinc-900">
 				<BarStatus />
 				<div className="relative min-h-0 flex-1 overflow-hidden">
-					<ScreenInbox {...email} snippet={snippet} rowRef={rowRef} onOpen={openEmail} isHidden={isEmailOpen} />
-					<ScreenEmail {...email} html={html} backRef={backRef} onBack={closeEmail} isHidden={!isEmailOpen} />
+					<ScreenInbox
+						{...email}
+						snippet={snippet}
+						rowRef={rowRef}
+						onOpen={openEmail}
+						isHidden={isEmailOpen}
+						isHintShown={!hasOpened}
+					/>
+					<ScreenEmail {...email} html={html} clicks={clicks} backRef={backRef} onBack={closeEmail} isHidden={!isEmailOpen} />
 				</div>
 			</div>
 		</div>
 	);
 }
 
-function BarStatus() {
+// A phone's status bar, its notch in the middle.
+export function BarStatus() {
 	return (
 		<div className="relative flex h-11 shrink-0 items-center justify-between pr-6 pl-8 text-[15px] font-semibold tabular-nums">
 			<span>9:41</span>
@@ -196,7 +290,7 @@ function BarStatus() {
 					<rect x="10" y="3" width="3" height="9" rx="1" />
 					<rect x="15" y="0" width="3" height="12" rx="1" />
 				</svg>
-				<Wifi className="size-4" strokeWidth={2.75} />
+				<IconWifi className="h-3 w-4" />
 				<span className="flex items-center gap-px">
 					<span className="flex h-[13px] w-[25px] rounded-[4px] p-[1.5px] shadow-[inset_0_0_0_1px_rgb(24_24_27/0.35)]">
 						<span className="h-full w-4/5 rounded-[2px] bg-[#34c759]" />
@@ -208,7 +302,7 @@ function BarStatus() {
 	);
 }
 
-function ScreenInbox({ sender, name, subject, snippet, rowRef, onOpen, isHidden }) {
+function ScreenInbox({ sender, name, subject, snippet, rowRef, onOpen, isHidden, isHintShown }) {
 	return (
 		<div
 			inert={isHidden}
@@ -233,10 +327,12 @@ function ScreenInbox({ sender, name, subject, snippet, rowRef, onOpen, isHidden 
 						ref={rowRef}
 						type="button"
 						onClick={onOpen}
-						className="flex w-full items-start gap-3 bg-[#e8f0fe] px-4 py-3 text-left outline-none transition-colors duration-150 hover:bg-[#dde8fc] focus-visible:bg-[#d3e3fd] active:bg-[#d3e3fd]"
+						aria-label={`Open the email from ${name}: ${subject}`}
+						className="relative flex w-full items-start gap-3 bg-[#e8f0fe] px-4 py-3 text-left outline-none transition-colors duration-150 hover:bg-[#dde8fc] focus-visible:bg-[#d3e3fd] active:bg-[#d3e3fd]"
 					>
 						<AvatarNewsletter newsletter={sender} size={40} className="rounded-full bg-white text-zinc-500" />
 						<RowInbox from={name} subject={subject} snippet={snippet} time="9:41 AM" isUnread />
+						{isHintShown && <HintTap />}
 					</button>
 				</li>
 				{INBOX.map((email) => (
@@ -287,7 +383,59 @@ function RowInbox({ from, subject, snippet, time, isUnread = false }) {
 	);
 }
 
-function ScreenEmail({ sender, name, subject, html, backRef, onBack, isHidden }) {
+// A finger tapping the issue's subject, the way screen recordings show taps: a fingertip that presses in, and a ripple
+// where it pressed (animate-tap-finger and animate-tap-ripple in app/globals.css).
+function HintTap() {
+	return (
+		<span aria-hidden="true" className="pointer-events-none absolute top-1/2 left-[45%] size-11 -translate-x-1/2 -translate-y-1/2">
+			<span className="absolute inset-0 rounded-full bg-zinc-900/15 animate-tap-ripple" />
+			<span className="absolute inset-0 rounded-full bg-zinc-900/20 shadow-[0_1px_6px_rgb(0_0_0/0.2),inset_0_0_0_2px_rgb(255_255_255/0.75)] animate-tap-finger" />
+		</span>
+	);
+}
+
+// On a phone's own screen: the message as its mail app opens it, edge to edge, with nothing drawn around it.
+function ViewEmail({ sender, subject, html, clicks }) {
+	return (
+		<div className="absolute inset-0 animate-fade-in overflow-y-auto overscroll-contain bg-white text-zinc-900">
+			<HeaderMessage sender={sender} name={sender.fromName || sender.name} subject={subject || "No subject"} className="pt-4" />
+			<FrameEmail html={html} clicks={clicks} />
+		</div>
+	);
+}
+
+function HeaderMessage({ sender, name, subject, className = "pt-1" }) {
+	return (
+		<div className={cn("px-4 pb-3", className)}>
+			<div className="flex items-start gap-3">
+				<p className="min-w-0 flex-1 text-[22px] leading-snug">
+					{subject}
+					<span className="ml-2 inline-block rounded bg-zinc-100 px-1.5 py-0.5 align-middle text-[11px] leading-none text-zinc-600">
+						Inbox
+					</span>
+				</p>
+				<Star aria-hidden="true" className="mt-1.5 size-5 shrink-0 text-zinc-500" />
+			</div>
+			<div className="mt-5 flex items-center gap-3">
+				<AvatarNewsletter newsletter={sender} size={40} className="rounded-full bg-zinc-100 text-zinc-500" />
+				<div className="min-w-0 flex-1">
+					<p className="flex items-baseline gap-1.5">
+						<span className="truncate text-[15px] font-semibold">{name}</span>
+						<span className="shrink-0 text-[13px] text-zinc-500">9:41 AM</span>
+					</p>
+					<p className="flex items-center gap-0.5 text-[13px] text-zinc-500">
+						to me
+						<ChevronDown aria-hidden="true" className="size-3.5" />
+					</p>
+				</div>
+				<Reply aria-hidden="true" className="size-5 shrink-0 text-zinc-600" />
+				<Ellipsis aria-hidden="true" className="size-5 shrink-0 text-zinc-600" />
+			</div>
+		</div>
+	);
+}
+
+function ScreenEmail({ sender, name, subject, html, clicks, backRef, onBack, isHidden }) {
 	return (
 		<div
 			inert={isHidden}
@@ -314,33 +462,8 @@ function ScreenEmail({ sender, name, subject, html, backRef, onBack, isHidden })
 				))}
 			</div>
 			<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none]">
-				<div className="px-4 pt-1 pb-3">
-					<div className="flex items-start gap-3">
-						<p className="min-w-0 flex-1 text-[22px] leading-snug">
-							{subject}
-							<span className="ml-2 inline-block rounded bg-zinc-100 px-1.5 py-0.5 align-middle text-[11px] leading-none text-zinc-600">
-								Inbox
-							</span>
-						</p>
-						<Star aria-hidden="true" className="mt-1.5 size-5 shrink-0 text-zinc-500" />
-					</div>
-					<div className="mt-5 flex items-center gap-3">
-						<AvatarNewsletter newsletter={sender} size={40} className="rounded-full bg-zinc-100 text-zinc-500" />
-						<div className="min-w-0 flex-1">
-							<p className="flex items-baseline gap-1.5">
-								<span className="truncate text-[15px] font-semibold">{name}</span>
-								<span className="shrink-0 text-[13px] text-zinc-500">9:41 AM</span>
-							</p>
-							<p className="flex items-center gap-0.5 text-[13px] text-zinc-500">
-								to me
-								<ChevronDown aria-hidden="true" className="size-3.5" />
-							</p>
-						</div>
-						<Reply aria-hidden="true" className="size-5 shrink-0 text-zinc-600" />
-						<Ellipsis aria-hidden="true" className="size-5 shrink-0 text-zinc-600" />
-					</div>
-				</div>
-				<FrameEmail html={html} />
+				<HeaderMessage sender={sender} name={name} subject={subject} />
+				<FrameEmail html={html} clicks={clicks} />
 				<div aria-hidden="true" className="flex gap-3 px-4 pt-6 pb-10">
 					{REPLIES.map(({ label, icon: Icon }) => (
 						<span
@@ -357,20 +480,29 @@ function ScreenEmail({ sender, name, subject, html, backRef, onBack, isHidden })
 	);
 }
 
-// As tall as the email, so the screen around it scrolls the message's header away with the email, as mail apps do.
-function FrameEmail({ html }) {
-	// Without allow-scripts nothing in the email runs; same origin only lets the frame be sized and Escape out.
+// As tall as the email, so the screen around it scrolls the message's header away with the email, as mail apps do. Its
+// clicks scroll with it, drawn over the frame.
+function FrameEmail({ html, clicks }) {
+	const frameRef = useRef(null);
+
+	// Without allow-scripts nothing in the email runs; same origin only lets the frame be sized, Escape out, and its links
+	// open outside it and be found for their clicks.
 	return (
-		<iframe
-			title="Email preview"
-			sandbox="allow-same-origin"
-			srcDoc={html}
-			onLoad={(event) => {
-				forwardEscape(event.currentTarget);
-				fitToEmail(event.currentTarget);
-			}}
-			className="block h-160 w-full bg-white"
-		/>
+		<div className="relative">
+			<iframe
+				ref={frameRef}
+				title="Email preview"
+				sandbox="allow-same-origin"
+				srcDoc={html}
+				onLoad={(event) => {
+					forwardEscape(event.currentTarget);
+					openLinksOutside(event.currentTarget);
+					fitToEmail(event.currentTarget);
+				}}
+				className="block h-160 w-full bg-white"
+			/>
+			{clicks && <OverlayClicks frameRef={frameRef} links={clicks.links} clickers={clicks.clickers} />}
+		</div>
 	);
 }
 
@@ -384,14 +516,6 @@ function fitToEmail(frame) {
 	fit();
 	email.fonts?.ready.then(fit);
 	email.addEventListener("load", fit, true);
-}
-
-// A click in the email puts the focus in its frame, whose key presses never reach the dashboard: Escape there is passed
-// on to the dialog, which closes on it. Each new email is a new document, so each load listens again.
-function forwardEscape(frame) {
-	frame.contentDocument?.addEventListener("keydown", (event) => {
-		if (event.key === "Escape") document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-	});
 }
 
 // What inboxes show after the subject without preview text: the email's first words, a space between blocks.
