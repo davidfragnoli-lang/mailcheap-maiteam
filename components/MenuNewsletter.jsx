@@ -26,7 +26,16 @@ let refreshedFor = null;
 
 // The newsletter the dashboard shows, and the others to switch to. savedId: the cookie the layout was rendered from.
 // addForm: FormAddNewsletter, for Add a newsletter's dialog.
-export default function MenuNewsletter({ newsletters, selectedId, savedId, isCompact = false, addForm }) {
+// maxNewsletters, limitMessage: the server's own (PATCHES.md P12), upstream's by default.
+export default function MenuNewsletter({
+	newsletters,
+	selectedId,
+	savedId,
+	isCompact = false,
+	addForm,
+	maxNewsletters = MAX_NEWSLETTERS_PER_ACCOUNT,
+	limitMessage = NEWSLETTER_LIMIT_MESSAGE,
+}) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -126,7 +135,7 @@ export default function MenuNewsletter({ newsletters, selectedId, savedId, isCom
 						))}
 					</DropdownMenuRadioGroup>
 					<DropdownMenuSeparator className="my-1.5" />
-					{newsletters.length < MAX_NEWSLETTERS_PER_ACCOUNT ? (
+					{newsletters.length < maxNewsletters ? (
 						<DropdownMenuItem className={ITEM} onSelect={() => setAdding(true)}>
 							<Plus />
 							Add a newsletter
@@ -137,7 +146,7 @@ export default function MenuNewsletter({ newsletters, selectedId, savedId, isCom
 								<Plus />
 								Add a newsletter
 							</DropdownMenuItem>
-							<p className="mt-1 text-xs text-pretty text-muted-foreground">{NEWSLETTER_LIMIT_MESSAGE}</p>
+							<p className="mt-1 text-xs text-pretty text-muted-foreground">{limitMessage}</p>
 						</div>
 					)}
 					<DropdownMenuItem asChild className={ITEM}>

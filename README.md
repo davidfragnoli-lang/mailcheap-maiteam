@@ -130,7 +130,7 @@ If you plan to use your own domain for the dashboard (like `mailcheap.example.co
 
 Only the emails you list: `ADMIN_EMAILS` (who can also open `/admin`) and `ALLOWED_EMAILS`, a comma-separated list of addresses and whole domains, like `jane@example.com, @example.org`. It's checked at every sign-in, with a code or with Google, and anyone you take off the list is signed out and loses their API keys at their next request. With both lists empty, nobody can sign in.
 
-Everyone gets an account of their own, with up to 3 newsletters and their contacts and campaigns, and the account's domains and API keys. There's no billing on a self-hosted server: no plans, no limits.
+Everyone gets an account of their own, with up to 3 newsletters (`MAILCHEAP_MAX_NEWSLETTERS_PER_ACCOUNT` changes that) and their contacts and campaigns, and the account's domains and API keys. There's no billing on a self-hosted server: no plans, no limits.
 
 ### 4. Email provider
 

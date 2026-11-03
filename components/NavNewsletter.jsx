@@ -1,7 +1,8 @@
 import FormAddNewsletter from "@/components/FormAddNewsletter";
 import MenuNewsletter from "@/components/MenuNewsletter";
 import { getSharedDomain } from "@/lib/config";
-import { MAX_NEWSLETTERS_PER_ACCOUNT, toNewsletterOption } from "@/lib/newsletters";
+import { getMaxNewslettersPerAccount, getNewsletterLimitMessage } from "@/lib/maiteam/newsletter-limit";
+import { toNewsletterOption } from "@/lib/newsletters";
 import { findAccountDomains } from "@/lib/sender";
 import { getSelectedNewsletter } from "@/lib/selected-newsletter";
 
@@ -9,7 +10,10 @@ import { getSelectedNewsletter } from "@/lib/selected-newsletter";
 export default async function NavNewsletter({ isCompact }) {
 	const { account, newsletters, selected, savedId } = await getSelectedNewsletter();
 	const sharedDomain = getSharedDomain();
-	const isAtLimit = newsletters.length >= MAX_NEWSLETTERS_PER_ACCOUNT;
+	// maiteam (PATCHES.md P12): the server's number, read here because the menu and the dialog run in the browser.
+	const maxNewsletters = getMaxNewslettersPerAccount();
+	const limitMessage = getNewsletterLimitMessage(maxNewsletters);
+	const isAtLimit = newsletters.length >= maxNewsletters;
 	const domains = isAtLimit || sharedDomain ? [] : await findAccountDomains(account._id);
 
 	return (
@@ -18,12 +22,15 @@ export default async function NavNewsletter({ isCompact }) {
 			selectedId={selected ? String(selected._id) : null}
 			savedId={savedId}
 			isCompact={isCompact}
+			maxNewsletters={maxNewsletters}
+			limitMessage={limitMessage}
 			addForm={
 				<FormAddNewsletter
 					sharedDomain={sharedDomain}
 					domains={domains.map(({ domain }) => domain)}
 					startsFrom={selected && (selected.fromName || selected.postalAddress) ? selected.name : null}
 					isAtLimit={isAtLimit}
+					limitMessage={limitMessage}
 				/>
 			}
 		/>
