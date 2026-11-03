@@ -1,0 +1,87 @@
+{
+  "status": "maiteam-locked",
+  "language": "es",
+  "source": {
+    "owner": "maiteam Design & Offer",
+    "issue": "QI-27910",
+    "approval": "Re-locked by Design & Offer on QI-27854 (comment 3b52af10, design 846f6f5) with every placeholder resolved; pricing v2 lines from QI-27885 COPY-DELTAS §C2 (design f76a6e2, David's pricing v2 of 31 Oct 2026) applied verbatim on QI-27910. Not yet independently QA'd",
+    "retrieved": true,
+    "path": "maiteam-ships/maiteam-tracker-design at 68c1696280c8761592d34eda86785c0f2458b394 (QI-27910; bytes pinned by hash)",
+    "files": {
+      "docs/welcome-series/01-confirm.es.html": "f0216516d82f9f93eccab086876a0269b9167fae056fa07e676751df5dd33eff",
+      "docs/welcome-series/01-confirm.es.txt": "6ea79d69cb6492e936f7800b023296771ffa62e97743809a40d47ee188df1941",
+      "docs/welcome-series/02-data.es.html": "3f2b64adcdf85b5aedb40dd80563ed2d92725c867c19250f11d1c2c19e76d67b",
+      "docs/welcome-series/02-data.es.txt": "2a6079fdf2f75231b954376b313954e7152bf35fdf3c89b0a8b448fe62decae6",
+      "docs/welcome-series/03-agent.es.html": "2cd3baec1a522584c2dd27bbaa5c3d2ec349b39ebfb62a1173001d7670eca494",
+      "docs/welcome-series/03-agent.es.txt": "17332656308d1ef2caadff8f98d4f0a7af2055e778a9b5abb55e0f6614a03a2e"
+    },
+    "transcription": [
+      "Words from the .txt mails unchanged; checked by round trip to the source bytes, and no old product name left",
+      "Confirmation button line bound to mailcheap's {{confirm_url}} as upstream's built-in button markup (inline-block, #18181b on #ffffff, border-radius), which the renderer repaints in the newsletter's look",
+      "Footer lines end in two spaces (Markdown line break)",
+      "Subject 1 / preview 1 sent; subject 2 / preview 2 kept as the unsent alternative",
+      "No placeholders: the in-copy unsubscribe and postal lines are gone, mailcheap's system footer prints them in the newsletter's language (QI-27854 option A)"
+    ]
+  },
+  "cadence": {
+    "note": "Mail 1 is the double opt-in email at signup. Mails 2 and 3 are timed from the confirmed enrollment.",
+    "stepDelaysMs": [
+      86400000,
+      259200000
+    ]
+  },
+  "confirmation": {
+    "subject": "Confirma tu correo para fortuna",
+    "previewText": "Un clic, luego tres correos breves. Nada más.",
+    "markdown": "Hola,\n\nAlguien, probablemente tú, ha pedido apuntarse a la lista de espera de fortuna con esta dirección. fortuna es un panel de finanzas personales gratuito, en francos suizos; con fortuna + Agent, tu propio agente de IA puede archivar transacciones en él. Confirma, y esto es exactamente lo que recibirás:\n\n- Mañana: cómo se protegen tus datos financieros, en palabras sencillas.\n- Dentro de tres días: qué hace realmente tu agente, mostrado con datos de ejemplo.\n- Cuando fortuna abra: tu invitación para iniciar sesión, con lo que es gratis y lo que cuesta fortuna + Agent, antes de que nada te cueste dinero.\n\nTres correos en total, el último con tu invitación. Nada de boletines.\n\n<a href=\"{{confirm_url}}\" style=\"display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px;\">Confirmar mi correo</a>\n\nSi no fuiste tú, no hagas nada. No se envía nada más.\n\nDavid\n\n--  \nDavid · fortuna, de maiteam  \nTu dirección de correo se usa solo para esta serie y nunca se vende. Protección de datos: Ley federal suiza de protección de datos (nLPD) y RGPD. Aviso de privacidad: https://fortuna.maiteam.ch/privacy?locale=es",
+    "mail": {
+      "source": "docs/welcome-series/01-confirm.es.txt",
+      "sha256": "6ea79d69cb6492e936f7800b023296771ffa62e97743809a40d47ee188df1941",
+      "html": "docs/welcome-series/01-confirm.es.html",
+      "htmlSha256": "f0216516d82f9f93eccab086876a0269b9167fae056fa07e676751df5dd33eff"
+    },
+    "alternative": {
+      "subject": "¿Eras tú? Confirma tu plaza en la lista de fortuna",
+      "previewText": "Qué recibirás y con qué frecuencia, en un párrafo.",
+      "sent": false
+    }
+  },
+  "steps": [
+    {
+      "position": 1,
+      "delayDays": 1,
+      "mail": {
+        "source": "docs/welcome-series/02-data.es.txt",
+        "sha256": "2a6079fdf2f75231b954376b313954e7152bf35fdf3c89b0a8b448fe62decae6",
+        "html": "docs/welcome-series/02-data.es.html",
+        "htmlSha256": "3f2b64adcdf85b5aedb40dd80563ed2d92725c867c19250f11d1c2c19e76d67b"
+      },
+      "subject": "Cómo se protegen tus datos financieros en fortuna",
+      "previewText": "Claves que puedes revocar, un historial de cambios que puedes deshacer, una exportación que es tuya.",
+      "alternative": {
+        "subject": "Antes de darle a un agente el extracto de tu tarjeta",
+        "previewText": "Dónde están tus datos, quién puede tocarlos y cómo lo paras.",
+        "sent": false
+      },
+      "markdown": "Hola,\n\nLa primera pregunta que nos hacen: ¿y si el agente se equivoca, o consigue más de lo que yo quería darle? Esto es lo que es cierto hoy.\n\n- Tu agente recibe una clave, no tu contraseña. Solo lectura, o lectura y escritura, con el nombre que tú le pongas y el último uso a la vista. «Revocar» lo para en la siguiente petición.\n- fortuna guarda solo la huella de la clave. La clave la ves una sola vez.\n- Cada cambio del agente aparece en la página «Cambios» con su nombre y su hora. «Deshacer» lo revierte.\n- Exporta un ZIP desde Ajustes cuando quieras: tus registros, el historial de cambios, el registro del agente y tus PDF. «Borrar mi cuenta y mis datos» elimina la cuenta, los datos, los PDF y tu clave.\n- Tus registros se cifran con una clave solo tuya antes de escribirse en la base de datos. La base de datos y el archivo PDF cifran además su almacenamiento.\n\nUn límite honesto: lo que tu agente lee va a tu proveedor de IA. Elige uno de confianza, o empieza con «Solo lectura».\n\nResponde a este correo con la línea de la que quieras una prueba.\n\nDavid\n\n--  \nDavid · fortuna, de maiteam  \nTu dirección de correo se usa solo para esta serie y nunca se vende. Protección de datos: Ley federal suiza de protección de datos (nLPD) y RGPD. Aviso de privacidad: https://fortuna.maiteam.ch/privacy?locale=es"
+    },
+    {
+      "position": 2,
+      "delayDays": 3,
+      "mail": {
+        "source": "docs/welcome-series/03-agent.es.txt",
+        "sha256": "17332656308d1ef2caadff8f98d4f0a7af2055e778a9b5abb55e0f6614a03a2e",
+        "html": "docs/welcome-series/03-agent.es.html",
+        "htmlSha256": "2cd3baec1a522584c2dd27bbaa5c3d2ec349b39ebfb62a1173001d7670eca494"
+      },
+      "subject": "Qué hace realmente tu agente con un extracto de tarjeta",
+      "previewText": "Un flujo real, mostrado con datos de ejemplo, del PDF a la página «Cambios».",
+      "alternative": {
+        "subject": "La parte del presupuesto que te saltas, hecha por tu agente",
+        "previewText": "Entra el extracto de la tarjeta, se archivan las transacciones, un botón «Deshacer». Datos de ejemplo.",
+        "sent": false
+      },
+      "markdown": "Hola,\n\nEste es el flujo, con datos de ejemplo (inventados, ninguna cuenta real).\n\nTú, a tu agente: «Aquí tienes el extracto de la tarjeta de septiembre. Archívalo en fortuna.»\n\nTu agente: «Hecho. 23 transacciones añadidas desde extracto-tarjeta-2026-09.pdf, 4 movidas a Supermercado. Dos parecían duplicados de agosto, así que las he dejado fuera. Todo está en la página ‹Cambios› y se puede deshacer.»\n\nEn fortuna, la página «Cambios» muestra ahora dos filas firmadas con la clave a la que pusiste nombre, digamos «recibos», cada una con un botón «Deshacer». El PDF está en «Documentos», vinculado a sus filas. Pulsa «Deshacer» en la primera fila y las 23 transacciones desaparecen. Ese deshacer también se puede deshacer.\n\nEl agente hace el archivado que tú te saltas. El panel se queda con el recibo de lo que hizo.\n\nFunciona con cualquier agente que hable MCP. Una clave de Ajustes → Claves de agente es todo lo que necesita; la clave forma parte de fortuna + Agent, CHF 89 al año, y el resto de fortuna es gratis.\n\n[Abrir la demo con datos de ejemplo](https://fortuna.maiteam.ch/demo?locale=es)\n\nDavid\n\n--  \nDavid · fortuna, de maiteam  \nTu dirección de correo se usa solo para esta serie y nunca se vende. Protección de datos: Ley federal suiza de protección de datos (nLPD) y RGPD. Aviso de privacidad: https://fortuna.maiteam.ch/privacy?locale=es"
+    }
+  ]
+}

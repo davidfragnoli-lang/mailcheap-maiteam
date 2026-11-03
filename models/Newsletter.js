@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { accountScoped } from "../lib/account-scope.js";
 import { contentReviewSchema } from "../lib/content-review-schema.js";
+import { EMAIL_LANGUAGES } from "../lib/maiteam/email-language.js";
 import { SUMMARY_FREQUENCIES } from "../lib/summary.js";
 import { lookFields } from "./maiteam-look-fields.js";
 
@@ -16,6 +17,8 @@ const newsletterSchema = new mongoose.Schema(
 		// Without one, emails print the server's default (lib/postal-address.js), unless the owner saved it empty.
 		postalAddress: { type: String, trim: true },
 		postalAddressCleared: { type: Boolean },
+		// maiteam (PATCHES.md P12): the language of the footer and "Read online" mailcheap adds to its emails.
+		language: { type: String, enum: EMAIL_LANGUAGES },
 		archiveEnabled: { type: Boolean, default: false },
 		// Its website domain's host once it's live (lib/website-domains.js). Without one, the archive and the links in its
 		// emails use <slug>.<shared domain>.

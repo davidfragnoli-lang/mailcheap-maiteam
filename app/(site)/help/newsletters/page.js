@@ -74,6 +74,10 @@ export default function NewslettersPage() {
 						? "Until you set yours, emails print mailcheap's business address. Saved empty, emails wait until you add one."
 						: "Saved empty, emails wait until you add one."}
 				</li>
+				<li>
+					<strong>Language</strong>: the footer, with its unsubscribe link, and the Read online link are in English, Spanish or French.
+					Set it with the API or your AI assistant (<code>language</code>: en, es or fr). Your issues go out as you write them.
+				</li>
 			</ul>
 
 			<h2 id="website">Website</h2>
