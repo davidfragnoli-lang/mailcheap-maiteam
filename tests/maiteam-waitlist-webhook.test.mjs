@@ -85,6 +85,7 @@ describe("waitlist webhook rules", () => {
 		assert.deepEqual(signupInputFor(resolveWaitlistProduct("maifortune", ENV), ok), {
 			slug: "maifortune",
 			sequence: "welcome",
+			tags: [],
 			email: "reader@example.invalid",
 			source: "waitlist:maifortune",
 			resubscribe: false,
