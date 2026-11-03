@@ -126,6 +126,8 @@ export async function getDomainIdentity(domain) {
 		verified: identity.verified,
 		dkimStatus: identity.dkimStatus,
 		mailFromStatus: identity.mailFromStatus,
+		// maiteam (PATCHES.md P11): what lib/ses.js reads from BehaviorOnMxFailure, when a test sets it.
+		...(identity.mailFromFallback !== undefined && { mailFromFallback: identity.mailFromFallback }),
 		records: [
 			...tokens.map((token) => ({ purpose: "dkim", type: "CNAME", name: `${token}._domainkey.${domain}`, value: `${token}.dkim.amazonses.com` })),
 			{ purpose: "mail-from", type: "MX", name: identity.mailFromDomain, value: "10 feedback-smtp.us-east-1.amazonses.com" },

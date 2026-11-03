@@ -554,3 +554,26 @@ describe("maiteam welcome sequences", () => {
 		}
 	});
 });
+
+// FRA-25999 QA r4 item 2: upstream 40244c9 holds a newsletter's own welcome while the content check flags it. A step that
+// sends that saved welcome (useWelcome) is held with it, as upstream skips its own welcome; the next step still goes.
+test("a step that reuses a held welcome is skipped like the welcome; the next step still goes", async () => {
+	const { getOwnSignupEmail } = await import("../lib/signup-email-review.js");
+	const { getReviewInput, hashReviewInput } = await import("../lib/content-review.js");
+	const WELCOME = { enabled: true, subject: "Welcome aboard", markdown: "Thanks for joining." };
+	const user = await customer("seq-held", { requireConfirmation: false, welcome: WELCOME });
+	const newsletter = await m.Newsletter.findOne({ accountId: user.accountId, _id: user.newsletterId }).lean();
+	const hash = hashReviewInput(getReviewInput({ campaign: getOwnSignupEmail(newsletter, "welcome"), newsletter }));
+	await m.Newsletter.updateOne({ accountId: user.accountId, _id: user.newsletterId }, { $set: { "reviews.welcome": { hash, outcome: "block", checkedAt: new Date() } } });
+	await createSequence(user, { name: "Held", slug: "held", steps: [{ delayDays: 0, useWelcome: true }, { delayDays: 1, subject: "Day 1", markdown: "Hello again" }] });
+	const reader = "reader@seq-held.example.org";
+	await signUp(user, reader, { sequence: "held" });
+	const [{ result }] = await runStepJobs();
+	assert.equal(result.outcome, "skipped");
+	const step = await m.Message.findOne({ accountId: user.accountId, kind: "sequence", email: reader, stepPosition: 1 }).lean();
+	assert.deepEqual([step.status, step.error], ["skipped", "The welcome email is in review"]);
+	assert.ok(!emailsTo(reader).some(({ subject }) => subject === WELCOME.subject), "the held welcome never went out");
+	const [{ result: next }] = await runStepJobs();
+	assert.equal(next.outcome, "sent");
+	assert.deepEqual(emailsTo(reader).map(({ subject }) => subject), ["Day 1"]);
+});

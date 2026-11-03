@@ -18,6 +18,8 @@ const domainSchema = new mongoose.Schema(
 		dkimStatus: { type: String, default: "PENDING" },
 		mailFromStatus: { type: String, default: "PENDING" },
 		records: [{ _id: false, purpose: String, type: { type: String }, name: String, value: String }],
+		// maiteam (PATCHES.md P11): the provider sends with its own MAIL FROM while the custom one's MX is missing.
+		mailFromFallback: { type: Boolean },
 		// The DMARC record found on the domain, or on the closest parent with one (lib/dmarc-rules.js).
 		dmarc: { status: { type: String }, host: { type: String } },
 		// MailCheap's own last look at the records (lib/domain-dns.js): each one proxied, different or missing. Any of
