@@ -19,6 +19,9 @@ const newsletterSchema = new mongoose.Schema(
 		postalAddressCleared: { type: Boolean },
 		// maiteam (PATCHES.md P12): the language of the footer and "Read online" mailcheap adds to its emails.
 		language: { type: String, enum: EMAIL_LANGUAGES },
+		// maiteam (PATCHES.md P15): false sends every email of the newsletter without the open pixel and without
+		// tracked links. Unset is on, as upstream.
+		tracking: { type: Boolean },
 		archiveEnabled: { type: Boolean, default: false },
 		// Its website domain's host once it's live (lib/website-domains.js). Without one, the archive and the links in its
 		// emails use <slug>.<shared domain>.
