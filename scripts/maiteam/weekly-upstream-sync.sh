@@ -2,7 +2,11 @@
 # Weekly upstream sync for maiteam's mailcheap (PATCHES.md, FRA-26000 step 7). Meant to run as one step of the
 # existing weekly routine (ai.fragno.weekly-upstream-updates), not as a parallel updater.
 #
-#   scripts/maiteam/weekly-upstream-sync.sh [--dry-run|--push|--promote] [--worktree <dir>] [--branch <deployed>]
+#   scripts/maiteam/weekly-upstream-sync.sh --branch <deployed> [--dry-run|--push|--promote] [--worktree <dir>]
+#
+#   --branch   required: the branch Vercel builds production from, as it is named on origin (today
+#              migrate/upstream-bb82ec6-r2). There is no default and no refspec alias: the sync reads origin/<branch>,
+#              and --promote pushes only to a branch origin already has, so a push can never create a new branch.
 #
 #   --dry-run  (default) fetch, merge upstream/main into a sync branch, re-apply P2, run every gate. Nothing pushed.
 #   --push     the same, then push the sync branch to origin, so Vercel builds a Git-backed preview, and smoke it.
@@ -24,7 +28,7 @@ set -u
 setopt pipefail
 MODE=dry-run
 WORKTREE="$HOME/Projects/mailcheap-sync"
-DEPLOYED=production
+DEPLOYED=""
 BASE_REF=""
 UPSTREAM_REF=upstream/main
 while (( $# )); do
@@ -48,14 +52,22 @@ LOG="$LOG_DIR/$STAMP.log"
 log() { print -r -- "$(date -u +%FT%TZ) $*" | tee -a "$LOG"; }
 finish() { log "RESULT $1"; print -r -- "mailcheap: $1"; exit "${2:-0}"; }
 
+[[ -n "$DEPLOYED" ]] || finish "STOP no --branch: name the branch Vercel builds production from" 1
+[[ "$DEPLOYED" == production ]] && finish "STOP --branch production is the old fork's branch name; pass the real deployed branch" 1
+# The runtime QA reviewed and Vercel runs (package.json engines 22.x).
+[[ "$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)" == 22 ]] || finish "STOP node $(node -v 2>/dev/null || print none) on PATH; the gates run on Node 22" 1
 [[ -d "$WORKTREE/.git" || -f "$WORKTREE/.git" ]] || finish "STOP no sync worktree at $WORKTREE" 1
 cd "$WORKTREE" || finish "STOP cannot enter $WORKTREE" 1
 [[ -z "$(git status --porcelain)" ]] || finish "STOP sync worktree is dirty" 1
 
 git fetch --quiet origin >>"$LOG" 2>&1 || finish "STOP fetch origin failed" 1
+# The branch has to exist on origin as itself: a refspec that maps another branch onto origin/<branch> doesn't count.
+git ls-remote --exit-code --heads origin "refs/heads/$DEPLOYED" >/dev/null 2>&1 || finish "STOP origin has no branch $DEPLOYED" 1
+DEPLOYED_SHA="$(git ls-remote --heads origin "refs/heads/$DEPLOYED" | cut -f1)"
 git fetch --quiet upstream >>"$LOG" 2>&1 || finish "STOP fetch upstream failed" 1
 [[ ( -n "$BASE_REF" || "$UPSTREAM_REF" != upstream/main ) && "$MODE" != dry-run ]] && finish "STOP --base-ref and --upstream-ref are for dry runs only" 1
 BASE="$(git rev-parse "${BASE_REF:-origin/$DEPLOYED}")" || finish "STOP no ${BASE_REF:-origin/$DEPLOYED}" 1
+[[ -n "$BASE_REF" || "$BASE" == "$DEPLOYED_SHA" ]] || finish "STOP origin/$DEPLOYED here (${BASE:0:7}) is not origin's $DEPLOYED (${DEPLOYED_SHA:0:7}): check the fetch refspec" 1
 UPSTREAM="$(git rev-parse "$UPSTREAM_REF")" || finish "STOP no $UPSTREAM_REF" 1
 NEW="$(git rev-list --count "$BASE..$UPSTREAM")"
 [[ "$NEW" == 0 ]] && finish "current (upstream/main ${UPSTREAM:0:7} already merged into $DEPLOYED ${BASE:0:7})"
@@ -129,7 +141,11 @@ PREVIEW="$(print -r -- "$VERCEL_REPLY" | json_field url)"
 [[ -n "$PREVIEW" ]] && smoke "https://$PREVIEW" || finish "STOP preview smoke failed for ${SHA:0:7}" 1
 [[ "$MODE" == push ]] && finish "preview ready https://$PREVIEW (${SHA:0:7}, $TESTS); promote with --promote after review"
 
-git checkout --quiet "$DEPLOYED" && git merge --ff-only --quiet "$SYNC" && git push --quiet origin "$DEPLOYED" >>"$LOG" 2>&1 || finish "STOP fast-forward push of $DEPLOYED failed" 1
+# Fast-forward only, to the existing branch only: --force-with-lease pins what origin must still hold, so a branch that
+# moved or vanished since the fetch refuses the push instead of being created or overwritten.
+git ls-remote --exit-code --heads origin "refs/heads/$DEPLOYED" >/dev/null 2>&1 || finish "STOP origin has no branch $DEPLOYED: not creating it" 1
+git merge-base --is-ancestor "$BASE" "$SYNC" || finish "STOP $SYNC does not fast-forward $DEPLOYED" 1
+git push --quiet --force-with-lease="refs/heads/$DEPLOYED:$BASE" origin "$SYNC:refs/heads/$DEPLOYED" >>"$LOG" 2>&1 || finish "STOP fast-forward push of $DEPLOYED failed" 1
 if await_deployment "$SHA" production && await_serving "$HOST" "$DEPLOYMENT_ID" "$PRODUCTION_URL"; then
 	finish "promoted ${SHA:0:7} (upstream ${UPSTREAM:0:7}, $NEW commits, $TESTS); $HOST serves $DEPLOYMENT_ID"
 fi

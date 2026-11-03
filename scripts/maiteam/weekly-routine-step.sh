@@ -6,7 +6,9 @@
 #
 # The mode file holds one word: off (also when the file is missing), dry-run, push or promote. It stays off until
 # FRA-26000's release gates are met; then promote is the standing weekly mode, with no per-run card. Settings come from
-# ~/.config/mailcheap-sync/env (VERCEL_TEAM_ID, VERCEL_PROJECT_ID, MONGOD_PATH, MAILCHEAP_SYNC_WORKTREE); the Vercel
+# ~/.config/mailcheap-sync/env (MAILCHEAP_DEPLOYED_BRANCH, required: the branch Vercel builds production from;
+# MAILCHEAP_NODE_BIN, a Node 22 bin directory put first on PATH; VERCEL_TEAM_ID, VERCEL_PROJECT_ID, MONGOD_PATH,
+# MAILCHEAP_SYNC_WORKTREE); the Vercel
 # token is read from the shared env file and never printed. Exit 0 for done or off, 1 for a stop, 2 for a failed rollback.
 
 set -u
@@ -33,12 +35,14 @@ if [[ -z "${VERCEL_TOKEN:-}" && -f "$SHARED" ]]; then
 fi
 export VERCEL_TOKEN="${VERCEL_TOKEN:-}" VERCEL_TEAM_ID="${VERCEL_TEAM_ID:-}" VERCEL_PROJECT_ID="${VERCEL_PROJECT_ID:-}"
 [[ -n "${MONGOD_PATH:-}" ]] && export MONGOD_PATH
+[[ -n "${MAILCHEAP_NODE_BIN:-}" ]] && export PATH="$MAILCHEAP_NODE_BIN:$PATH"
+[[ -n "${MAILCHEAP_DEPLOYED_BRANCH:-}" ]] || { print -r -- "STOP MAILCHEAP_DEPLOYED_BRANCH is not set in $CONFIG"; exit 1; }
 WORKTREE="${MAILCHEAP_SYNC_WORKTREE:-$HOME/Projects/mailcheap-sync}"
 SYNC="${MAILCHEAP_SYNC_SCRIPT:-$WORKTREE/scripts/maiteam/weekly-upstream-sync.sh}"
 [[ -f "$SYNC" ]] || { print -r -- "STOP no sync script at $SYNC"; exit 1; }
 
 OUT="$(mktemp)"
-/bin/zsh "$SYNC" "--$MODE" --worktree "$WORKTREE" >"$OUT" 2>/dev/null
+/bin/zsh "$SYNC" "--$MODE" --worktree "$WORKTREE" --branch "$MAILCHEAP_DEPLOYED_BRANCH" >"$OUT" 2>/dev/null
 CODE=$?
 LINE="$(tail -1 "$OUT")"
 rm -f "$OUT"

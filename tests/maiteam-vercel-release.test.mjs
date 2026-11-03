@@ -129,8 +129,9 @@ test("the routine step is off until its mode file says otherwise, and passes on 
 	const step = new URL("../scripts/maiteam/weekly-routine-step.sh", import.meta.url).pathname;
 	const fake = `${dir}/sync.sh`;
 	await writeFile(fake, 'print -r -- "noise"\nprint -r -- "mailcheap: ROLLED BACK abc1234 (x); verified"\nprint -r -- "args $*" >&2\nexit 1\n');
-	const env = { PATH: process.env.PATH, HOME: dir, MAILCHEAP_SYNC_SCRIPT: fake, MAILCHEAP_SYNC_CONFIG: `${dir}/none`, MAILCHEAP_SHARED_ENV: `${dir}/none` };
-	const call = (file) => run("/bin/zsh", [step, "--mode-file", file], { env }).then(({ stdout }) => ({ code: 0, line: stdout.trim() }), (error) => ({ code: error.code, line: error.stdout.trim() }));
+	const base = { PATH: process.env.PATH, HOME: dir, MAILCHEAP_SYNC_SCRIPT: fake, MAILCHEAP_SYNC_CONFIG: `${dir}/none`, MAILCHEAP_SHARED_ENV: `${dir}/none` };
+	let env = { ...base, MAILCHEAP_DEPLOYED_BRANCH: "migrate/upstream-bb82ec6-r2" };
+	const call = (file) => run("/bin/zsh", [step, "--mode-file", file], { env }).then(({ stdout, stderr }) => ({ code: 0, line: stdout.trim(), stderr }), (error) => ({ code: error.code, line: error.stdout.trim(), stderr: error.stderr })).then(({ stderr, ...rest }) => rest);
 	assert.deepEqual(await call(`${dir}/missing`), { code: 0, line: "off (release gates pending)" });
 	await writeFile(`${dir}/mode`, "off\n");
 	assert.deepEqual(await call(`${dir}/mode`), { code: 0, line: "off (release gates pending)" });
@@ -138,4 +139,38 @@ test("the routine step is off until its mode file says otherwise, and passes on 
 	assert.deepEqual(await call(`${dir}/mode`), { code: 1, line: "ROLLED BACK abc1234 (x); verified" });
 	await writeFile(`${dir}/mode`, "yolo\n");
 	assert.equal((await call(`${dir}/mode`)).code, 1);
+	// FRA-25998 r4: the deployed branch is named, never assumed, and reaches the sync as --branch.
+	await writeFile(`${dir}/mode`, "dry-run\n");
+	await writeFile(fake, 'print -r -- "mailcheap: args $*"\n');
+	assert.deepEqual(await call(`${dir}/mode`), { code: 0, line: `args --dry-run --worktree ${dir}/Projects/mailcheap-sync --branch migrate/upstream-bb82ec6-r2` });
+	env = base;
+	assert.deepEqual(await call(`${dir}/mode`), { code: 1, line: `STOP MAILCHEAP_DEPLOYED_BRANCH is not set in ${dir}/none` });
+});
+
+// FRA-25998 r4: the sync never invents the branch it pushes to. Without --branch, with the old fork's "production", or
+// with a branch origin doesn't have (as itself, not through a refspec), it stops before anything else.
+test("the sync stops without the real deployed branch, and never pushes to one origin lacks", async (t) => {
+	const { mkdtemp } = await import("node:fs/promises");
+	const { tmpdir } = await import("node:os");
+	const dir = await mkdtemp(`${tmpdir()}/mailcheap-branch-`);
+	const git = (...args) => run("git", args, { cwd: dir });
+	await git("init", "--quiet", "--bare", "origin.git");
+	await git("init", "--quiet", "-b", "migrate/upstream-bb82ec6-r2", "work");
+	const inWork = (...args) => run("git", ["-c", "user.name=t", "-c", "user.email=t@example.test", ...args], { cwd: `${dir}/work` });
+	await inWork("commit", "--quiet", "--allow-empty", "-m", "x");
+	await inWork("remote", "add", "origin", `${dir}/origin.git`);
+	await inWork("push", "--quiet", "origin", "migrate/upstream-bb82ec6-r2");
+	// The alias the old setup used: another branch mapped onto origin/production.
+	await inWork("config", "--add", "remote.origin.fetch", "+refs/heads/migrate/upstream-bb82ec6-r2:refs/remotes/origin/production");
+	const script = new URL("../scripts/maiteam/weekly-upstream-sync.sh", import.meta.url).pathname;
+	const env = { PATH: process.env.PATH, HOME: dir, MAILCHEAP_SYNC_LOG_DIR: `${dir}/logs` };
+	const sync = (...args) => run("/bin/zsh", [script, "--worktree", `${dir}/work`, ...args], { env }).then(({ stdout }) => ({ code: 0, line: stdout.trim() }), (error) => ({ code: error.code, line: error.stdout.trim().split("\n").pop() }));
+	assert.deepEqual(await sync("--promote"), { code: 1, line: "mailcheap: STOP no --branch: name the branch Vercel builds production from" });
+	assert.deepEqual(await sync("--promote", "--branch", "production"), { code: 1, line: "mailcheap: STOP --branch production is the old fork's branch name; pass the real deployed branch" });
+	if (process.versions.node.split(".")[0] !== "22") return t.skip("the origin checks run after the Node 22 gate");
+	assert.deepEqual(await sync("--promote", "--branch", "release"), { code: 1, line: "mailcheap: STOP origin has no branch release" });
+	const { stdout } = await run("git", ["ls-remote", "--heads", `${dir}/origin.git`]);
+	assert.deepEqual(stdout.trim().split("\n").map((line) => line.split("\t")[1]), ["refs/heads/migrate/upstream-bb82ec6-r2"], "origin gained no branch");
+	const script2 = (await import("node:fs")).readFileSync(script, "utf8");
+	assert.match(script2, /--force-with-lease="refs\/heads\/\$DEPLOYED:\$BASE" origin "\$SYNC:refs\/heads\/\$DEPLOYED"/, "the promote push names the existing branch and its expected head");
 });
