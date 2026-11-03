@@ -112,7 +112,8 @@ else
 	finish "STOP gitleaks is not installed" 1
 fi
 
-npm ci --no-audit --no-fund >>"$LOG" 2>&1 || finish "STOP npm ci failed" 1
+# Its own npm cache, so a shared ~/.npm in another state (owner, a half-written entry) never stops the sync.
+npm ci --no-audit --no-fund --cache "${MAILCHEAP_NPM_CACHE:-$HOME/.cache/mailcheap-sync/npm}" >>"$LOG" 2>&1 || finish "STOP npm ci failed" 1
 TEST_ENV=(PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}")
 [[ -n "${MONGOD_PATH:-}" ]] && TEST_ENV+=(MONGOD_PATH="$MONGOD_PATH")
 env -i "${TEST_ENV[@]}" node --import ./tests/setup/register.mjs --test --test-reporter=tap "tests/**/*.test.mjs" >"$LOG_DIR/$STAMP.tap" 2>&1
