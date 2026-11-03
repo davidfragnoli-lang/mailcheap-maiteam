@@ -99,6 +99,15 @@ test("the hourly look stores SES's fallback and keeps a fallback domain sending;
 	const reject = await read("reject-mail.com");
 	assert.equal(reject.mailFromFallback, false);
 	assert.equal(withActiveProvider(reject).verified, false);
+	// QA r4b: the send path reads the domains through its own projection (lib/sender.js), not the whole document. Each
+	// kind of email asks loadSender who it may send as.
+	const { findAccountDomains, loadSender } = await import("../lib/sender.js");
+	const seen = Object.fromEntries((await findAccountDomains(user.accountId)).map((domain) => [domain.domain, domain.verified]));
+	assert.deepEqual([seen["fallback-mail.com"], seen["reject-mail.com"]], [true, false], "the send path sees what the Domains page sees");
+	const account = { _id: user.accountId };
+	const sender = (fromEmail) => loadSender(account, { _id: user.accountId, accountId: user.accountId, slug: "fallback", fromEmail, replyTo: "owner@example.com" });
+	assert.equal((await sender("hi@fallback-mail.com")).identity, "fallback-mail.com", "a send from the fallback domain may go");
+	assert.ok((await sender("hi@reject-mail.com")).problem, "a send from the rejecting domain is refused");
 	const stopped = (domain) => platformEmails.filter(({ subject }) => subject === `[mailcheap] Sending from ${domain} stopped`).length;
 	assert.deepEqual([stopped("fallback-mail.com"), stopped("reject-mail.com")], [0, 1]);
 });
