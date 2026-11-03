@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { after, before, beforeEach, describe, test } from "node:test";
 import { activate, as, callApi, catchRedirect, form, signIn, startTestApp } from "./helpers/app.mjs";
+import { runWithRequest } from "./stubs/next-headers.mjs";
 import { flushAfter } from "./stubs/next-server.mjs";
 import { disableSignupProtection, enableSignupProtection } from "./stubs/maiteam-signup-protection.mjs";
 import { published } from "./stubs/qstash.mjs";
@@ -224,7 +225,7 @@ describe("waitlist webhook route", () => {
 
 		const jobs = published.length;
 		const token = m.confirmation.createConfirmToken({ contactId: contact._id, newsletterId: contact.newsletterId });
-		assert.deepEqual(await m.confirm.confirmSubscription(token), { ok: true });
+		assert.deepEqual(await runWithRequest({}, async () => m.confirm.confirmSubscription(token)), { ok: true });
 		assert.equal((await m.Enrollment.findById(enrollment._id).setOptions({ crossAccount: true }).lean()).status, "active");
 		const [job] = published.slice(jobs);
 		assert.equal(job.body.position, 1);

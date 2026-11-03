@@ -52,8 +52,9 @@ test("company mail keeps its button ink and its links grey; the built-in confirm
 	assert.deepEqual([link, button, buttonText], ["#6b6a64", "#1a1a18", "#fafaf8"]);
 	const confirmation = getConfirmationContent({ name: "fortuna" });
 	const { html } = renderEmail({ ...confirmation, newsletter: newsletter("fortuna") });
+	// Upstream draws its built-in button from the theme now (lib/buttons.js getEmailButtonHtml).
 	assert.ok(html.includes("background:#6e5c96;color:#ffffff;"), "the confirmation button takes fortuna's malva");
-	assert.equal(html.match(/display:inline-block;background:/g).length, 1, "one button per message");
+	assert.equal(html.match(/<a[^>]*style="display:inline-block;[^"]*background:/g).length, 1, "one button per message");
 });
 
 test("contrast: text and links pass AA on the ground; the terracotta label is the tokens' 16px exception", () => {

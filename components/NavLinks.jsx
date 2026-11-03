@@ -62,7 +62,7 @@ const NEWSLETTER_ITEMS = [
 
 const ACCOUNT_ITEMS = [
 	// maiteam (PATCHES.md P6): every newsletter's welcome sequences.
-	{ href: "/sequences", label: "Sequences", icon: ListOrdered },
+	{ href: "/sequences", label: "Sequences", icon: ListOrdered, role: OWNER_ROLE },
 	{ href: "/domains", label: "Domains", icon: Globe, role: OWNER_ROLE },
 	{ href: "/api-keys", label: "API keys", icon: KeyRound, role: OWNER_ROLE },
 ];

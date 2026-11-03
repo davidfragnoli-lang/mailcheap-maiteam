@@ -13,6 +13,7 @@ import {
 } from "../lib/maiteam/changelog.js";
 import { listAppPages } from "./helpers/app-pages.mjs";
 import { activate, as, signIn, startTestApp } from "./helpers/app.mjs";
+import { runWithRequest } from "./stubs/next-headers.mjs";
 
 // P10 (PATCHES.md), COO's R7 disposition (FRA-25998): the what's new card in upstream's WhatsNew slot, with this
 // server's own release entries, closed per account in upstream's Account.changelog.seen.
@@ -150,7 +151,8 @@ test("the dashboard layout renders the card for an owner with unseen entries", a
   const { WhatsNew } = await import("@/components/SiteExtensions");
   assert.equal(WhatsNew, m.extensions.WhatsNew, "the build's alias resolves to the maiteam card");
   const { default: LayoutDashboard } = await import("../components/LayoutDashboard.jsx");
-  const tree = await LayoutDashboard({ user: { name: "Owner", email: "whats-new-layout@example.com" }, account, isAdmin: false, children: null });
+  // Upstream's layout reads the sidebar cookie now, so it renders inside a request.
+  const tree = await runWithRequest({}, () => LayoutDashboard({ user: { name: "Owner", email: "whats-new-layout@example.com" }, account, isAdmin: false, children: null }));
   const found = [];
   const walk = (node) => {
     if (Array.isArray(node)) return node.forEach(walk);

@@ -59,7 +59,7 @@ test("the Sender page shows the cap field, today's limit and the warm-up; the da
 	const user = await customer("send-cap-page");
 	const saved = await as(user, () => m.newsletters.saveSendCap(user.newsletterId, 120));
 	assert.deepEqual([saved.ok, saved.status.dailySendCap, saved.status.limit], [true, 120, 50]);
-	const html = renderToStaticMarkup(await as(user, () => m.senderPage.default()));
+	const html = renderToStaticMarkup(await as(user, () => m.senderPage.default({ searchParams: Promise.resolve({}) })));
 	assert.match(html, /Daily sending/);
 	assert.match(html, /name="dailySendCap"[^>]*value="120"/);
 	assert.match(html, /Today&#x27;s limit 50, 0 used\./);

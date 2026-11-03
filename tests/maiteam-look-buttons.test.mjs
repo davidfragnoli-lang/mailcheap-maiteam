@@ -24,3 +24,16 @@ test("the landing and letter looks keep the accepted ink button", () => {
 		assert.ok(!buttonOf(html).includes('class="button"'), preset);
 	}
 });
+
+// Upstream 40244c9 (FRA-25998 r4): its editor writes buttons as <div data-button> and HTML blocks as markers. Under a
+// look neither may reach the reader raw: a button is drawn as the ink link the looks repaint, a block is expanded.
+test("an editor button and an HTML block under a look render, not their markers", () => {
+	const html = '<p>Hi</p><div data-button=""><a href="https://example.com/go">Go</a></div>';
+	for (const [look, colour] of [[{ preset: "maiteam", product: "fortuna" }, "#6e5c96"], [{ preset: "landing" }, "#18181b"]]) {
+		const rendered = renderEmail({ format: "rich", html, subject: "s", newsletter: { name: "n", theme: { look } } }).html;
+		assert.ok(!rendered.includes("data-button"), `${look.preset}: no raw button marker`);
+		assert.match(rendered, new RegExp(`<a[^>]*href="https://example.com/go"[^>]*background:${colour};`), `${look.preset}: drawn in ${colour}`);
+	}
+	const empty = renderEmail({ format: "rich", html: '<div data-button=""><a href="https://example.com/go"></a></div>', subject: "s", newsletter: { name: "n", theme: { look: { preset: "maiteam" } } } }).html;
+	assert.ok(!empty.includes("example.com/go"), "a button without text is left out, as upstream does");
+});

@@ -6,6 +6,7 @@ import { activate, as, callApi, catchNotFound, catchRedirect, form, jsonRequest,
 import { flushAfter } from "./stubs/next-server.mjs";
 import { published } from "./stubs/qstash.mjs";
 import { sent as sesEmails, state as sesState } from "./stubs/ses.mjs";
+import { runWithRequest } from "./stubs/next-headers.mjs";
 
 // maiteam's welcome sequences (PATCHES.md P6) through upstream's real paths: add_contact, the confirmation click, the
 // QStash step job, upstream's batch and its email events. maiteam's send gates are off here, as for upstream's tests;
@@ -146,7 +147,7 @@ describe("maiteam welcome sequences", () => {
 		assert.equal(forged.outcome, "not-confirmed");
 
 		const clickedAt = Date.now();
-		assert.deepEqual(await m.confirm.confirmSubscription(confirmLink(contact)), { ok: true });
+		assert.deepEqual(await runWithRequest({}, async () => m.confirm.confirmSubscription(confirmLink(contact))), { ok: true });
 		await flushAfter();
 		enrollment = await enrollmentOf(user, contact._id);
 		assert.equal(enrollment.status, "active");
@@ -323,7 +324,7 @@ describe("maiteam welcome sequences", () => {
 			{ $set: { requireConfirmation: false, welcome: { enabled: true, subject: "Welcome", markdown: "Thanks for joining." } } }
 		);
 		for (const email of [inSeries, plain]) {
-			assert.deepEqual(await m.confirm.confirmSubscription(confirmLink(await contactOf(user, email))), { ok: true });
+			assert.deepEqual(await runWithRequest({}, async () => m.confirm.confirmSubscription(confirmLink(await contactOf(user, email)))), { ok: true });
 		}
 		await flushAfter();
 		const welcomes = await m.Message.find({ accountId: user.accountId, kind: "welcome" }).lean();
@@ -343,7 +344,7 @@ describe("maiteam welcome sequences", () => {
 		try {
 			assert.equal((await signUp(user, reader, { sequence: "off" })).status, 201);
 			const contact = await contactOf(user, reader);
-			assert.deepEqual(await m.confirm.confirmSubscription(confirmLink(contact)), { ok: true });
+			assert.deepEqual(await runWithRequest({}, async () => m.confirm.confirmSubscription(confirmLink(contact))), { ok: true });
 			const enrollment = await enrollmentOf(user, contact._id);
 			assert.equal(enrollment.status, "active");
 			assert.deepEqual(enrollment.steps.map(({ status }) => status), ["held", "held"]);

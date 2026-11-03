@@ -6,6 +6,7 @@ import { HOLD_REASON, migrateFork } from "../scripts/maiteam/migrate-from-fork.m
 import { holdOldSequences, replay } from "../scripts/maiteam/rollback-replay.mjs";
 import { startTestApp } from "./helpers/app.mjs";
 import { published } from "./stubs/qstash.mjs";
+import { runWithRequest } from "./stubs/next-headers.mjs";
 
 // P8d (PATCHES.md), QA r1 item 4 (FRA-25999): the write boundary of the cutover, both ways. The migration copies the
 // old database as of its dump and holds the new one; the old server keeps writing until the alias moves and it drains;
@@ -153,7 +154,7 @@ test("between the dump and the switch, the old server's writes and the new serve
 	const token = m.unsubscribe.createUnsubscribeToken({ contactId: readerB, newsletterId });
 	const response = await m.unsubscribeRoute.POST(new Request(`http://localhost:3000/api/unsubscribe?token=${token}`, { method: "POST" }));
 	assert.equal(response.status, 200);
-	assert.deepEqual(await m.confirm.confirmSubscription(m.confirmation.createConfirmToken({ contactId: readerC, newsletterId })), { ok: true });
+	assert.deepEqual(await runWithRequest({}, async () => m.confirm.confirmSubscription(m.confirmation.createConfirmToken({ contactId: readerC, newsletterId }))), { ok: true });
 	assert.equal(await newDb.collection("maiteam_cutover_pending").countDocuments({ appliedAt: null }), 2);
 	// A late bounce for mail the old server sent after the dump: no Message here yet, and the address is still suppressed.
 	await m.ses.handleSesEvent({ eventType: "Bounce", mail: { messageId: "old-ses-unknown", destination: ["late2@reader.example.org"] }, bounce: { bounceType: "Permanent", bouncedRecipients: [{ emailAddress: "late2@reader.example.org" }], timestamp: new Date().toISOString() } });
