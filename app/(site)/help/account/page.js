@@ -13,7 +13,7 @@ export default function AccountPage() {
 		<ArticleHelp slug="account">
 			<h2 id="sign-in">Signing in</h2>
 			<p>
-				You sign in {isGoogleEnabled() ? "with Google, or " : ""}with a code MailCheap emails to your address. The address can&apos;t
+				You sign in {isGoogleEnabled() ? "with Google, or " : ""}with a code mailcheap emails to your address. The address can&apos;t
 				be changed. Your name and photo are on the <LinkApp href="/account">Account page</LinkApp>, opened from the menu at the bottom
 				of the sidebar, along with
 				{isCloud() ? " your plan and" : ""} the deletion of your account. Without a photo, the dashboard shows your Gravatar, or else
@@ -50,7 +50,7 @@ export default function AccountPage() {
 				</li>
 			</ul>
 			<p>
-				Then click Delete account and type the code MailCheap emails you. Your account stops at once: you&apos;re signed out
+				Then click Delete account and type the code mailcheap emails you. Your account stops at once: you&apos;re signed out
 				everywhere, your API keys are revoked, connected apps are disconnected, nothing is sent, and your websites go offline.
 			</p>
 

@@ -289,7 +289,7 @@ describe("own domains", () => {
 		state.identities.get("owner-mail.com").verified = true;
 		cnames.set("news.owner-mail.com", ["cname.mailcheap.ai"]);
 		assert.deepEqual(await as(user, () => m.domains.checkDomainAction(String(domain._id))), { ok: true, verified: true });
-		assert.equal((await m.Newsletter.findOne({ accountId: user.accountId }).lean()).archiveHost, undefined, "a CNAME to MailCheap moves nothing");
+		assert.equal((await m.Newsletter.findOne({ accountId: user.accountId }).lean()).archiveHost, undefined, "a CNAME to mailcheap moves nothing");
 
 		assert.deepEqual(await as(user, () => m.campaigns.sendTestCampaign(id)), { ok: true });
 		const email = sent.at(-1);
@@ -476,10 +476,10 @@ function answerDns(domain, how) {
 }
 
 function stoppedAlerts(domain) {
-	return platformEmails.filter(({ subject }) => subject === `[MailCheap] Sending from ${domain} stopped`);
+	return platformEmails.filter(({ subject }) => subject === `[mailcheap] Sending from ${domain} stopped`);
 }
 
-describe("DNS records MailCheap looks at itself", () => {
+describe("DNS records mailcheap looks at itself", () => {
 	test("records behind Cloudflare's proxy stop a verified domain: a test says why, the page and the API show it, its owner hears once, and it sends again once fixed", async () => {
 		const user = await customer("proxied@example.com", "proxied-news");
 		const domain = await addVerifiedDomain(user, "proxied-mail.com");

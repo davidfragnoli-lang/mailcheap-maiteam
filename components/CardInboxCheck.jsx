@@ -51,10 +51,10 @@ export default function CardInboxCheck({ newsletterId }) {
 			>
 				<header className="px-3 pt-2.5 pb-3">
 					<h2 id={titleId} className="pr-8 font-semibold tracking-tight">
-						Get MailCheap&apos;s emails in your inbox
+						Get mailcheap&apos;s emails in your inbox
 					</h2>
 					<p className="mt-1 text-sm text-pretty text-muted-foreground">
-						MailCheap only emails you when it matters, like a campaign that needs you or your summary. Never marketing.
+						mailcheap only emails you when it matters, like a campaign that needs you or your summary. Never marketing.
 					</p>
 				</header>
 				<ol className="flex flex-col gap-0.5">
@@ -83,7 +83,7 @@ export default function CardInboxCheck({ newsletterId }) {
 						</>
 					) : (
 						<>
-							<StepNext number={1} title="Send yourself an email" description="From MailCheap, to the address you sign in with.">
+							<StepNext number={1} title="Send yourself an email" description="From mailcheap, to the address you sign in with.">
 								<Button size="sm" onClick={send} disabled={isSending}>
 									{isSending ? <Loader2 data-icon="inline-start" className="animate-spin" /> : <Mail data-icon="inline-start" />}
 									Send me an email

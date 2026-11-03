@@ -33,7 +33,7 @@ export default function NotificationsPage() {
 			<h2 id="what">What shows there</h2>
 			<ul>
 				<li>
-					<strong>What needs you</strong>, which MailCheap emails you too: a campaign that paused, your account blocked, a domain
+					<strong>What needs you</strong>, which mailcheap emails you too: a campaign that paused, your account blocked, a domain
 					that stopped sending, bounces or complaints getting high, a spam complaint, signups paused after a flood, a scheduled send
 					that didn&apos;t start, and an issue or a signup email that can&apos;t be sent.
 				</li>
@@ -61,7 +61,7 @@ export default function NotificationsPage() {
 			<p>
 				<Link href="/docs/api#list-notifications">List notifications</Link> returns the same notifications, with the page each one
 				is about. mark_notifications_read marks them read, as opening the bell does, and clear_notifications clears them, as Clear
-				all does. An AI assistant connected to MailCheap can tell you what needs you.{" "}
+				all does. An AI assistant connected to mailcheap can tell you what needs you.{" "}
 				<Link href={getHelpHref("api-and-ai")}>API and AI assistants</Link>
 			</p>
 		</ArticleHelp>

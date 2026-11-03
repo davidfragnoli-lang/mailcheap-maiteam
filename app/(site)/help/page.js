@@ -97,7 +97,7 @@ function getQuestions() {
 	return [
 		isCloud() && {
 			question: "Why do some Gmail readers get my issue the next day?",
-			answer: `Gmail is careful with the first emails from a new domain. So on its first day, MailCheap sends an issue to its first ${formatNumber(SENDER_WARMUP.gmailFirstDay)} Gmail readers, and the others get it the next day. Readers on other inboxes get it right away, and a domain of your own you already send newsletters with isn't held back.`,
+			answer: `Gmail is careful with the first emails from a new domain. So on its first day, mailcheap sends an issue to its first ${formatNumber(SENDER_WARMUP.gmailFirstDay)} Gmail readers, and the others get it the next day. Readers on other inboxes get it right away, and a domain of your own you already send newsletters with isn't held back.`,
 			href: getHelpHref("warm-up", "new-domain"),
 		},
 		{

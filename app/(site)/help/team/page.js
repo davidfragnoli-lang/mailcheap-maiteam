@@ -15,7 +15,7 @@ export default function TeamPage() {
 				Open the newsletter, then its <LinkApp href="/newsletters/team">Team page</LinkApp> from Settings, and click Invite: their
 				name, the address the invitation goes to, and their role, admin or member. They get an email with a link that works for{" "}
 				{INVITATION_DAYS} days. Signing in with that address and clicking Join opens the newsletter for them, with what their role
-				allows. Someone new to MailCheap signs up the same way, with that address.
+				allows. Someone new to mailcheap signs up the same way, with that address.
 			</p>
 			<p>
 				Each newsletter has its own team, of {MAX_TEAM_MEMBERS} people at most, invited or joined. Only you, the account&apos;s

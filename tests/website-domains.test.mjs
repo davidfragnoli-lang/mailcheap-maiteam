@@ -91,7 +91,7 @@ before(async () => {
 after(() => app?.stop());
 
 describe("rules", () => {
-	test("a website goes on a subdomain of the customer's, never on MailCheap's or a domain's own name", () => {
+	test("a website goes on a subdomain of the customer's, never on mailcheap's or a domain's own name", () => {
 		const options = { sharedDomain: SHARED_DOMAIN, appHost: "mailcheap.ai" };
 		for (const host of ["news.example.com", "www.example.com", "read.news.example.co.uk"]) assert.equal(getWebsiteHostProblem(host, options), null, host);
 		assert.equal(getWebsiteHostProblem("example.com", options), "Use a subdomain, like news.example.com");
@@ -133,7 +133,7 @@ describe("rules", () => {
 		const live = getWebsiteDomainSetup({ archiveHost: "news.example.com", websiteDomain: { host: "news.example.com", cnameFound: true, verification } }, { accountId, cnameTarget });
 		assert.deepEqual([live.isLive, live.status.label, live.steps.map(({ key }) => key)], [true, "Live", ["cname"]]);
 		const gone = getWebsiteDomainSetup({ archiveHost: "news.example.com", websiteDomain: { host: "news.example.com", cnameFound: false } }, { accountId, cnameTarget });
-		assert.deepEqual([gone.status.label, gone.steps[0].status.label], ["Not pointing at MailCheap", "Not found"]);
+		assert.deepEqual([gone.status.label, gone.steps[0].status.label], ["Not pointing at mailcheap", "Not found"]);
 		const before = getWebsiteDomainSetup({ archiveHost: "letters.example.com" }, { accountId, cnameTarget });
 		assert.deepEqual([before.host, before.isLive, before.status.label], ["letters.example.com", true, "Live"], "a host from before website domains is live");
 		assert.equal(getWebsiteDomainSetup({ archiveHost: "letters.example.com" }, { accountId, cnameTarget: null }), null, "without a target: nothing to show");
@@ -175,11 +175,11 @@ describe("setting up", () => {
 		assert.match(email.headers["List-Unsubscribe"], /^<https:\/\/news\.site-owner\.dev\/api\/unsubscribe\?token=/);
 	});
 
-	test("a CNAME left pointing at MailCheap isn't enough to claim someone's domain: each account needs its own TXT record", async () => {
+	test("a CNAME left pointing at mailcheap isn't enough to claim someone's domain: each account needs its own TXT record", async () => {
 		const owner = await customer("left-owner@example.com", "left-notes");
 		assert.deepEqual(await addLiveWebsiteDomain(owner, "news.left-behind.dev"), { ok: true, live: true });
 		const squatter = await customer("squatter@example.com", "squat-notes");
-		assert.deepEqual(await setDomain(squatter, "news.left-behind.dev"), { error: "news.left-behind.dev is already used by another MailCheap newsletter" });
+		assert.deepEqual(await setDomain(squatter, "news.left-behind.dev"), { error: "news.left-behind.dev is already used by another mailcheap newsletter" });
 
 		assert.deepEqual(await removeDomain(owner), { ok: true, removed: "news.left-behind.dev" });
 		assert.deepEqual(await setDomain(squatter, "news.left-behind.dev"), { ok: true, live: false }, "the owner's CNAME and TXT records are still there");
@@ -209,7 +209,7 @@ describe("setting up", () => {
 		await pointWebsiteDomain(user, "news.elsewhere.dev");
 		failNextAttach({ status: 409, message: "news.elsewhere.dev is on another Vercel project" });
 		assert.deepEqual(await setDomain(user, "news.elsewhere.dev"), {
-			error: "news.elsewhere.dev is used by another site on Vercel, where MailCheap runs. Remove it there, then check again.",
+			error: "news.elsewhere.dev is used by another site on Vercel, where mailcheap runs. Remove it there, then check again.",
 		});
 		assert.equal(await m.Alert.exists({ accountId: null, key: "dns-helper-down" }), null, "the host's problem, not the helper's");
 

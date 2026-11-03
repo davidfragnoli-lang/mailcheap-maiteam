@@ -124,7 +124,7 @@ describe("the steps", () => {
 		assert.equal(m.getStarted.isGetStartedOpen(await loadAccount(user), null), false, "no list without a newsletter");
 	});
 
-	test("its design: a preset picked, MailCheap's own as it was included, from the dashboard or the API, or a theme changed or picked before the step was there", async () => {
+	test("its design: a preset picked, mailcheap's own as it was included, from the dashboard or the API, or a theme changed or picked before the step was there", async () => {
 		const user = await customer("gs-design@example.com", { hasPlan: true });
 		assert.deepEqual((await loadNewsletter(user)).theme, { preset: "mailcheap" }, "every newsletter has a theme from the start");
 		const { key } = await createKey(user, "full");
@@ -133,7 +133,7 @@ describe("the steps", () => {
 		assert.deepEqual(await doneSteps(user), ["agent"], "the other settings and a theme without a preset pick nothing");
 
 		assert.equal((await pickTheme(user, "mailcheap")).ok, true);
-		assert.deepEqual(await doneSteps(user), ["design", "agent"], "keeping MailCheap's counts");
+		assert.deepEqual(await doneSteps(user), ["design", "agent"], "keeping mailcheap's counts");
 		assert.ok((await loadNewsletter(user)).getStarted.themeChosenAt instanceof Date);
 		assert.deepEqual(await doneSteps(user, await addNewsletter(user, "gs-design-b")), ["agent"], "each newsletter picks its own");
 
@@ -152,7 +152,7 @@ describe("the steps", () => {
 		await mongoose.connection.db.collection("newsletters").updateOne({ _id }, { $set: { theme: { preset: "midnight" } } });
 		assert.deepEqual(await doneSteps(before), ["design"]);
 		await mongoose.connection.db.collection("newsletters").updateOne({ _id }, { $set: { theme: { preset: "mailcheap", radius: "none" } } });
-		assert.deepEqual(await doneSteps(before), ["design"], "MailCheap's, changed");
+		assert.deepEqual(await doneSteps(before), ["design"], "mailcheap's, changed");
 
 		const stranger = await customer("gs-design-stranger@example.com");
 		assert.ok((await pickTheme(stranger, "garden", before.newsletterId)).error, "another account's newsletter");

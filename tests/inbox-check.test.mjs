@@ -65,12 +65,12 @@ test("customers get the card once the open newsletter's get-started panel is gon
 	assert.equal(open(paying, { ...closed, dismissedNudges: { ownDomain: "add" } }), true, "another helper closed");
 	assert.equal(open(paying, { ...closed, dismissedNudges: { inboxCheck: new Date() } }), false);
 	assert.equal(open(paying, null), false);
-	assert.equal(isInboxCheckOpen(paying, closed, {}), false, "a self-hosted server sends MailCheap's emails from its own domain");
+	assert.equal(isInboxCheckOpen(paying, closed, {}), false, "a self-hosted server sends mailcheap's emails from its own domain");
 });
 
 test("the email asks for a reply, says it isn't marketing, and carries nothing a customer wrote", () => {
 	const email = renderInboxCheckEmail();
-	assert.equal(email.subject, "Reply so MailCheap's emails reach your inbox");
+	assert.equal(email.subject, "Reply so mailcheap's emails reach your inbox");
 	assert.match(email.text, /^Reply to this email with anything/);
 	assert.match(email.text, /never marketing/);
 	assert.match(email.text, /Found this in spam\? Mark it as not spam too\./);
@@ -82,7 +82,7 @@ test("the card floats at the bottom right like the get-started panel, says what 
 	const html = renderToStaticMarkup(createElement(m.CardInboxCheck, { newsletterId: "65f1c0ffee00000000000001" }));
 	assert.match(html, /^<div class="pointer-events-none fixed right-\(--dock-right\) bottom-\(--dock-bottom\)/);
 	assert.match(html, /shadow-float/);
-	assert.match(html, /Get MailCheap&#x27;s emails in your inbox/);
+	assert.match(html, /Get mailcheap&#x27;s emails in your inbox/);
 	assert.match(html, /Never marketing/);
 	assert.match(html, /aria-current="step"[^>]*>.*Send yourself an email.*>Send me an email</);
 	assert.match(html, /Reply to it with anything/);

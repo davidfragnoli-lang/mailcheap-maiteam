@@ -81,7 +81,7 @@ export default function SenderAddressesPage() {
 
 			<h2 id="dns-checks">When a record changes</h2>
 			<p>
-				Your email provider checks your records to verify the domain, and may not notice when one changes later. So MailCheap also
+				Your email provider checks your records to verify the domain, and may not notice when one changes later. So mailcheap also
 				looks at them itself: when you click Check now, every day once the domain is verified, and before a test email or a send
 				when it hasn&apos;t looked in the last hour.
 			</p>

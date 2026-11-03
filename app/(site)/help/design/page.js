@@ -31,7 +31,7 @@ export default function DesignPage() {
 			</p>
 			<FigureHelp
 				src="/help/design/themes.webp"
-				alt="The Design page's themes, each showing the newsletter's website and an email in it, with MailCheap in use."
+				alt="The Design page's themes, each showing the newsletter's website and an email in it, with mailcheap in use."
 				caption="Themes on the Design page"
 			/>
 

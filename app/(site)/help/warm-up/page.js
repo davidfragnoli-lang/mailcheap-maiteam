@@ -21,7 +21,7 @@ export default function WarmupPage() {
 			<h2 id="why">Why a send doesn&apos;t always go out at once</h2>
 			<p>
 				Gmail, Yahoo and Outlook decide what lands in the inbox from what they&apos;ve seen of a sender: how many of its emails
-				bounce, how many people mark them as spam, and how fast its volume grows. MailCheap sends in a way that keeps your newsletter
+				bounce, how many people mark them as spam, and how fast its volume grows. mailcheap sends in a way that keeps your newsletter
 				on their good side, so your emails reach the inbox.
 			</p>
 			<p>
@@ -60,14 +60,14 @@ export default function WarmupPage() {
 			<h2 id="new-domain">A new domain and Gmail</h2>
 			<p>
 				Gmail is careful with the first emails from a domain it doesn&apos;t know, and holds back the ones that come too fast. So on a
-				new domain&apos;s first day, MailCheap sends an issue to its first {formatNumber(SENDER_WARMUP.gmailFirstDay)} Gmail readers,
+				new domain&apos;s first day, mailcheap sends an issue to its first {formatNumber(SENDER_WARMUP.gmailFirstDay)} Gmail readers,
 				and the others get it the next day. Readers on other inboxes get it right away.
 			</p>
 			<p>A domain is new when it&apos;s:</p>
 			<ul>
 				{sharedDomain && (
 					<li>
-						the address MailCheap gives your newsletter, like <code>your-newsletter.{sharedDomain}</code>, on its first day of
+						the address mailcheap gives your newsletter, like <code>your-newsletter.{sharedDomain}</code>, on its first day of
 						sending;
 					</li>
 				)}
@@ -84,7 +84,7 @@ export default function WarmupPage() {
 			<h2 id="gmail">When Gmail asks to slow down</h2>
 			<p>
 				Sometimes Gmail still finds a domain&apos;s emails unusual. It then holds them back and asks the sender to slow down.
-				Sending on would make it worse, so MailCheap pauses the sends from that domain for {formatCount(BACKOFF.hours, "hour")} and
+				Sending on would make it worse, so mailcheap pauses the sends from that domain for {formatCount(BACKOFF.hours, "hour")} and
 				emails you. Then they go on by themselves: Gmail gets half the emails the domain sent it the day before, spread over the
 				day, and twice as many each day after, for {formatCount(BACKOFF.days, "day")}. Resuming earlier, or moving to another
 				domain, still waits for those hours.

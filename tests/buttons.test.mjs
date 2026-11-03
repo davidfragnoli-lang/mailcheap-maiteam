@@ -55,7 +55,7 @@ describe("what an issue keeps of a button", () => {
 		assert.equal(cleanRichHtml(button("Hi", STORY, "left")), button("Hi", STORY, "left"), "the editor's own markup stays as it is");
 	});
 
-	test("a button or a link keeps the link MailCheap fills in for each reader of the confirmation and last-chance emails, and nothing like it", () => {
+	test("a button or a link keeps the link mailcheap fills in for each reader of the confirmation and last-chance emails, and nothing like it", () => {
 		for (const href of ["{{confirm_url}}", "{{keep_url}}"]) {
 			assert.equal(cleanRichHtml(button("Yes", href)), button("Yes", href), href);
 			assert.equal(cleanRichHtml(`<p><a href="${href}">Yes</a></p>`), `<p><a href="${href}">Yes</a></p>`, `${href} in a link`);

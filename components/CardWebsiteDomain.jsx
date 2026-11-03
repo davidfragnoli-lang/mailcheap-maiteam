@@ -52,7 +52,7 @@ export default function CardWebsiteDomain({ newsletterId, setup, sharedAddress, 
 			const result = await checkWebsiteDomain(newsletterId);
 			if (result?.error) return void toast.error(result.error);
 			if (result.live && result.pointed) toast.success(`${setup.host} is live`);
-			else if (result.live) toast.error(`${setup.host} doesn't point at MailCheap anymore. Add its CNAME record back.`);
+			else if (result.live) toast.error(`${setup.host} doesn't point at mailcheap anymore. Add its CNAME record back.`);
 			else toast.message("Some records aren't there yet. DNS changes can take up to a few hours.");
 		});
 	}
@@ -153,7 +153,7 @@ function DialogRemove({ newsletterId, host, isLive, sharedAddress }) {
 					<DialogTitle>Remove {host}?</DialogTitle>
 					<DialogDescription>
 						{isLive
-							? `Your website and the links in your next emails go back to ${sharedAddress}. Links in emails you already sent keep working while ${host} points at MailCheap.`
+							? `Your website and the links in your next emails go back to ${sharedAddress}. Links in emails you already sent keep working while ${host} points at mailcheap.`
 							: "You can add it again later."}
 					</DialogDescription>
 				</DialogHeader>

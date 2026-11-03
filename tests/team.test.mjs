@@ -98,10 +98,10 @@ describe("inviting", () => {
 	test("the owner invites by name, address and role: an email with a link, the newsletter's name escaped, replies to the owner", async () => {
 		assert.deepEqual(await invite(owner, ids.first, { name: "Mia", email: "Mia@Example.com" }), { ok: true, email: "mia@example.com" });
 		const email = lastInvitation("mia@example.com");
-		assert.equal(email.subject, "Join Field <b>notes</b> on MailCheap");
+		assert.equal(email.subject, "Join Field <b>notes</b> on mailcheap");
 		assert.match(email.html, /Field &lt;b&gt;notes&lt;\/b&gt;/);
 		assert.doesNotMatch(email.html, /<b>notes/);
-		assert.match(email.text, /olivia@example\.com invited you to work on Field <b>notes<\/b> with them on MailCheap, as a member/);
+		assert.match(email.text, /olivia@example\.com invited you to work on Field <b>notes<\/b> with them on mailcheap, as a member/);
 		assert.equal(email.reply_to, "olivia@example.com");
 		assert.ok(email.token, "the link carries a token");
 		const stored = await findMember(ids.first, "mia@example.com");
@@ -145,7 +145,7 @@ describe("inviting", () => {
 		}
 	});
 
-	test("on MailCheap Cloud, inviting needs a plan", async () => {
+	test("on mailcheap Cloud, inviting needs a plan", async () => {
 		const free = await signIn("free@example.com");
 		const newsletterId = await createNewsletter(free, { name: "Free letter", slug: "free-letter" });
 		const result = await invite(free, newsletterId, { name: "Pal", email: "pal@example.com" });
@@ -154,7 +154,7 @@ describe("inviting", () => {
 	});
 
 	test("a self-hosted server only invites the emails it lets in", async () => {
-		const server = { MAILCHEAP_CLOUD: "false", ALLOWED_EMAILS: "olivia@example.com,@example.org", EMAIL_FROM: "MailCheap <hello@example.org>" };
+		const server = { MAILCHEAP_CLOUD: "false", ALLOWED_EMAILS: "olivia@example.com,@example.org", EMAIL_FROM: "mailcheap <hello@example.org>" };
 		await withEnv(server, async () => {
 			assert.match((await invite(owner, ids.second, { name: "Stranger", email: "stranger@example.com" })).error, /ALLOWED_EMAILS/);
 		});

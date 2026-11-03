@@ -18,7 +18,7 @@ export default function WebsiteAnalyticsPage() {
 			<h2 id="add">Add a tool</h2>
 			<p>
 				Your newsletter&apos;s <Link href={getHelpHref("website")}>website</Link> can load Google Analytics, Google Tag Manager and
-				the Meta pixel, so you see its visitors, where they come from and who subscribes in the tools you already use. MailCheap
+				the Meta pixel, so you see its visitors, where they come from and who subscribes in the tools you already use. mailcheap
 				adds each tool&apos;s code to your website: all it needs is the tool&apos;s ID.
 				{hasOwnHost && (
 					<>
@@ -191,7 +191,7 @@ export default function WebsiteAnalyticsPage() {
 					</p>
 					<p>
 						Custom code takes <code>{"<script>"}</code>, <code>{"<style>"}</code>, <code>{"<link>"}</code> and{" "}
-						<code>{"<noscript>"}</code> tags, with addresses that start with <code>https://</code>. MailCheap checks it as you type
+						<code>{"<noscript>"}</code> tags, with addresses that start with <code>https://</code>. mailcheap checks it as you type
 						and when you save, and names the line to fix, like a tag that isn&apos;t closed, text outside a tag or a JavaScript
 						error. A few things go elsewhere:
 					</p>
@@ -242,7 +242,7 @@ export default function WebsiteAnalyticsPage() {
 			<p>
 				It goes out when someone subscribes with your website&apos;s form or its popup. With{" "}
 				<Link href={getHelpHref("newsletters", "confirm-signups")}>confirmed opt-in</Link> on, that&apos;s when they fill in the
-				form, before they click the link in their email. MailCheap sends the event alone, without their email address. The{" "}
+				form, before they click the link in their email. mailcheap sends the event alone, without their email address. The{" "}
 				<Link href={getHelpHref("website", "form-on-your-site")}>form on your own site</Link> doesn&apos;t send it.
 			</p>
 

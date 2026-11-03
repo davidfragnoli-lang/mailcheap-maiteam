@@ -308,7 +308,7 @@ function SectionSender({ draft, set, update, domains, sharedDomain, fromEmail, d
 				htmlFor={POSTAL_ADDRESS_ID}
 				hint={
 					defaultPostalAddress && postalAddress === defaultPostalAddress ? (
-						"MailCheap's address is used by default. Replace it with yours anytime."
+						"mailcheap's address is used by default. Replace it with yours anytime."
 					) : postalAddress.trim() ? (
 						"Shown in the footer of every email. Anti-spam laws require one."
 					) : (
@@ -322,7 +322,7 @@ function SectionSender({ draft, set, update, domains, sharedDomain, fromEmail, d
 										onClick={() => set("postalAddress", defaultPostalAddress)}
 										className="font-medium text-foreground underline decoration-foreground/30 underline-offset-2 transition-colors duration-150 hover:decoration-foreground"
 									>
-										Use MailCheap&apos;s address
+										Use mailcheap&apos;s address
 									</button>
 								</>
 							)}
@@ -530,7 +530,7 @@ function SectionCleanup({ draft, setDraft, set, newsletter, sender, previewNewsl
 					doesn&apos;t answer by a send {LAST_CHANCE_DAYS} days later becomes dormant: not unsubscribed, not deleted, and
 					back if they sign up again.
 				</p>
-				<Field label="Ignored issues" hint="In a row, counting from the first issue MailCheap sent">
+				<Field label="Ignored issues" hint="In a row, counting from the first issue mailcheap sent">
 					<Input
 						name="cleanupIssues"
 						type="number"
@@ -594,7 +594,7 @@ function SectionStoppedDomains({ totals, stagger }) {
 	return (
 		<Section title="Stopped for their domain" stagger={stagger}>
 			<p className="px-4 py-3 text-sm text-pretty text-muted-foreground">
-				MailCheap checks your contacts&apos; domains in the background.
+				mailcheap checks your contacts&apos; domains in the background.
 				{totals.isSpamListOn && " Contacts on a known spam domain stop getting issues at once."} Contacts on one that
 				can&apos;t receive email stop after two checks a day apart, and get issues again once it can.{" "}
 				<LinkHelp article="list-cleanup" section="domains" />
@@ -927,7 +927,7 @@ function NoticeReview({ review, instead }) {
 		<NoticeSection>
 			<span>
 				{review.status === "in_review"
-					? `In review: a person at MailCheap checks this email before it goes out, usually within a few hours. Until then, ${instead}.`
+					? `In review: a person at mailcheap checks this email before it goes out, usually within a few hours. Until then, ${instead}.`
 					: `This email can't be sent${review.note ? `: ${review.note}` : ""}. Until you change it, ${instead}.`}{" "}
 				<LinkHelp article="sending" section="content-check" />
 			</span>

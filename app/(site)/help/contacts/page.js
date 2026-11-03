@@ -129,7 +129,7 @@ export default function ContactsPage() {
 			</p>
 			<p>
 				Their country comes from where they signed up or confirmed, or for someone who joined another way, like an import, where
-				they first clicked a link in your emails, and the globe on their page lights it up. MailCheap reads it from their connection,
+				they first clicked a link in your emails, and the globe on their page lights it up. mailcheap reads it from their connection,
 				then keeps the country only, never the address. Opens never give one, since inboxes load images through their own servers.
 				{!isCloud() && " On a self-hosted server, countries need Vercel, which names each visitor's country."}
 			</p>
@@ -394,7 +394,7 @@ export default function ContactsPage() {
 				good.
 			</p>
 			<p>
-				MailCheap also checks in the background that your contacts&apos; domains can receive email. Contacts on one that can&apos;t show as
+				mailcheap also checks in the background that your contacts&apos; domains can receive email. Contacts on one that can&apos;t show as
 				bounced, marked &ldquo;No mail server&rdquo;, and come back on their own once it can.
 				{(isCloud() || isSpamListEnabled()) &&
 					" Contacts on a known spam domain show as bounced, marked \u201cSpam domain\u201d, unless they ever opened or clicked."}{" "}

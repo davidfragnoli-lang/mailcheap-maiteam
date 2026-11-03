@@ -171,7 +171,7 @@ describe("signup limits by plan", () => {
 		await sentEarlier(100, 0);
 		const emailsBefore = platformEmails.length;
 		assert.equal(await signUp("REST API", user, "past-starter@example.org"), null, "Starter's 100 went out");
-		const alert = platformEmails.slice(emailsBefore).find(({ subject }) => subject === "[MailCheap] Signup emails capped");
+		const alert = platformEmails.slice(emailsBefore).find(({ subject }) => subject === "[mailcheap] Signup emails capped");
 		assert.ok(alert.text.includes("Over 100 welcome and confirmation emails for welcome-cap news in 10 minutes. New signups get none until it slows down. Bigger plans send more."));
 
 		await m.Account.updateOne({ _id: user.accountId }, { $set: { plan: "growth" } });

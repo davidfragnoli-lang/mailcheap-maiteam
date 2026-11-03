@@ -19,7 +19,7 @@ const CLOUD = { MAILCHEAP_CLOUD: "true" };
 const now = new Date("2026-10-13T12:00:00Z");
 const at = (hours) => new Date(now.getTime() + hours * HOUR_MS);
 
-test("a new domain holds Gmail's readers back on its first day only, on MailCheap Cloud", () => {
+test("a new domain holds Gmail's readers back on its first day only, on mailcheap Cloud", () => {
 	const fresh = getSenderPace({}, { now, env: CLOUD });
 	assert.deepEqual(fresh, {
 		day: 1,

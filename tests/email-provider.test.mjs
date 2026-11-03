@@ -42,8 +42,8 @@ test("only the provider refusing one customer's own domain or sending space bloc
 	}
 	const sesError = (name) => Object.assign(new Error(`${name}: for jane@example.com`), { name });
 	assert.equal(isCustomerRefusal(sesError("SendingPausedException")), true);
-	assert.equal(isCustomerRefusal(sesError("AccountSuspendedException")), false, "the whole AWS account alerts as MailCheap's own");
-	assert.equal(isCustomerRefusal(sesError("SenderNotAllowed")), false, "MailCheap's own check, which the owner fixes");
+	assert.equal(isCustomerRefusal(sesError("AccountSuspendedException")), false, "the whole AWS account alerts as mailcheap's own");
+	assert.equal(isCustomerRefusal(sesError("SenderNotAllowed")), false, "mailcheap's own check, which the owner fixes");
 
 	assert.equal(getRefusalCode(refused(SEND_OUTCOMES.domainUnverified, { detail: "jane@example.com: 550 domain_suspended" })), "domain_suspended");
 	assert.equal(getRefusalCode(refused(SEND_OUTCOMES.domainUnverified, { providerCode: "dbl_listed" })), "dbl_listed");
@@ -79,5 +79,5 @@ test("a provider's pause only an admin lifts, unlike the owner's own login refus
 	assert.equal(isPauseForAdmins(providerError(SEND_OUTCOMES.credentialRefused, "401")), false, "a resume sends it again");
 	const sesError = (name) => Object.assign(new Error(name), { name });
 	assert.equal(isPauseForAdmins(sesError("SendingPausedException")), true);
-	assert.equal(isPauseForAdmins(sesError("SenderNotAllowed")), false, "MailCheap's own check of their from address");
+	assert.equal(isPauseForAdmins(sesError("SenderNotAllowed")), false, "mailcheap's own check of their from address");
 });

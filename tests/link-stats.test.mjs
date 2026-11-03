@@ -51,7 +51,7 @@ test("each web link in the report shows its website's favicon, anything else a g
 	assert.equal(html.match(/<svg/g)?.length, 1, "the other gets a globe");
 });
 
-test("MailCheap's own unsubscribe, keep and confirm pages aren't the issue's links", () => {
+test("mailcheap's own unsubscribe, keep and confirm pages aren't the issue's links", () => {
 	const host = "localhost:3000";
 	assert.equal(isSystemLink("http://localhost:3000/api/unsubscribe?token=abc", host), true);
 	assert.equal(isSystemLink("http://localhost:3000/unsubscribe", host), true);

@@ -59,7 +59,7 @@ describe("the dashboard's sidebar", () => {
 		assert.ok(findTag(html, "Collapse sidebar"));
 		assert.match(findTag(html, "Expand sidebar"), / inert=""/);
 		assert.equal(findInertPart(html).includes("Collapse sidebar"), false, "the logo and the collapse button work");
-		assert.match(html, /<a[^>]*href="\/"[^>]*>.*?MailCheap<\/span><\/a>/);
+		assert.match(html, /<a[^>]*href="\/"[^>]*>.*?mailcheap<\/span><\/a>/);
 	});
 
 	test("collapsed, starts folded: the logo opens it, the button that keeps it open waits for it to unfold, and every link keeps its name", () => {

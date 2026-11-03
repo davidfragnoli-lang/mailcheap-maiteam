@@ -152,7 +152,7 @@ export default function ImportingContactsPage() {
 			<p>
 				The others stay out, since your emails wouldn&apos;t reach someone who wants them: misspelled domains, spam traps and spam
 				domains, domains that can&apos;t receive email, and people who unsubscribed, bounced or complained before. Invalid addresses,
-				duplicates and addresses MailCheap knows can&apos;t receive email are only counted. Bringing one back checks it again as
+				duplicates and addresses mailcheap knows can&apos;t receive email are only counted. Bringing one back checks it again as
 				adding one contact does, so an address that can&apos;t receive email, or that unsubscribed since, still stays out.
 			</p>
 			<p>

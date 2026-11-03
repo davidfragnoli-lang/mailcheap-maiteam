@@ -157,8 +157,8 @@ describe("a domain Gmail rate limits", () => {
 		near(jobs[0].notBefore * 1000, limitedAt + 6 * HOUR_MS);
 		assert.deepEqual(
 			platformEmails.slice(before.emails).map(({ to, subject }) => [to[0], subject]),
-			[["rate-limited@example.com", "[MailCheap] Campaign paused"]],
-			"MailCheap handles it, so the admins get neither an email nor a Telegram message"
+			[["rate-limited@example.com", "[mailcheap] Campaign paused"]],
+			"mailcheap handles it, so the admins get neither an email nor a Telegram message"
 		);
 		assert.equal(telegramMessages.length, before.telegram);
 		const alert = await backoffAlert(send);

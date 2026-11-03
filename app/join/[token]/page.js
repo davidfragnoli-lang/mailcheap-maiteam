@@ -81,7 +81,7 @@ function Invalid() {
 					It was used, canceled or it expired. Ask whoever invited you to send a new one.
 				</p>
 				<Button asChild variant="outline" className="mt-2">
-					<Link href="/">Open MailCheap</Link>
+					<Link href="/">Open mailcheap</Link>
 				</Button>
 			</div>
 		</main>

@@ -593,18 +593,18 @@ describe("PostShiba sending", () => {
 			assert.deepEqual([campaign.status, campaign.pauseReason], ["paused", "PostShiba refused the account's SMTP credential (401)"]);
 			assert.equal(await m.Message.countDocuments({ accountId: user.accountId, campaignId: id, status: "queued" }), 1, "waits for the resume");
 			const told = platformEmails.slice(before.emails).map(({ to, subject, reply_to }) => [to.join(), subject, reply_to]);
-			assert.deepEqual(told, [["ps-refused-again@example.com", "[MailCheap] Campaign paused", "hello@mailcheap.ai"]], "its owner, not the admins, and a resume lifts it");
+			assert.deepEqual(told, [["ps-refused-again@example.com", "[mailcheap] Campaign paused", "hello@mailcheap.ai"]], "its owner, not the admins, and a resume lifts it");
 			assert.equal(telegramMessages.length, before.telegram);
 
 			fake.fail(REFUSED_LOGIN);
 			await as(other, () => m.campaigns.sendCampaign(otherId, {}));
 			await runNextJob();
 			const toAdmins = platformEmails.slice(before.emails).filter(({ to }) => to.includes("admin@example.com"));
-			assert.deepEqual(toAdmins.map(({ subject }) => subject), ["[MailCheap] PostShiba refuses MailCheap's sends"]);
+			assert.deepEqual(toAdmins.map(({ subject }) => subject), ["[mailcheap] PostShiba refuses mailcheap's sends"]);
 			assert.match(toAdmins[0].text, new RegExp(`It refused the logins of 2 accounts within the hour, account ${other.accountId} last`));
 			assert.deepEqual(
 				telegramMessages.slice(before.telegram).map(({ text }) => text.split("\n")[0]),
-				["<b>MailCheap</b> · PostShiba refuses MailCheap's sends"]
+				["<b>mailcheap</b> · PostShiba refuses mailcheap's sends"]
 			);
 			await runJobs();
 			assert.equal((await m.Campaign.findOne({ accountId: other.accountId, _id: otherId }).lean()).status, "sent");
@@ -626,12 +626,12 @@ describe("PostShiba sending", () => {
 
 			const emails = platformEmails.slice(before.emails);
 			const toOwner = emails.filter(({ to }) => to.includes("ps-suspended@example.com"));
-			assert.deepEqual(toOwner.map(({ subject }) => subject), ["[MailCheap] Campaign paused"]);
+			assert.deepEqual(toOwner.map(({ subject }) => subject), ["[mailcheap] Campaign paused"]);
 			assert.equal(toOwner[0].reply_to, "owner-help@example.com", "they can't lift it: their reply reaches an admin's own inbox");
 			const toAdmins = emails.filter(({ to }) => to.includes("admin@example.com"));
-			assert.deepEqual(toAdmins.map(({ subject }) => subject), ["[MailCheap] A paying customer can't send"]);
+			assert.deepEqual(toAdmins.map(({ subject }) => subject), ["[mailcheap] A paying customer can't send"]);
 			const telegram = telegramMessages.slice(before.telegram);
-			assert.deepEqual(telegram.map(({ text }) => text.split("\n")[0]), ["<b>MailCheap</b> · A paying customer can't send"]);
+			assert.deepEqual(telegram.map(({ text }) => text.split("\n")[0]), ["<b>mailcheap</b> · A paying customer can't send"]);
 			for (const text of [toAdmins[0].text, telegram[0].text]) {
 				assert.match(text, /ps-suspended \(ps-suspended\.dev, Starter plan\): PostShiba refuses its emails \(domain_suspended\)\. Its campaign paused with 2 emails waiting\./);
 				assert.match(text, /Nothing on their dashboard lifts it: ask PostShiba why, or lift it there\. Then they resume the campaign\./);
@@ -659,7 +659,7 @@ describe("PostShiba sending", () => {
 			const alert = await m.Alert.findOne({ accountId: null, key: `customer-blocked:${user.newsletterId}` }).lean();
 			assert.equal(alert.count, 2);
 			const toAdmins = platformEmails.slice(before.emails).filter(({ to }) => to.includes("admin@example.com"));
-			assert.deepEqual(toAdmins.map(({ subject }) => subject), ["[MailCheap] A paying customer can't send"], "once a day");
+			assert.deepEqual(toAdmins.map(({ subject }) => subject), ["[mailcheap] A paying customer can't send"], "once a day");
 			assert.match(toAdmins[0].text, /ps-signups \(ps-signups\.dev, Starter plan\): PostShiba refuses its emails \(domain_suspended\)\. Its welcome emails fail\./);
 			assert.match(toAdmins[0].text, new RegExp(`/admin/newsletters/${user.newsletterId}`));
 			assert.equal(telegramMessages.length - before.telegram, 1);
@@ -856,7 +856,7 @@ describe("PostShiba blocks", () => {
 			assert.deepEqual(await as(admin, () => m.admin.blockAccountAction(String(user.accountId), "Review")), { ok: true });
 		});
 		const blocked = platformEmails.slice(emailsBefore).find(({ to }) => to.includes("ps-pause@example.com"));
-		assert.deepEqual([blocked.subject, blocked.reply_to], ["[MailCheap] Account blocked", "owner-help@example.com"], "its owner's reply reaches an admin's own inbox");
+		assert.deepEqual([blocked.subject, blocked.reply_to], ["[mailcheap] Account blocked", "owner-help@example.com"], "its owner's reply reaches an admin's own inbox");
 		const tenantId = user.account.postshiba.tenantId;
 		assert.equal(fake.state.tenants.get(tenantId).suspended, true);
 		assert.equal((await loadAccount(user)).postshiba.tenantStatus, "suspended");

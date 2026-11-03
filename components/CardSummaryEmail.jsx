@@ -98,7 +98,7 @@ export default function CardSummaryEmail({ newsletterId, frequency: savedFrequen
 function describe(frequency, hour) {
 	if (frequency === "daily") return `Every morning at ${hour} AM, your time, with yesterday's numbers. Days with no news are skipped.`;
 	if (frequency === "weekly") return `Every Monday at ${hour} AM, your time: last week's subscribers and your latest issue.`;
-	return "MailCheap won't send you summaries of this newsletter.";
+	return "mailcheap won't send you summaries of this newsletter.";
 }
 
 const OPTIONS = [

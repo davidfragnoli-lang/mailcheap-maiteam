@@ -74,7 +74,7 @@ test("with a list of sites there's no plain form to paste: only the framed one c
 	assert.equal(html, null);
 });
 
-test("the prompt for an AI agent says what MailCheap is, gives both codes and the frame, links the docs and what's left to do", () => {
+test("the prompt for an AI agent says what mailcheap is, gives both codes and the frame, links the docs and what's left to do", () => {
 	const appUrl = "https://mailcheap.test";
 	const newsletter = { name: "Field notes", description: "One idea a week." };
 	function prompt(signupForm, options) {
@@ -86,7 +86,7 @@ test("the prompt for an AI agent says what MailCheap is, gives both codes and th
 	const { code, text } = prompt({ enabled: true });
 	assert.ok(
 		text.startsWith(
-			"Add the signup form of my newsletter, Field notes, to my website. Whoever signs up there joins my list on MailCheap (https://mailcheap.test), the newsletter app I use."
+			"Add the signup form of my newsletter, Field notes, to my website. Whoever signs up there joins my list on mailcheap (https://mailcheap.test), the newsletter app I use."
 		)
 	);
 	assert.ok(text.includes("It comes in two versions: pick the one that fits my site."));
@@ -107,7 +107,7 @@ test("the prompt for an AI agent says what MailCheap is, gives both codes and th
 
 	const listed = prompt({ enabled: true, allowedDomains: ["example.com", "blog.dev"] });
 	assert.equal(listed.code.html, null);
-	assert.ok(listed.text.includes("It only works on the sites I listed in MailCheap (example.com, blog.dev), so use the script"));
+	assert.ok(listed.text.includes("It only works on the sites I listed in mailcheap (example.com, blog.dev), so use the script"));
 	assert.ok(!listed.text.includes("## HTML") && !listed.text.includes("<form"), "no plain form to pick");
 	assert.ok(listed.text.endsWith(`- Add my site under Where it works at ${appUrl}/newsletters/form if it isn't one of example.com, blog.dev: the form only shows on the sites listed there.`));
 });

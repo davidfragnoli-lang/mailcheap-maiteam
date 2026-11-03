@@ -92,7 +92,7 @@ async function findNewsletter({ accountId, newsletterId }) {
 function describe(frequency, name) {
 	if (frequency === "daily") return `The summary of ${name} comes every morning at ${SUMMARY_HOUR} AM, your time. Days with no news are skipped.`;
 	if (frequency === "weekly") return `The summary of ${name} comes every Monday at ${SUMMARY_HOUR} AM, your time.`;
-	return `It's off: MailCheap won't send you summaries of ${name}.`;
+	return `It's off: mailcheap won't send you summaries of ${name}.`;
 }
 
 const OPTIONS = [

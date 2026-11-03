@@ -68,7 +68,7 @@ export default function WebsitePage() {
 					</p>
 					<ol>
 						<li>
-							<strong>Points to MailCheap</strong>: a CNAME record that sends your subdomain&apos;s visitors to MailCheap.
+							<strong>Points to mailcheap</strong>: a CNAME record that sends your subdomain&apos;s visitors to mailcheap.
 						</li>
 						<li>
 							<strong>Proves it&apos;s yours</strong>: a TXT record only your account gets, so nobody else can claim your subdomain, even
@@ -76,7 +76,7 @@ export default function WebsitePage() {
 						</li>
 						{isCloud() && (
 							<li>
-								<strong>Vercel&apos;s check</strong>: only when your domain is already used with Vercel, where MailCheap runs. It asks for
+								<strong>Vercel&apos;s check</strong>: only when your domain is already used with Vercel, where mailcheap runs. It asks for
 								one more TXT record.
 							</li>
 						)}
@@ -96,7 +96,7 @@ export default function WebsitePage() {
 					<p>
 						Keep the CNAME record: without it, your website and the links in your emails stop working, and the card says so. A newsletter
 						has one domain at a time. Removing it puts your website and the links in your next emails back where they were. Links in
-						emails you already sent keep working as long as the subdomain points at MailCheap.
+						emails you already sent keep working as long as the subdomain points at mailcheap.
 					</p>
 				</>
 			)}
@@ -117,7 +117,7 @@ export default function WebsitePage() {
 			<p>
 				The page, its card on your website and its link previews, on X, LinkedIn or in a message, show the issue&apos;s subject,
 				its preview text and its first picture. In the send step&apos;s On your website card, pick another of its pictures, upload
-				one, or use the card MailCheap draws with the title, and give the page a title and a description of its own: a subject
+				one, or use the card mailcheap draws with the title, and give the page a title and a description of its own: a subject
 				written for the inbox can have a title written for the web. Left empty, they stay the subject and the preview text. When
 				several issues start with the same picture, like a banner, their cards on your website show the drawn card instead, unless
 				you pick that picture for them.
@@ -214,7 +214,7 @@ export default function WebsitePage() {
 			<ul>
 				<li>
 					<strong>AI agent</strong>: a prompt for the AI agent that builds your site, like Cursor, Claude Code, Codex or Lovable. It
-					tells your agent what MailCheap is and gives it the script and the HTML form, with when each fits, so it picks the one
+					tells your agent what mailcheap is and gives it the script and the HTML form, with when each fits, so it picks the one
 					that fits your site and adds the form there. Once it&apos;s done, it reminds you of what&apos;s left: turning the form on,
 					if it&apos;s off, and listing your site under Where it works.
 				</li>

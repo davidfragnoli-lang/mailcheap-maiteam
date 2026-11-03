@@ -378,7 +378,7 @@ describe("search engines", () => {
 	});
 
 	// People look for MailCheap Cloud's sign-in by name; links to it carry ?next=, which the canonical address leaves out.
-	test("sign-in is indexed on MailCheap Cloud, at one address, and stays out of search on a self-hosted server", async () => {
+	test("sign-in is indexed on mailcheap Cloud, at one address, and stays out of search on a self-hosted server", async () => {
 		const { generateMetadata } = await importFile("app/signin/page.js");
 		assert.deepEqual(await withEnv({ MAILCHEAP_CLOUD: "true", APP_URL: SITE_URL }, () => generateMetadata()), {
 			title: "Sign in",
