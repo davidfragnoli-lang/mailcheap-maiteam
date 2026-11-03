@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { after, before, beforeEach, describe, test } from "node:test";
 import { activate, as, callApi, catchRedirect, form, signIn, startTestApp } from "./helpers/app.mjs";
 import { memoryReplayStore } from "./helpers/memory-replay-store.mjs";
+import { runWithRequest } from "./stubs/next-headers.mjs";
 import { flushAfter } from "./stubs/next-server.mjs";
 import { disableSignupProtection } from "./stubs/maiteam-signup-protection.mjs";
 import { published } from "./stubs/qstash.mjs";
@@ -177,7 +178,7 @@ describe("fortuna-es waitlist webhook", () => {
 		assert.equal(forged.outcome, "not-confirmed");
 
 		const token = m.confirmation.createConfirmToken({ contactId: contact._id, newsletterId: contact.newsletterId });
-		assert.deepEqual(await m.confirm.confirmSubscription(token), { ok: true });
+		assert.deepEqual(await runWithRequest({}, async () => m.confirm.confirmSubscription(token)), { ok: true });
 		await flushAfter();
 		enrollment = await m.Enrollment.findById(enrollment._id).setOptions({ crossAccount: true }).lean();
 		assert.equal(enrollment.status, "active");
@@ -207,7 +208,7 @@ describe("fortuna-es waitlist webhook", () => {
 		const leaving = "se-va@fortuna-es.example.org";
 		await deliver(leaving);
 		const contact = await contactOf(leaving);
-		await m.confirm.confirmSubscription(m.confirmation.createConfirmToken({ contactId: contact._id, newsletterId: contact.newsletterId }));
+		await runWithRequest({}, async () => m.confirm.confirmSubscription(m.confirmation.createConfirmToken({ contactId: contact._id, newsletterId: contact.newsletterId })));
 		await flushAfter();
 		assert.equal((await runStepJobs())[0].outcome, "sent");
 		const token = m.unsubscribe.createUnsubscribeToken({ contactId: contact._id, newsletterId: contact.newsletterId });

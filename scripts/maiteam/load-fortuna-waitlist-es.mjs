@@ -74,7 +74,9 @@ export async function loadRecord({ api, plan }) {
 	}
 	check(newsletter.welcome.enabled === false, "the welcome email is off");
 	check(newsletter.theme.preset === "fortuna", "the fortuna look");
-	for (const key of ["subject", "previewText", "markdown"]) check(newsletter.confirmation[key] === plan.newsletter.confirmation[key], `confirmation ${key}`);
+	// Upstream 40244c9 answers an email as { format, content } (lib/newsletter-emails.js toDraftEmail); it still takes markdown.
+	for (const key of ["subject", "previewText"]) check(newsletter.confirmation[key] === plan.newsletter.confirmation[key], `confirmation ${key}`);
+	check(newsletter.confirmation.format === "markdown" && newsletter.confirmation.content === plan.newsletter.confirmation.markdown, "confirmation markdown");
 	check(newsletter.confirmation.isCustom, "the confirmation email is the locked copy");
 
 	const sequences = expectStatus(await api("GET", `/sequences?newsletter=${encodeURIComponent(newsletter.id)}`), [200], "list_sequences");
