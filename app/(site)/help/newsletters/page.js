@@ -7,7 +7,8 @@ import { getArchiveCnameTarget, getSharedDomain, isCloud } from "@/lib/config";
 import { formatWindow } from "@/lib/format";
 import { getHelpHref, getHelpPageMetadata } from "@/lib/help";
 import { INBOX_CHECK_LIMIT } from "@/lib/inbox-check";
-import { MAX_NEWSLETTERS_PER_ACCOUNT, SLUG_CHANGES } from "@/lib/newsletters";
+import { getMaxNewslettersPerAccount } from "@/lib/maiteam/newsletter-limit";
+import { SLUG_CHANGES } from "@/lib/newsletters";
 import { SUMMARY_BARS, SUMMARY_HOUR } from "@/lib/summary";
 import { MAX_TEAM_MEMBERS } from "@/lib/team-rules";
 
@@ -22,7 +23,7 @@ export default function NewslettersPage() {
 		<ArticleHelp slug="newsletters">
 			<h2 id="several">More than one newsletter</h2>
 			<p>
-				An account has up to {MAX_NEWSLETTERS_PER_ACCOUNT} newsletters. Add one from the newsletter menu at the top of the sidebar, where
+				An account has up to {getMaxNewslettersPerAccount()} newsletters. Add one from the newsletter menu at the top of the sidebar, where
 				you also switch between them: the dashboard shows one newsletter at a time.{" "}
 				{isCloud() && "They share your plan's emails and subscribers."} Each has its own contacts, campaigns, sender and website.
 			</p>
@@ -75,8 +76,8 @@ export default function NewslettersPage() {
 						: "Saved empty, emails wait until you add one."}
 				</li>
 				<li>
-					<strong>Language</strong>: the footer, with its unsubscribe link, and the Read online link are in English, Spanish or French.
-					Set it with the API or your AI assistant (<code>language</code>: en, es or fr). Your issues go out as you write them.
+					<strong>Language</strong>: the footer, with its unsubscribe link, and the Read online link are in English, Spanish, French, Italian or German.
+					Set it with the API or your AI assistant (<code>language</code>: en, es, fr, it or de). Your issues go out as you write them.
 				</li>
 			</ul>
 
