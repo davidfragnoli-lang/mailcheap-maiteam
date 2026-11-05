@@ -2,7 +2,7 @@
 
 This file lists everything our deployment (mailcheap.maiteam.ch) changes on top of `marclou/mailcheap`. The weekly upstream sync re-applies these patches. Each one has to stay small, separate and justified. A patch is not permission to cherry-pick old commits: each one is rebuilt against the upstream code it lands on.
 
-- Upstream base: `e6b5d72` (upstream/main, fetched 2026-11-05 08:20 UTC), merged into the released `9dd5457`; before that `40244c9` (2026-11-03), merged into `94d0b54` (first built on `bb82ec6`, 2026-10-20). License AGPL-3.0, Marc Lou's notices unchanged.
+- Upstream base: `45315be` (upstream/main, fetched 2026-11-05 13:35 UTC), merged into the released `f73afe7`; before that `e6b5d72`, merged into `9dd5457`; before that `40244c9` (2026-11-03), merged into `94d0b54` (first built on `bb82ec6`, 2026-10-20). License AGPL-3.0, Marc Lou's notices unchanged.
 - Old fork: `67d13b0` (MIT, 10 Oct) plus 28 commits up to `origin/production` `d190983`. Accepted but undeployed: `feat/maifortune-welcome` `69a87f1` (3 commits).
 - Classification: **drop** (upstream has a proven equivalent), **re-port** (upstream lacks it or is weaker), **config/docs**. Equivalence was checked in upstream code at `bb82ec6`, not by feature name.
 
@@ -114,6 +114,10 @@ Other adaptations: `tests/maiteam-send-gates.test.mjs` adds an author before sen
 **Equivalence** (`tests/runners/maiteam-look-equivalence.mjs`, now `--base e6b5d72`): the 59 non-default looks still render the old fork's bytes; the default look is upstream's email apart from the ink fill on a marked button (5 of 5); no look with upstream's presets is upstream's bytes, from an extracted `e6b5d72` (6 of 6); the 15 no-look cases with the maiteam presets change, as upstream's renderer and their new dark palettes do, and are recorded as rendered.
 
 **Data:** only new optional fields and a new `authors` collection, so no migration. **Operator note:** an issue needs an author before it is sent or scheduled. Issues drafted after a newsletter's first author take it, and the default author's address is the reply-to of the newsletter's own emails. A newsletter with no author refuses new campaign sends until one is added on its Sender page; welcome, confirmation and P6 sequence emails don't ask.
+
+## Upstream catch-up to 45315be (FRA-25998 r10, 2026-11-05)
+
+One upstream commit ("Sync from mailcheap-cloud 28f0af9", 33 files): a block pauses a Stripe plan's billing and ends the plan after 30 days (`lib/billing-pause.js`, hourly reconcile), an unblock alert, email-OTP hardening, and better-auth pinned to 1.7.17. The one conflict, `lib/alert-kinds.js`, was names only and took upstream's text before P2 ran again (6 files). No patch is touched. On this server the billing pause does nothing: the hourly reconcile returns "billing is off" unless Cloud and Stripe are both on, and `pauseBilling` / `resumeBilling` skip accounts without a Stripe subscription, which is every migrated account. The P8 cutover hold sets `status: "paused"` directly and never `planEndingAt`, so a release is not held by upstream's plan-ending check. `models/Account.js` gains optional fields only, so no migration. P1's `engines.node: "22.x"` stays. `.gitleaksignore` lists upstream's two synthetic test values from `45315be` (the in-memory better-auth secret in `tests/email-otp-security.test.mjs` and the `test-cron-secret` literal in `tests/billing-pause.test.mjs`), under its comment for upstream's own test constants.
 
 ## Known gaps against the old fork (P3, P3c)
 
