@@ -457,17 +457,17 @@ describe("early fraud warnings", () => {
 
 		const emails = platformEmails.slice(emailsBefore);
 		const toAdmins = emails.find(({ to }) => to.includes("admin@example.com"));
-		assert.equal(toAdmins.subject, "[MailCheap] Payment refunded after a fraud warning");
+		assert.equal(toAdmins.subject, "[mailcheap] Payment refunded after a fraud warning");
 		assert.ok(
 			toAdmins.text.includes(
-				`Account ${user.accountId}: the card's bank reported a $19.00 payment as fraud (made_with_stolen_card), and MailCheap refunded it and ended the plan it paid for.`
+				`Account ${user.accountId}: the card's bank reported a $19.00 payment as fraud (made_with_stolen_card), and mailcheap refunded it and ended the plan it paid for.`
 			),
 			toAdmins.text
 		);
 		const toOwner = emails.find(({ to }) => to.includes("fraud@example.com"));
-		assert.equal(toOwner.subject, "[MailCheap] Your plan ended");
+		assert.equal(toOwner.subject, "[mailcheap] Your plan ended");
 		assert.ok(
-			toOwner.text.includes("Your card's bank reported a $19.00 payment to MailCheap as unauthorized, so we refunded it and ended the plan it paid for."),
+			toOwner.text.includes("Your card's bank reported a $19.00 payment to mailcheap as unauthorized, so we refunded it and ended the plan it paid for."),
 			toOwner.text
 		);
 

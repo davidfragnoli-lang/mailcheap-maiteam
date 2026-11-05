@@ -377,7 +377,7 @@ describe("unblocking", () => {
 		const emailsBefore = platformEmails.length;
 		assert.deepEqual(await as(admin, () => m.admin.unblockAccountAction(String(user.accountId))), { ok: true });
 		assert.equal((await loadCampaign(user, id)).status, "paused");
-		const unblocked = platformEmails.slice(emailsBefore).filter(({ subject }) => subject === "[MailCheap] Account unblocked");
+		const unblocked = platformEmails.slice(emailsBefore).filter(({ subject }) => subject === "[mailcheap] Account unblocked");
 		assert.deepEqual(
 			unblocked.map(({ to }) => to),
 			[["unblock@example.com"]],
