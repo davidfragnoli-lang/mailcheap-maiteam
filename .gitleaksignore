@@ -5,3 +5,4 @@ b75e9c880c4dbaa719a939d1f9afe4ea20180a4a:tests/maiteam-migration.test.mjs:generi
 be981c145190f0cd7857fe0062cecd2c272c8974:tests/alerts.test.mjs:generic-api-key:19
 45672d3a618439c22bfa874d9991df62ce27eb71:tests/helpers/app.mjs:generic-api-key:45
 f8b0b7fbc93ce09c1221c8bdc073b729c0efe237:tests/notifications.test.mjs:generic-api-key:13
+45315be5b3e307b80b2e47eaa6fbb7d6064e1963:tests/email-otp-security.test.mjs:generic-api-key:24
