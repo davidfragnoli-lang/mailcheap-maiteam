@@ -323,7 +323,7 @@ export default function WritingPage() {
 				Every email ends with its footer, which the editor shows under your issue: why readers get it, with your newsletter&apos;s
 				name, the link to unsubscribe and your postal address, which anti-spam laws ask for. It goes in every email and can&apos;t be
 				removed.
-				{isCloud() && " Until you set your own address, it's MailCheap's business address."}
+				{isCloud() && " Until you set your own address, it's mailcheap's business address."}
 			</p>
 			<p>
 				Edit name and Edit address, under it, open your newsletter&apos;s settings in a new tab: its name on the{" "}

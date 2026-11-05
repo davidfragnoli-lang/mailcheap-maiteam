@@ -39,7 +39,7 @@ test("emails are written in the theme's light colors, and mail apps in dark mode
 	assert.match(dark, /^\.email-page \{ background: #0d1017 !important; \}$/m);
 	assert.match(dark, /^\.email-button, \.email-button a \{ background: #c4f25c !important; color: #0a0a0a !important; \}$/m);
 	assert.match(dark, /^\.body a \{ color: #c4f25c; \}$/m);
-	assert.match(render(null).html, /^\.email-page \{ background: #0a0a0a !important; \}$/m, "MailCheap's own dark colors");
+	assert.match(render(null).html, /^\.email-page \{ background: #0a0a0a !important; \}$/m, "mailcheap's own dark colors");
 	const block = '<div data-html-block=""><p style="color:#123456;">Block</p></div>';
 	assert.ok(renderEmail({ ...base, markdown: block, newsletter: { name: "N", theme: { preset: "midnight" } } }).html.includes(block), "an HTML block keeps its colors");
 });

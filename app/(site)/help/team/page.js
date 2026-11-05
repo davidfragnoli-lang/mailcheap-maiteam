@@ -14,12 +14,12 @@ export default function TeamPage() {
 			<p>
 				Open the newsletter, then its <LinkApp href="/newsletters/team">Team page</LinkApp> from Settings, and click Invite: their
 				name, the address the invitation goes to, and their role, admin or member. They get an email with a link that works for{" "}
-				{INVITATION_DAYS} days. It opens MailCheap&apos;s sign-in with their address filled in: the code MailCheap emails them signs
-				them in and opens the newsletter, with what their role allows. Someone new to MailCheap gets an account with the name you
+				{INVITATION_DAYS} days. It opens mailcheap&apos;s sign-in with their address filled in: the code mailcheap emails them signs
+				them in and opens the newsletter, with what their role allows. Someone new to mailcheap gets an account with the name you
 				typed, which they can change on their Account page.
 			</p>
 			<p>
-				They join with the address you invited, the one the code goes to: another address is another MailCheap account, which
+				They join with the address you invited, the one the code goes to: another address is another mailcheap account, which
 				doesn&apos;t see the newsletter. Already signed in with another one, they switch to it from the invitation&apos;s page.
 			</p>
 			<p>
@@ -59,7 +59,7 @@ export default function TeamPage() {
 				the field they&apos;re typing in.
 			</p>
 			<p>
-				Your saves and theirs never write over each other. When they saved since you last did, MailCheap brings their changes
+				Your saves and theirs never write over each other. When they saved since you last did, mailcheap brings their changes
 				into your draft, paragraph by paragraph, and saves both: you each keep writing where you are. When you both change the
 				same paragraph, the one typed last stays. Undo undoes your own changes, not theirs. A newsletter without a team saves
 				as it always did.

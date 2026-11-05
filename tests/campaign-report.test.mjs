@@ -303,7 +303,7 @@ test("as its send goes out, a pause that lifts by itself included, and for a whi
 			.seconds;
 	assert.equal(refreshOf({ status: "sending" }), REFRESH_SECONDS);
 	assert.equal(refreshOf({ status: "paused", pauseCode: "rate_limited" }), REFRESH_SECONDS, "Gmail's slowing down lifts by itself");
-	assert.equal(refreshOf({ status: "paused", pauseCode: "content_review" }), REFRESH_SECONDS, "and so does MailCheap's review");
+	assert.equal(refreshOf({ status: "paused", pauseCode: "content_review" }), REFRESH_SECONDS, "and so does mailcheap's review");
 	assert.equal(refreshOf({ status: "paused" }), undefined, "a pause its owner clicked waits for them");
 	assert.equal(refreshOf({ status: "paused", pauseCode: "high_rates" }), undefined);
 	assert.equal(refreshOf({ status: "paused", pauseCode: "content_rejected" }), undefined);

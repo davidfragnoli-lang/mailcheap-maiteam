@@ -324,7 +324,7 @@ describe("many at once", () => {
 		assert.equal((await findContact(user, "untagged@example.org")).statusChanges.at(-1).via, "mcp");
 	});
 
-	test("an address the account or MailCheap won't email stays dormant, and nothing is left to try again", async () => {
+	test("an address the account or mailcheap won't email stays dormant, and nothing is left to try again", async () => {
 		const user = await customer("bulk-suppressed@example.com");
 		await m.Contact.insertMany(
 			["back", "bounced-elsewhere", "spamtrap"].map((name) => ({ accountId: user.accountId, newsletterId: user.newsletterId, email: `${name}@example.org`, status: "dormant" }))

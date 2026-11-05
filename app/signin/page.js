@@ -55,7 +55,7 @@ export default async function SigninPage({ searchParams }) {
 			<div className="flex flex-1 items-center justify-center py-12">
 				<div className="w-full max-w-[22rem] animate-enter">
 					<h1 className="font-display text-[2.5rem] leading-[1.05] font-[480] tracking-[-0.03em] text-balance">
-						{invitation ? `Join ${invitation.newsletter.name}` : "Sign in to MailCheap"}
+						{invitation ? `Join ${invitation.newsletter.name}` : "Sign in to mailcheap"}
 					</h1>
 					{intro && <p className="mt-3 text-[15px] leading-6 text-pretty text-muted-foreground">{intro}</p>}
 					{oauthRequest?.isExpired ? null : (
@@ -89,8 +89,8 @@ export default async function SigninPage({ searchParams }) {
 // Only what changes what to do: an app connecting, an expired link, an account just deleted, an invitation to a team
 // that can't be read anymore, or a server that lets few emails in.
 function getIntro(oauthRequest, isDeleted, isInvitation) {
-	if (oauthRequest?.isExpired) return "This sign-in link expired. Go back to the app and connect MailCheap again.";
-	if (oauthRequest) return `${oauthRequest.client.name} wants to connect to your MailCheap account. Sign in first.`;
+	if (oauthRequest?.isExpired) return "This sign-in link expired. Go back to the app and connect mailcheap again.";
+	if (oauthRequest) return `${oauthRequest.client.name} wants to connect to your mailcheap account. Sign in first.`;
 	if (isDeleted) return `Your account is deleted. Sign in within ${DELETION_GRACE_DAYS} days to restore it.`;
 	if (isInvitation) return "You're invited to a newsletter's team. Sign in with the address your invitation went to.";
 	if (!isCloud()) return "Only the emails this server allows can sign in.";
