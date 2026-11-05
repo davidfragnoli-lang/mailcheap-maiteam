@@ -13,7 +13,11 @@ const newsletterSchema = new mongoose.Schema(
 		imageUrl: { type: String, trim: true },
 		fromName: { type: String, trim: true },
 		fromEmail: { type: String, required: true, lowercase: true, trim: true },
+		// Where replies to its emails go while it has no author (lib/sender-rules.js resolveFrom), as set before authors.
 		replyTo: { type: String, lowercase: true, trim: true },
+		// The author its new issues start with, whose address gets the replies to its own emails (lib/authors.js): its
+		// first author until another is picked on its Sender page.
+		defaultAuthorId: { type: mongoose.Schema.Types.ObjectId, ref: "Author" },
 		// Without one, emails print the server's default (lib/postal-address.js), unless the owner saved it empty.
 		postalAddress: { type: String, trim: true },
 		postalAddressCleared: { type: Boolean },
@@ -157,9 +161,13 @@ const newsletterSchema = new mongoose.Schema(
 			themeChosenAt: { type: Date },
 		},
 		// Its look on its website and in its emails (lib/themes.js): a preset, and only what was changed on top of it.
+		// lightColors and darkColors: each mode's palette changes. colors: the mode the preset is made for's, as themes
+		// were saved before they had two; the next save of the theme moves them.
 		theme: {
 			preset: { type: String, trim: true },
 			colors: { background: { type: String }, text: { type: String }, accent: { type: String } },
+			lightColors: { background: { type: String }, text: { type: String }, accent: { type: String } },
+			darkColors: { background: { type: String }, text: { type: String }, accent: { type: String } },
 			fonts: { heading: { type: String }, body: { type: String } },
 			headingWeight: { type: Number },
 			radius: { type: String },
@@ -168,6 +176,7 @@ const newsletterSchema = new mongoose.Schema(
 			// maiteam (PATCHES.md P3c): the email look its emails take instead of the theme above, stored as saved
 			// (lib/maiteam/email-look.js). Unset: upstream's email theme. The website keeps the theme above.
 			look: lookFields,
+			emailAlign: { type: String },
 		},
 	},
 	{ timestamps: true }
