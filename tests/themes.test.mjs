@@ -170,7 +170,7 @@ test("share cards keep their address with mailcheap's colors, and a palette name
 	assert.equal(getShareCardUrl({ slug: "notes" }, issue, "https://app.test", "dark"), "https://app.test/archive/notes/og?p=hello&m=dark");
 });
 
-test("a card in either mode has that mode's colors, MailCheap's own included", () => {
+test("a card in either mode has that mode's colors, mailcheap's own included", () => {
 	const garden = resolveTheme({ preset: "garden" });
 	assert.equal(getShareCardColors(garden).background, "#eef1e8");
 	assert.equal(getShareCardColors(garden, "dark").background, "#101914");
@@ -213,7 +213,7 @@ test("emails are in a theme's light colors, with its dark ones for mail apps in 
 	assert.equal(garden.background, "#eef1e8");
 	assert.equal(garden.dark.background, "#000000");
 	const plain = getEmailTheme(resolveTheme(null));
-	assert.equal(plain.background, "#ffffff", "MailCheap's own colors in light");
+	assert.equal(plain.background, "#ffffff", "mailcheap's own colors in light");
 	assert.equal(plain.dark.background, "#0a0a0a");
 });
 
@@ -227,7 +227,7 @@ test("emails can sit on the left, a choice like the others that the website neve
 	assert.deepEqual(getThemeOutput(left).customized, ["emailAlign"]);
 	assert.equal(getEmailTheme(resolveTheme(null)).align, "center");
 	assert.equal(getEmailTheme(resolveTheme(left)).align, "left");
-	assert.equal(getThemeStyleSheet(resolveTheme({ preset: "mailcheap", emailAlign: "left" })), "", "MailCheap's pages stay as they always were");
+	assert.equal(getThemeStyleSheet(resolveTheme({ preset: "mailcheap", emailAlign: "left" })), "", "mailcheap's pages stay as they always were");
 	assert.equal(getThemeStyleSheet(resolveTheme(left)), getThemeStyleSheet(resolveTheme({ preset: "garden" })));
 });
 
@@ -268,7 +268,7 @@ test("a website's stylesheet has the light palette, then what changes in dark mo
 	assert.match(garden, /\.dark body\{--background:#101914;--foreground:#e1eae3;/);
 	assert.match(garden, /\.dark body\{[^}]*color-scheme:dark/);
 	assert.doesNotMatch(garden.split(".dark body")[1], /--radius|--theme-font/, "dark mode changes colors only");
-	assert.doesNotMatch(getThemeStyleSheet(resolveTheme({ preset: "mailcheap", radius: "none" })), /\.dark/, "MailCheap's own colors follow the page");
+	assert.doesNotMatch(getThemeStyleSheet(resolveTheme({ preset: "mailcheap", radius: "none" })), /\.dark/, "mailcheap's own colors follow the page");
 	const branded = getThemeStyleSheet(resolveTheme({ preset: "mailcheap", lightColors: { accent: "#2563eb" } }));
 	assert.match(branded, /body\{--background:#ffffff;[^}]*--primary:#2563eb;/);
 	assert.match(branded, /\.dark body\{--background:#0a0a0a;/);
@@ -295,7 +295,7 @@ test("a stored theme can't put CSS or markup of its own in a page: only hex colo
 	assert.doesNotMatch(css, /display:none|<\/style>|<script|example\.com|body\{body/);
 });
 
-test("the dashboard's swatches paint each mode's colors, MailCheap's own being the dashboard's", () => {
+test("the dashboard's swatches paint each mode's colors, mailcheap's own being the dashboard's", () => {
 	assert.deepEqual(getSwatchColors(resolveTheme({ preset: "swiss" })), {
 		light: { background: "#ffffff", text: "#111111", accent: "#d92b16" },
 		dark: { background: "#0e0e0e", text: "#f2f2f2", accent: "#ff4a2e" },

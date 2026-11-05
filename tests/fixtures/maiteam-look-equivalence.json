@@ -1,5 +1,5 @@
 {
-	"about": "sha256 of the old fork's output (7bdd14c) per look case and of upstream's (e0842e7) per case without a look; written by tests/runners/maiteam-look-equivalence.mjs --write-fixture",
+	"about": "sha256 per case: the old fork's output (7bdd14c) for each look; the port's for the default look (upstream e6b5d72's email apart from the button fill) and for the maiteam presets without a look; upstream's (e6b5d72) for every other case without a look. Written by tests/runners/maiteam-look-equivalence.mjs --write-fixture",
 	"looks": {
 		"landing/markdown": {
 			"html": "80904ba5f87ffd78c1a2de0adf2a0f4e22ef0d6e556e5f3f02c1a9bedaa06d03",
@@ -238,110 +238,110 @@
 			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
 		},
 		"default/markdown": {
-			"html": "cf12c5b09bb522ff1e6b4da34a27ccf3c9d861354b7321ea336d8579f9fd3026",
+			"html": "f970a3b8d9e6b04822d7c8cffb6aa02c10c91131b72013a19b5bfd806f0641d0",
 			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
 		},
 		"default/markdown-web-url": {
-			"html": "50c0846b0a643abbb5ae2813ae22b4667095bd1d717465d782cea6e7b78130e0",
+			"html": "bdc1c72f371f7692e8ba441cf1e0929a0aa782ea502817e433257c42e54314fa",
 			"text": "8c3378f6dd8e086cce52168d66e03f29c832d49f378d5cb918d57828b27485cf"
 		},
 		"default/markdown-dark-preview": {
-			"html": "cf12c5b09bb522ff1e6b4da34a27ccf3c9d861354b7321ea336d8579f9fd3026",
+			"html": "f970a3b8d9e6b04822d7c8cffb6aa02c10c91131b72013a19b5bfd806f0641d0",
 			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
 		},
 		"default/markdown-web-version": {
-			"html": "6ba8ca95c7df4768cf553bc5692bea9f9e6d7bf338cd7ca1039fbcb5ffe50c3d",
+			"html": "7aeb398668c4d4793d0f063a9964780d202c40fa75a5b8918e811eb594405192",
 			"text": "db39b2094b7a230c5e253fec85da82fe556c12575ff383d556e42d331f5110fc"
 		},
 		"default/rich": {
-			"html": "b2294fa50b5e4ef177e1bcbbf77f0428695080d939e3b1476cea59f2673e314b",
+			"html": "be4867ffae08aeedff8699a7999f5b350d2509fe64e78f3169b6e4c9ba672be4",
 			"text": "b3c23916372888b849ec18594e8bc2c2b125dabeb1fa426a96e4b628d3257473"
 		}
 	},
 	"upstream": {
 		"none/markdown": {
-			"html": "e5ee1f26fb52643378391254f12ca9a9a818d3023c12fa8357ac4fe32843b4ca",
+			"html": "5dc0823897f8ca4d4b893d9dc77b5a32ea25f1ddb3a350dacbf733886daedbdb",
 			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
 		},
 		"none/markdown-web-url": {
-			"html": "05ad9c5077e6d6b4cf544ac01cec03df8b77e244cb1014dd8e1f8c9bdf0892b2",
+			"html": "7db9c8098e3cdb30f536838cf3ef0068cced4755a47251c07cf0c3b62f7b8561",
 			"text": "8c3378f6dd8e086cce52168d66e03f29c832d49f378d5cb918d57828b27485cf"
 		},
 		"none/markdown-dark-preview": {
-			"html": "e5ee1f26fb52643378391254f12ca9a9a818d3023c12fa8357ac4fe32843b4ca",
+			"html": "5dc0823897f8ca4d4b893d9dc77b5a32ea25f1ddb3a350dacbf733886daedbdb",
 			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
 		},
 		"none/markdown-web-version": {
-			"html": "8614e7ba308b4570e162842d1551825c76a3e83bab3cb4144e7c010dc0206e69",
+			"html": "d1c8e86b4d2274833f57c4eac57fbbc9353fcea9f929084de82588a2a5b64061",
 			"text": "db39b2094b7a230c5e253fec85da82fe556c12575ff383d556e42d331f5110fc"
 		},
 		"none/rich": {
-			"html": "b2294fa50b5e4ef177e1bcbbf77f0428695080d939e3b1476cea59f2673e314b",
-			"text": "b3c23916372888b849ec18594e8bc2c2b125dabeb1fa426a96e4b628d3257473"
-		},
-		"maiteam/markdown": {
-			"html": "ea403f494712bd32ef37723e35459745233528629d697ef6a89c8b8af39eb1f3",
-			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
-		},
-		"maiteam/markdown-web-url": {
-			"html": "2d5e13697da58fddf8f0f22cfae7b8e8936c6b3d440197332060425b385717d1",
-			"text": "8c3378f6dd8e086cce52168d66e03f29c832d49f378d5cb918d57828b27485cf"
-		},
-		"maiteam/markdown-dark-preview": {
-			"html": "ea403f494712bd32ef37723e35459745233528629d697ef6a89c8b8af39eb1f3",
-			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
-		},
-		"maiteam/markdown-web-version": {
-			"html": "4a88880119a27ba991afa3e5519160a09bc0eeef1b2c32afc6bccfbb56a5e396",
-			"text": "db39b2094b7a230c5e253fec85da82fe556c12575ff383d556e42d331f5110fc"
-		},
-		"maiteam/rich": {
-			"html": "084cab6289631dbb5c3bd3a58f38b6163f5ff27953c444d582b6dbacd74b7786",
-			"text": "b3c23916372888b849ec18594e8bc2c2b125dabeb1fa426a96e4b628d3257473"
-		},
-		"fortuna/markdown": {
-			"html": "69492ba62b0d4312d25ab4c76f08b68973a876e3f275631571e9ec493b9e37ab",
-			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
-		},
-		"fortuna/markdown-web-url": {
-			"html": "46710adee3b93c9bd8ac7f9bd7080dd9853b4564865cb9c0c917019323baf69a",
-			"text": "8c3378f6dd8e086cce52168d66e03f29c832d49f378d5cb918d57828b27485cf"
-		},
-		"fortuna/markdown-dark-preview": {
-			"html": "69492ba62b0d4312d25ab4c76f08b68973a876e3f275631571e9ec493b9e37ab",
-			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
-		},
-		"fortuna/markdown-web-version": {
-			"html": "6ac279983846d1035168c9777e30b3a34913eeb4c8d8ae075b5328b6a30395bf",
-			"text": "db39b2094b7a230c5e253fec85da82fe556c12575ff383d556e42d331f5110fc"
-		},
-		"fortuna/rich": {
-			"html": "5cfd3f3b372fe225374cc706a4b05a77b5ba46ca16c78ba47f018a0f948c15cf",
-			"text": "b3c23916372888b849ec18594e8bc2c2b125dabeb1fa426a96e4b628d3257473"
-		},
-		"landing/markdown": {
-			"html": "9eee9d4ed4a46ffdcd46df9e9a25d8b047b42fcf760ff06024d706bb09ec5978",
-			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
-		},
-		"landing/markdown-web-url": {
-			"html": "24edc6068145c05a672df24742f9aafd70e321285a82fc1acecac0cddf4fb348",
-			"text": "8c3378f6dd8e086cce52168d66e03f29c832d49f378d5cb918d57828b27485cf"
-		},
-		"landing/markdown-dark-preview": {
-			"html": "9eee9d4ed4a46ffdcd46df9e9a25d8b047b42fcf760ff06024d706bb09ec5978",
-			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
-		},
-		"landing/markdown-web-version": {
-			"html": "064c76e9459c181f9199207985e5dcaf8be5637a40ed98d3d34518b6b5e948cc",
-			"text": "db39b2094b7a230c5e253fec85da82fe556c12575ff383d556e42d331f5110fc"
-		},
-		"landing/rich": {
-			"html": "2d87e8707886e4f72b7d38394a91867e8ea5baaad63f896e0ec85a934a25fcae",
+			"html": "be4867ffae08aeedff8699a7999f5b350d2509fe64e78f3169b6e4c9ba672be4",
 			"text": "b3c23916372888b849ec18594e8bc2c2b125dabeb1fa426a96e4b628d3257473"
 		},
 		"html": {
-			"html": "a2337b5b41e39d9e2dc2b0cb9055b7035649c93f3b605debb9c7f1024bf9b604",
-			"text": "f92ff21c95e745f527ff90ac9882eeeaf429d542742be8b4eb8037d06b90c548"
+			"html": "f502e0d2b3e384e2ba6dc91d0ac4aa890ff1b141ce6a6eb24270c0ec0754702b",
+			"text": "2e943434b71ec6411e5cde7c4923c783e1039fcd53f4d9181fa0f65d6876b765"
+		},
+		"maiteam/markdown": {
+			"html": "b1e17e4cf22a35d2b0ccfaa2e70664f4754ae015b06711784514c92f7016ee98",
+			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
+		},
+		"maiteam/markdown-web-url": {
+			"html": "1351d9d6f5de20e4860fd97e98282353c3e3639f9323d833a7006f1464e58e6c",
+			"text": "8c3378f6dd8e086cce52168d66e03f29c832d49f378d5cb918d57828b27485cf"
+		},
+		"maiteam/markdown-dark-preview": {
+			"html": "b1e17e4cf22a35d2b0ccfaa2e70664f4754ae015b06711784514c92f7016ee98",
+			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
+		},
+		"maiteam/markdown-web-version": {
+			"html": "f0af771d6505c80ff0948d60886dac89552d203960ce1ae380a3bb6bd42fcf4f",
+			"text": "db39b2094b7a230c5e253fec85da82fe556c12575ff383d556e42d331f5110fc"
+		},
+		"maiteam/rich": {
+			"html": "afa80cd7e80b3ab10ce2bbd51f6fb142b30c57d7d330084ee13e8b762f184b7c",
+			"text": "b3c23916372888b849ec18594e8bc2c2b125dabeb1fa426a96e4b628d3257473"
+		},
+		"fortuna/markdown": {
+			"html": "1a5cccf1db4e6e5cf13f13395ac166a31020a0550bb92b39868f9f36ef34e206",
+			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
+		},
+		"fortuna/markdown-web-url": {
+			"html": "20186fac3c4bc242202fe0f48471b07dcb30e1695de4cd7797a50840f6426e58",
+			"text": "8c3378f6dd8e086cce52168d66e03f29c832d49f378d5cb918d57828b27485cf"
+		},
+		"fortuna/markdown-dark-preview": {
+			"html": "1a5cccf1db4e6e5cf13f13395ac166a31020a0550bb92b39868f9f36ef34e206",
+			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
+		},
+		"fortuna/markdown-web-version": {
+			"html": "7f704c5464d98cb2c88176e973cd23feb134c432874ea43eea58d7ba3da46146",
+			"text": "db39b2094b7a230c5e253fec85da82fe556c12575ff383d556e42d331f5110fc"
+		},
+		"fortuna/rich": {
+			"html": "160e5ab4ab0942695ecf0b79d852ae58f7cdccb8379e9e050441d4000f7589c4",
+			"text": "b3c23916372888b849ec18594e8bc2c2b125dabeb1fa426a96e4b628d3257473"
+		},
+		"landing/markdown": {
+			"html": "cc5cd2e9320fc1169c51474bc31867401e29e62bc1bbe7a1774f81253de4ae95",
+			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
+		},
+		"landing/markdown-web-url": {
+			"html": "61e49a6bb180c2952f97d1f2b5c66bad1d0e9282ebcc60ad197176139314842b",
+			"text": "8c3378f6dd8e086cce52168d66e03f29c832d49f378d5cb918d57828b27485cf"
+		},
+		"landing/markdown-dark-preview": {
+			"html": "cc5cd2e9320fc1169c51474bc31867401e29e62bc1bbe7a1774f81253de4ae95",
+			"text": "ff8341199544b26bc708912adbb687d898b1772151a4f19c3c4a2c92adcdd0b9"
+		},
+		"landing/markdown-web-version": {
+			"html": "4d5d361cf10c258c6e0e1602a8eade433ba06cd6fe6487e249cceb59bc8ae609",
+			"text": "db39b2094b7a230c5e253fec85da82fe556c12575ff383d556e42d331f5110fc"
+		},
+		"landing/rich": {
+			"html": "45a5af5d75eec0f968ad747e87a53fd708c0187917c2e954c857a97be258b6b1",
+			"text": "b3c23916372888b849ec18594e8bc2c2b125dabeb1fa426a96e4b628d3257473"
 		}
 	}
 }

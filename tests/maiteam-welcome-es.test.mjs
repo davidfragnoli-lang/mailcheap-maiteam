@@ -145,7 +145,7 @@ describe("fortuna-es waitlist webhook", () => {
 	// QI-27854 option A: mailcheap's own footer in Spanish, with the one working unsubscribe link and the address.
 	function assertSpanishFooter(sent) {
 		assert.match(sent.html, /<html lang="es">/);
-		assert.match(sent.html, /Recibes este correo porque te suscribiste a fortuna\.<br>\n<a href="http[^"]+\/unsubscribe\?token=[^"]+"[^>]*>Darte de baja<\/a><br>1 Main St, Paris/);
+		assert.match(sent.html, /Recibes este correo porque te suscribiste a fortuna\.(?:<br>\n| )<a (?:class="[^"]*" )?href="http[^"]+\/unsubscribe\?token=[^"]+"[^>]*>Darte de baja<\/a><br>1 Main St, Paris/);
 		assert.match(sent.text, /Recibes este correo porque te suscribiste a fortuna\.\nDarte de baja: http\S+\/unsubscribe\?token=\S+\n1 Main St, Paris/);
 		assert.doesNotMatch(`${sent.html}\n${sent.text}`, /receiving this|Unsubscribe<|Unsubscribe:/);
 	}

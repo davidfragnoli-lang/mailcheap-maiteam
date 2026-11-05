@@ -4,11 +4,16 @@
 //   node tests/runners/maiteam-look-equivalence.mjs [--old-repo <path>] [--write-fixture]
 //
 // It extracts the old fork's renderer (lib/ at 7bdd14c, from --old-repo, default ../mailcheap-brand-correction) and
-// this repository's lib/ before the port (e0842e7) into a temporary directory with this checkout's node_modules
-// linked, renders every case of tests/helpers/maiteam-look-cases.mjs through them and through the port, and prints a
-// JSON report. --write-fixture records the old outputs' hashes in tests/fixtures/maiteam-look-equivalence.json, which
-// tests/maiteam-email-look.test.mjs checks the port against without needing the old repository. Reads nothing else
-// and touches no network.
+// upstream's lib/ at the upstream commit this pin is merged with (--base, default e6b5d72) into a temporary directory
+// with this checkout's node_modules linked, renders every case of tests/helpers/maiteam-look-cases.mjs through them and
+// through the port, and prints a JSON report:
+//   - every look but the default one: the old fork's bytes;
+//   - the default look: upstream's email without a look, apart from the old default's ink fill on a <a data-button>;
+//   - no look, with upstream's own presets: upstream's bytes;
+//   - no look, with the maiteam presets (P3), which upstream doesn't have: reported, recorded as rendered.
+// --write-fixture records the hashes in tests/fixtures/maiteam-look-equivalence.json, which
+// tests/maiteam-email-look.test.mjs checks the port against without needing either repository. Reads nothing else and
+// touches no network. Upstream's renderer changes with its releases, so each catch-up reruns this with its --base.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -19,13 +24,16 @@ import { NEWSLETTER, listCases, listDefaultCases, listUpstreamCases, newArgument
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const OLD_COMMIT = "7bdd14c";
-const BASE_COMMIT = "e0842e7";
+const MAITEAM_PRESETS = ["maiteam", "fortuna", "landing"];
 const OLD_FILES = ["lib/email-theme.js", "lib/render-email.js", "lib/callouts.js", "lib/clean-html.js", "lib/markdown.js"];
 const FIXTURE = join(ROOT, "tests/fixtures/maiteam-look-equivalence.json");
 
 const args = process.argv.slice(2);
 const oldRepo = resolve(ROOT, args.includes("--old-repo") ? args[args.indexOf("--old-repo") + 1] : "../mailcheap-brand-correction");
 const shouldWriteFixture = args.includes("--write-fixture");
+const BASE_COMMIT = args.includes("--base") ? args[args.indexOf("--base") + 1] : "e6b5d72";
+// The default look's one change to upstream's email: a marked button gets the ink fill.
+const withUpstreamButtons = (html) => html.replace(/<a class="button" style="[^"]*" href="([^"]*)">([^<]*)<\/a>/g, '<a href="$1" data-button>$2</a>');
 
 function extract(repo, commit, paths, into) {
 	mkdirSync(into, { recursive: true });
@@ -67,31 +75,37 @@ try {
 		return { ...compare(testCase.id, before, after), hashes: { html: sha256(before.html), text: sha256(before.text) } };
 	});
 
-	// The default look is upstream's own email, plus the old default's ink fill on a <a data-button>: compared with the
-	// old fork's default wrapper, and with upstream's email without a look (equal unless the email has a marked button).
+	// The default look is upstream's own email, plus the old default's ink fill on a <a data-button>.
 	const defaultResults = listDefaultCases().map((testCase) => {
 		const { previewScheme, ...upstreamInput } = testCase.input;
 		const after = newRender(newArguments(testCase));
 		const upstream = baseRender({ ...upstreamInput, newsletter: NEWSLETTER });
-		const before = oldRender(oldArguments(testCase));
 		return {
-			...compare(testCase.id, before, after),
-			equalsUpstreamWithoutLook: after.html === upstream.html && after.text === upstream.text,
-			hashes: { html: sha256(before.html), text: sha256(before.text) },
+			...compare(testCase.id, upstream, { ...after, html: withUpstreamButtons(after.html) }),
+			filledButtons: (after.html.match(/<a class="button"/g) ?? []).length,
+			hashes: { html: sha256(after.html), text: sha256(after.text) },
 		};
 	});
 	const defaultLook = {
 		cases: defaultResults.length,
-		equalToUpstreamWithoutLook: defaultResults.filter((result) => result.equalsUpstreamWithoutLook).map(({ id }) => id),
-		identicalToOldDefault: defaultResults.filter((result) => result.identical).length,
-		differentFromOldDefault: defaultResults.filter((result) => !result.identical).map(({ hashes, ...result }) => result),
+		identicalToUpstreamApartFromButtons: defaultResults.filter((result) => result.identical).length,
+		different: defaultResults.filter((result) => !result.identical).map(({ hashes, ...result }) => result),
 	};
 
-	const upstreamResults = listUpstreamCases().map(({ id, input }) => {
-		const before = baseRender(input);
-		const after = newRender(input);
-		return { ...compare(id, before, after), hashes: { html: sha256(before.html), text: sha256(before.text) } };
-	});
+	const isMaiteamPreset = (id) => MAITEAM_PRESETS.includes(id.split("/")[0]);
+	const upstreamResults = listUpstreamCases()
+		.filter(({ id }) => !isMaiteamPreset(id))
+		.map(({ id, input }) => {
+			const before = baseRender(input);
+			const after = newRender(input);
+			return { ...compare(id, before, after), hashes: { html: sha256(before.html), text: sha256(before.text) } };
+		});
+	const presetResults = listUpstreamCases()
+		.filter(({ id }) => isMaiteamPreset(id))
+		.map(({ id, input }) => {
+			const after = newRender(input);
+			return { id, hashes: { html: sha256(after.html), text: sha256(after.text) } };
+		});
 
 	const summarize = (results) => ({
 		cases: results.length,
@@ -102,19 +116,20 @@ try {
 		oldFork: { commit: OLD_COMMIT, ...summarize(lookResults) },
 		defaultLook,
 		upstreamWithoutLook: { commit: BASE_COMMIT, ...summarize(upstreamResults) },
+		maiteamPresetsWithoutLook: { cases: presetResults.length, recorded: presetResults.map(({ id }) => id) },
 	};
 	if (shouldWriteFixture) {
 		mkdirSync(join(ROOT, "tests/fixtures"), { recursive: true });
 		const fixture = {
-			about: `sha256 of the old fork's output (${OLD_COMMIT}) per look case and of upstream's (${BASE_COMMIT}) per case without a look; written by tests/runners/maiteam-look-equivalence.mjs --write-fixture`,
+			about: `sha256 per case: the old fork's output (${OLD_COMMIT}) for each look; the port's for the default look (upstream ${BASE_COMMIT}'s email apart from the button fill) and for the maiteam presets without a look; upstream's (${BASE_COMMIT}) for every other case without a look. Written by tests/runners/maiteam-look-equivalence.mjs --write-fixture`,
 			looks: Object.fromEntries([...lookResults, ...defaultResults].map(({ id, hashes }) => [id, hashes])),
-			upstream: Object.fromEntries(upstreamResults.map(({ id, hashes }) => [id, hashes])),
+			upstream: Object.fromEntries([...upstreamResults, ...presetResults].map(({ id, hashes }) => [id, hashes])),
 		};
 		writeFileSync(FIXTURE, `${JSON.stringify(fixture, null, "\t")}\n`);
 		report.fixture = "tests/fixtures/maiteam-look-equivalence.json";
 	}
 	console.log(JSON.stringify(report, null, 2));
-	const failed = report.oldFork.different.length > 0 || report.upstreamWithoutLook.different.length > 0 || defaultLook.differentFromOldDefault.length > 0;
+	const failed = report.oldFork.different.length > 0 || report.upstreamWithoutLook.different.length > 0 || defaultLook.different.length > 0;
 	process.exitCode = failed ? 1 : 0;
 } finally {
 	rmSync(scratch, { recursive: true, force: true });

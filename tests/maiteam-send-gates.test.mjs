@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, test } from "node:test";
-import { activate, as, catchRedirect, form, jsonRequest, signIn, startTestApp, withEnv } from "./helpers/app.mjs";
+import { activate, addAuthor, as, catchRedirect, form, jsonRequest, signIn, startTestApp, withEnv } from "./helpers/app.mjs";
 import { published } from "./stubs/qstash.mjs";
 import { sent as sesEmails, state as sesState } from "./stubs/ses.mjs";
 
@@ -36,6 +36,8 @@ async function customer(slug, { contacts = 3, dailySendCap = 50 } = {}) {
 	if (dailySendCap !== null) await m.Newsletter.updateOne({ accountId: user.accountId, _id: user.newsletterId }, { $set: { dailySendCap } });
 	const rows = Array.from({ length: contacts }, (_, index) => ({ email: `reader${index}@${slug}.example.org`, status: "active" }));
 	if (contacts) await as(user, () => m.contacts.importContacts({ newsletterId: user.newsletterId, consent: true, rows }));
+	// Upstream e6b5d72: an issue needs an author before it's sent; drafts made after this one take it.
+	await addAuthor(user);
 	return user;
 }
 
@@ -119,7 +121,7 @@ describe("maiteam send gates", () => {
 		assert.match(JSON.stringify(await as(closed, async () => m.campaigns.sendCampaign(await campaign(closed), {}))), /needs 3 emails and 0 remain today/);
 		const before = sesEmails.length;
 		const id = await campaign(closed);
-		await assert.rejects(() => m.sending.sendTestEmail({ accountId: closed.accountId, campaignId: id, to: "me@closed.example.org" }), /daily send cap is 0/);
+		await assert.rejects(() => m.sending.sendTestEmail({ accountId: closed.accountId, campaignId: id, to: ["me@closed.example.org"] }), /daily send cap is 0/);
 		assert.equal(sesEmails.length, before);
 	});
 

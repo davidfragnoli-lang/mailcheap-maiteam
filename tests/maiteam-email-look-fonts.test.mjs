@@ -165,15 +165,15 @@ test("headline and text fonts are separate, and a link inside a headline keeps t
 
 test("a font changes the type only: footer, unsubscribe, preheader and the text part stay the same", () => {
 	const plain = renderEmail({ ...issue, newsletter, webUrl: "https://news.example.com/p/1" });
-	// The footer's words and link, without the look's own colour.
+	// The footer's words and link, without its markup: upstream's (e6b5d72) and a look's differ in classes and line breaks.
 	const footerOf = (html) =>
-		html.slice(html.indexOf("You're receiving this"), html.indexOf("</td>", html.indexOf("You're receiving this"))).replace(/ style="[^"]*"/g, "");
+		html.slice(html.indexOf("You're receiving this"), html.indexOf("</td>", html.indexOf("You're receiving this"))).replace(/<[^>]*?href="([^"]*)"[^>]*>/g, "[$1]").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 	const preheader = /<div style="display:none;[^>]*data-preheader>[^]*?<\/div>/.exec(plain.html)[0];
 	for (const font of THEME_FONTS) {
 		for (const preset of ["default", "landing", "letter", "maiteam"]) {
 			const themed = render({ ...presetTheme(preset), headingFont: font, bodyFont: font }, { webUrl: "https://news.example.com/p/1" });
 			assert.equal(footerOf(themed.html), footerOf(plain.html), `${preset}/${font}: footer text and unsubscribe link unchanged`);
-			assert.ok(themed.html.includes(`<a href="${UNSUBSCRIBE_PLACEHOLDER}" style="color:`), "unsubscribe placeholder present");
+			assert.match(themed.html, new RegExp(`<a (?:class="[^"]*" )?href="${UNSUBSCRIBE_PLACEHOLDER.replace(/[^\w]/g, "\\$&")}" style="color:`), "unsubscribe placeholder present");
 			assert.ok(themed.html.includes(preheader), "preheader unchanged");
 			assert.equal(themed.text, plain.text, `${preset}/${font}: text part identical`);
 			const unsubscribed = render({ ...presetTheme(preset), bodyFont: font }, { unsubscribeUrl: "https://mail.example.com/unsubscribe?token=abc" });

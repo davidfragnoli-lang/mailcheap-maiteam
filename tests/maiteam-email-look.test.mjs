@@ -82,8 +82,9 @@ test("a default look is upstream's email, plus the old default's ink fill on a m
 	assert.ok(isDefaultTheme(resolveTheme(undefined)));
 	assert.ok(isDefaultTheme(resolveTheme(presetTheme("default"))));
 	assert.ok(!isDefaultTheme(resolveTheme(presetTheme("landing"))));
-	assert.ok(before.html.includes('<meta name="color-scheme" content="light">'));
-	assert.ok(!before.html.includes("prefers-color-scheme"));
+	// Upstream e6b5d72 writes its emails in light, with its dark palette for the apps that follow dark mode.
+	assert.ok(before.html.includes('<meta name="color-scheme" content="light dark">'));
+	assert.ok(before.html.includes("prefers-color-scheme: dark"));
 
 	const cta = '\n\n<a href="https://example.com/go" data-button>Go</a>\n';
 	const upstream = renderEmail({ markdown: cta, subject: "Hi", newsletter });
@@ -376,7 +377,7 @@ test("the product comes only from the saved look, and a look from before product
 	assert.deepEqual(THEME_PRODUCTS, ["company", "fortuna", "quote-to-invoice"]);
 });
 
-test("a saved look still holding the old petrol preset takes the new colours; a colour someone changed stays", () => {
+test("a saved look still holding the old petrol preset takes the new colours; a colour someone changed stays", async () => {
 	const legacy = {
 		preset: "maiteam",
 		layout: "plain",
@@ -404,7 +405,9 @@ test("a saved look still holding the old petrol preset takes the new colours; a 
 	// A stored Mongoose subdocument reads the same as the plain object, and the schema checks the product.
 	const Stored = mongoose.models.MaiteamLookCheck ?? mongoose.model("MaiteamLookCheck", new mongoose.Schema({ look: lookFields }));
 	assert.deepEqual(resolveTheme(new Stored({ look: legacy }).look), resolved);
-	assert.equal(new Stored({ look: { ...legacy, product: "q2i" } }).validateSync().errors["look.product"].kind, "enum");
+	// validate(), as upstream's Mongoose deprecates validateSync().
+	const invalid = await new Stored({ look: { ...legacy, product: "q2i" } }).validate().catch((error) => error);
+	assert.equal(invalid.errors["look.product"].kind, "enum");
 });
 
 test("the button is its own colour: one marked link, other links stay links, a styled one keeps its style", () => {

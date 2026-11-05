@@ -25,7 +25,7 @@ for (const [language, strings] of Object.entries(EXPECTED)) {
 		test(`${language} footer and Read online, ${kind}`, () => {
 			const { html, text } = render(newsletter(language === "en" ? null : language), options);
 			assert.ok(html.includes(strings.reason), html);
-			assert.match(html, new RegExp(`<a href="${UNSUBSCRIBE.replace(/[?.]/g, "\\$&")}"[^>]*>${strings.link}</a><br>1 Main St, Paris`));
+			assert.match(html, new RegExp(`<a (?:class="[^"]*" )?href="${UNSUBSCRIBE.replace(/[?.]/g, "\\$&")}"[^>]*>${strings.link}</a><br>1 Main St, Paris`));
 			assert.match(html, new RegExp(`>${strings.read}</a>`));
 			if (kind !== "html") {
 				assert.match(html, new RegExp(`<html lang="${language}">`));
@@ -81,4 +81,20 @@ test("it and de footers render through 40244c9's editor output under the fortuna
 		assert.match(rendered.html, /<a[^>]*href="https:\/\/example.com\/go"[^>]*background:#6e5c96;/, `${language}: malva button`);
 		assert.doesNotMatch(`${rendered.html}\n${rendered.text}`, /receiving this|>Unsubscribe<|Read online/, language);
 	}
+});
+
+// FRA-25998 r9 (upstream e6b5d72): an issue's author byline, in upstream's theme and under a maiteam look, says "By" in
+// the newsletter's language, and stays out of the web version.
+test("the author byline follows the newsletter's language, in upstream's theme and in a look", () => {
+	const author = { name: "Ada", imageUrl: null };
+	const BY = { en: "By Ada", es: "Por Ada", fr: "Par Ada", it: "Di Ada", de: "Von Ada" };
+	for (const [language, line] of Object.entries(BY)) {
+		for (const options of [{}, { look: { preset: "maiteam", product: "fortuna" } }]) {
+			const { html, text } = render(newsletter(language === "en" ? null : language), { ...options, author });
+			assert.match(html, new RegExp(`vertical-align:middle;">${line}</span>`), `${language} ${options.look ? "look" : "theme"}`);
+			assert.ok(text.includes(`${line}\n\n`), text);
+			assert.ok(!render(newsletter(language), { ...options, author, isWebVersion: true }).html.includes(line), "no byline on the web version");
+		}
+	}
+	assert.ok(!render(newsletter("es"), { look: { preset: "maiteam" } }).html.includes("Por "), "no author, no byline");
 });

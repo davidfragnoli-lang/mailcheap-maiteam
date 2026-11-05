@@ -362,7 +362,8 @@ describe("writing and sending", () => {
 			assert.deepEqual(await as(user, () => m.newsletters.sendWelcomeTest(user.newsletterId)), { ok: true });
 			return emailsTo("author-default@example.com", from).at(-1).replyTo;
 		};
-		const senderPage = async () => (await as(user, () => m.senderPage({ searchParams: Promise.resolve({}) }))).props.authors;
+		// maiteam (PATCHES.md P4b): the page is the section followed by the daily cap's card.
+		const senderPage = async () => (await as(user, () => m.senderPage({ searchParams: Promise.resolve({}) }))).props.children[0].props.authors;
 		await m.Newsletter.updateOne({ accountId: user.accountId, _id: user.newsletterId }, { $set: { replyTo: "desk@example.com" } });
 		assert.equal(await welcomeReplyTo(), "desk@example.com", "the reply-to from before authors, while it has none");
 		assert.equal((await senderPage()).suggestion.email, "desk@example.com", "a first author starts where replies went");
