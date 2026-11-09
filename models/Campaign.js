@@ -105,6 +105,8 @@ const campaignSchema = new mongoose.Schema(
 			delivered: counter,
 			bounced: counter,
 			complained: counter,
+			// Refused by Gmail as likely unsolicited (models/Message.js refusedAt), still counted as sent.
+			refused: counter,
 			opened: counter,
 			clicked: counter,
 			unsubscribed: counter,
@@ -123,6 +125,7 @@ const campaignSchema = new mongoose.Schema(
 			delivered: counter,
 			bounced: counter,
 			complained: counter,
+			refused: counter,
 			failed: counter,
 			dormant: counter,
 		},
