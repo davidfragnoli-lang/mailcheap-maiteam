@@ -165,8 +165,8 @@ describe("a send Gmail refuses as unsolicited", () => {
 
 		const emails = platformEmails.slice(before.emails).map(({ to, subject }) => [to[0], subject]);
 		assert.deepEqual(emails, [
-			["refused-list@example.com", "[MailCheap] Campaign paused"],
-			["admin@example.com", "[MailCheap] Gmail refuses a campaign as unsolicited"],
+			["refused-list@example.com", "[mailcheap] Campaign paused"],
+			["admin@example.com", "[mailcheap] Gmail refuses a campaign as unsolicited"],
 		]);
 		const telegram = telegramMessages.slice(before.telegram);
 		assert.equal(telegram.length, 1);
