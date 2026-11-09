@@ -36,6 +36,8 @@ const sequenceSchema = new mongoose.Schema(
 			delivered: counter,
 			bounced: counter,
 			complained: counter,
+			// Refused by Gmail as likely unsolicited (models/Message.js refusedAt), still counted as sent.
+			refused: counter,
 			failed: counter,
 		},
 	},

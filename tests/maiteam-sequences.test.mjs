@@ -311,6 +311,35 @@ describe("maiteam welcome sequences", () => {
 		assert.equal(sequence.stats.complained, 1);
 	});
 
+	// PATCHES.md P6: a sequence pauses at a campaign's rate levels, and upstream 281026b added Gmail refusing emails as
+	// likely unsolicited to them. A refusal leaves the email sent and the contact enrolled, but counts toward the pause.
+	test("Gmail refusing its emails as unsolicited pauses a sequence at a campaign's level, and leaves its readers enrolled", async () => {
+		const user = await customer("seq-refused");
+		await createSequence(user, { name: "Refused", slug: "refused", steps: threeSteps("Refused", [0, 1]) });
+		const readers = Array.from({ length: 10 }, (_, index) => `mailcheap-test-seq-refused-${index}@gmail.com`);
+		for (const email of readers) await signUp(user, email, { sequence: "refused" });
+		await runStepJobs();
+		assert.ok(readers.every((email) => emailsTo(email).length === 1));
+		const reason =
+			"Gmail has detected that this message is likely unsolicited mail. To reduce the amount of spam sent to Gmail, this message has been blocked. For more information, go to https://support.google.com/mail/?p=UnsolicitedMessageError - gsmtp";
+		const sequenceOf = () => m.Sequence.findOne({ accountId: user.accountId, slug: "refused" }).lean();
+		for (const [index, email] of readers.entries()) {
+			const contact = await contactOf(user, email);
+			const message = await m.Message.findOne({ accountId: user.accountId, kind: "sequence", contactId: contact._id }).lean();
+			await m.events.handleEmailEvent({ type: "bounce", bounce: "soft", reason, accountId: String(user.accountId), messageId: String(message._id), email });
+			if (index === 8) assert.equal((await sequenceOf()).status, "active", "under the minimum of 10 refusals");
+		}
+		const sequence = await sequenceOf();
+		assert.equal(sequence.stats.refused, 10);
+		assert.equal(sequence.status, "paused");
+		assert.match(sequence.pauseReason, /^Gmail refusal rate of 100\.00% on this sequence \(limit 2\.00%\)\. Gmail refuses emails it reads as unsolicited: check that these contacts asked for your emails before you resume\.$/);
+		for (const email of readers) {
+			const contact = await contactOf(user, email);
+			assert.equal(contact.status, "active", email);
+			assert.equal((await enrollmentOf(user, contact._id)).status, "active", email);
+		}
+	});
+
 	test("a sequence replaces the welcome email after the confirmation click too", async () => {
 		const user = await customer("seq-confirm", { requireConfirmation: true });
 		await createSequence(user, { name: "Welcome", slug: "welcome", steps: threeSteps("Hello", [0]) });
