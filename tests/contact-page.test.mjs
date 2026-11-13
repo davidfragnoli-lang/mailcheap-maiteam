@@ -417,6 +417,9 @@ describe("the contact page and its data", () => {
 
 		await unsubscribeFrom(user, contact, { isPage: true });
 		await signUp();
+		// maiteam (P17): the archive's form brings someone who left back pending; their click makes them active.
+		const confirmToken = m.confirmation.createConfirmToken({ contactId: contact._id, newsletterId: user.newsletterId });
+		assert.deepEqual(await visit("FR", () => m.confirm.confirmSubscription(confirmToken)), { ok: true });
 		await unsubscribeFrom(user, contact, { isPage: false });
 		assert.deepEqual(await as(user, () => m.contacts.setContactStatus(id, "active", true)), { ok: true });
 		assert.deepEqual(await as(user, () => m.contacts.setContactStatus(id, "dormant")), { ok: true });
@@ -429,7 +432,8 @@ describe("the contact page and its data", () => {
 			statusChanges.map(({ from, to, via }) => [from, to, via]),
 			[
 				["active", "unsubscribed", "link"],
-				["unsubscribed", "active", "signup"],
+				["unsubscribed", "pending", "signup"],
+				["pending", "active", "confirmation"],
 				["active", "unsubscribed", "mail-app"],
 				["unsubscribed", "active", "dashboard"],
 				["active", "dormant", "dashboard"],
@@ -438,12 +442,14 @@ describe("the contact page and its data", () => {
 			]
 		);
 		assert.equal(statusChanges[1].source, "website");
-		assert.equal(statusChanges[3].consent, true);
+		assert.equal(statusChanges[4].consent, true);
 
 		const html = await renderPage(user, id);
 		for (const text of [
 			"With the link in your email",
 			"Signed up again on your website",
+			"Waiting for them to confirm",
+			"Confirmed their subscription",
 			"unsubscribe button",
 			"Resubscribed by you",
 			"Marked dormant by you",
@@ -455,8 +461,8 @@ describe("the contact page and its data", () => {
 		assert.ok(!html.includes("Before "), "nothing is missing");
 
 		const api = await callApi("GET", `/api/v1/contacts/${id}`, { key: user.key });
-		assert.deepEqual(api.body.statusChanges.map(({ via }) => via), ["link", "signup", "mail-app", "dashboard", "dashboard", "keep", "provider"]);
-		assert.equal(api.body.statusChanges[3].consent, true);
+		assert.deepEqual(api.body.statusChanges.map(({ via }) => via), ["link", "signup", "confirmation", "mail-app", "dashboard", "dashboard", "keep", "provider"]);
+		assert.equal(api.body.statusChanges[4].consent, true);
 	});
 
 	test("bounces, complaints, imports, the list cleanup and the never-email list keep their changes too", async () => {

@@ -76,6 +76,8 @@ export async function subscribe(_state, formData) {
 		email,
 		source: "website",
 		resubscribe: true,
+		// maiteam (P17, FRA-26634): anyone can type a stranger's address here, so someone who left confirms by email first.
+		rejoin: "confirm",
 		country: readCountry(requestHeaders),
 	});
 	const isPending = contact.status === "pending";
