@@ -53,7 +53,9 @@ function FormApiKey() {
 					<DialogDescription>
 						{state.level === "signups"
 							? "It is shown once. It can only add contacts, so it can go in your website's code."
-							: "It is shown once. Keep it on a server or in your AI assistant's settings, never in a web page."}
+							: state.level === "read"
+								? "It is shown once. It can only read, but it reads your contacts too: keep it on a server, never in a web page."
+								: "It is shown once. Keep it on a server or in your AI assistant's settings, never in a web page."}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex items-center gap-1 rounded-lg bg-muted py-1 pr-1 pl-3">
@@ -114,4 +116,5 @@ const LEVELS = [
 		description: "Everything the dashboard does: campaigns, contacts, domains, billing. For scripts and AI assistants.",
 	},
 	{ value: "signups", label: "Signups only", description: "Adds contacts and nothing else, for signup forms on your website." },
+	{ value: "read", label: "Read only", description: "Reads newsletters, campaigns, sequences and their results, and changes nothing. For dashboards and reports." },
 ];

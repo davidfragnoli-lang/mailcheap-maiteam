@@ -7,7 +7,7 @@ import { runAccountAction, toFormError } from "@/lib/actions/dashboard";
 export async function createApiKey(_state, formData) {
 	const { output, failure } = await runAccountAction("create_api_key", {
 		name: String(formData.get("name") ?? "").slice(0, 60),
-		level: formData.get("level") === "signups" ? "signups" : "full",
+		level: ["signups", "read"].includes(formData.get("level")) ? formData.get("level") : "full",
 	});
 	if (failure) return toFormError(failure);
 	revalidatePath("/api-keys");

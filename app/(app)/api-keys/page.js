@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 
 export const metadata = { title: "API keys" };
 
-const LEVEL_LABELS = { full: "Full access", signups: "Signups only" };
+const LEVEL_LABELS = { full: "Full access", signups: "Signups only", read: "Read only" };
 
 export default async function ApiKeysPage() {
 	const { account } = await requireRole(OWNER_ROLE);

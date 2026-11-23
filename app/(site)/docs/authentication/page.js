@@ -71,11 +71,19 @@ export default function AuthenticationPage() {
 									It can go in a web page: that endpoint answers browsers, and the key can&apos;t read or send anything.
 								</td>
 							</tr>
+							<tr>
+								<td className="py-3 pr-4 pl-4 font-medium whitespace-nowrap">Read only</td>
+								<td className="py-3 pr-4 text-muted-foreground">
+									Only the <Code>GET</Code> endpoints and MCP tools that change nothing and reach nothing outside mailcheap, for
+									dashboards and reports. It can&apos;t make a contacts export link, preview the summary email (its links work
+									without a key) or read billing. It reads contacts too, so keep it on a server.
+								</td>
+							</tr>
 						</tbody>
 					</table>
 				</div>
 				<p className="mt-4">
-					A signups only key calling anything else gets <Code>403 forbidden</Code>. Keys made before levels existed are signups only.
+					A signups only or read only key calling anything else gets <Code>403 forbidden</Code>. Keys made before levels existed are signups only.
 					Revoked keys get <Code>401 unauthorized</Code>.
 				</p>
 			</Section>
